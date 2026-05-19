@@ -60,7 +60,7 @@ async function loadGlobe() {
 function subtleGlobeMaterial(THREE: any): any {
   // MeshBasicMaterial renders at full brightness regardless of Three.js lighting mode,
   // which changed to physical units in r155 and made legacy intensity values near-black.
-  return new THREE.MeshBasicMaterial({ color: '#dde8ee' });
+  return new THREE.MeshBasicMaterial({ color: '#d9eefa' });
 }
 
 export default function GlobeView({ regions, onRegionClick, onUploadRequest, isOwner }: GlobeProps) {
@@ -91,6 +91,14 @@ export default function GlobeView({ regions, onRegionClick, onUploadRequest, isO
       if (r.hero_thumbnail_url) textures.set(code, textureLoader.load(r.hero_thumbnail_url));
     });
 
+    // Stored per-feature so onPolygonHover can mutate color in place
+    const matMap = new Map<string, any>();
+
+    const normalColor = (code: string) =>
+      countryRegions.has(code) ? '#d8e3dd' : '#f3f6f4';
+    const hoverColor = (code: string) =>
+      countryRegions.has(code) ? '#b8cec6' : '#dde8e4';
+
     globe
       .polygonsData(countriesGeo.features)
       .polygonAltitude((feat: any) =>
@@ -101,17 +109,41 @@ export default function GlobeView({ regions, onRegionClick, onUploadRequest, isO
         const texture = textures.get(code);
         const mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
         if (texture) mat.map = texture;
-        else mat.color.set(countryRegions.has(code) ? '#d8e3dd' : '#f3f6f4');
+        else mat.color.set(normalColor(code));
+        matMap.set(code, { mat, hasTexture: !!texture });
         return mat;
       })
       .polygonSideColor(() => '#e5ebe7')
       .polygonStrokeColor(() => '#cfd8d2')
       .polygonLabel((feat: any) => {
+        const name = feat.properties.NAME;
+        if (!name) return '';
         const region = countryRegions.get(feat.properties.ISO_A2);
-        if (!region) return '';
-        return `<div style="background:rgba(255,255,255,0.96);color:#111827;padding:6px 11px;border-radius:6px;font-family:system-ui,sans-serif;font-size:12px;border:1px solid rgba(148,163,184,0.32);box-shadow:0 12px 32px rgba(15,23,42,0.08)">
-          <strong>${feat.properties.NAME}</strong> &middot; <span style="color:#6b7280">${region.photo_count} photo${region.photo_count !== 1 ? 's' : ''}</span>
-        </div>`;
+        const style = 'background:rgba(255,255,255,0.96);color:#111827;padding:6px 11px;border-radius:6px;font-family:system-ui,sans-serif;font-size:12px;border:1px solid rgba(148,163,184,0.32);box-shadow:0 12px 32px rgba(15,23,42,0.08)';
+        if (region) {
+          return `<div style="${style}"><strong>${name}</strong> &middot; <span style="color:#6b7280">${region.photo_count} photo${region.photo_count !== 1 ? 's' : ''}</span></div>`;
+        }
+        return `<div style="${style}">${name}</div>`;
+      })
+      .onPolygonHover((feat: any, prevFeat: any) => {
+        if (prevFeat) {
+          const code = prevFeat.properties.ISO_A2;
+          const entry = matMap.get(code);
+          if (entry) {
+            if (entry.hasTexture) entry.mat.color.set('#ffffff');
+            else entry.mat.color.set(normalColor(code));
+            entry.mat.needsUpdate = true;
+          }
+        }
+        if (feat) {
+          const code = feat.properties.ISO_A2;
+          const entry = matMap.get(code);
+          if (entry) {
+            if (entry.hasTexture) entry.mat.color.set('#d0d0d0');
+            else entry.mat.color.set(hoverColor(code));
+            entry.mat.needsUpdate = true;
+          }
+        }
       })
       .onPolygonClick((feat: any) => {
         const code = feat.properties.ISO_A2;
@@ -146,29 +178,62 @@ export default function GlobeView({ regions, onRegionClick, onUploadRequest, isO
 
     const THREE = await loadThree();
 
+    const regionMatMap = new Map<string, any>();
+
+    const regionNormalColor = (code: string) =>
+      regionRegions.has(code) ? '#dce7e1' : '#f3f6f4';
+    const regionHoverColor = (code: string) =>
+      regionRegions.has(code) ? '#bdd4ca' : '#dde8e4';
+
     globe
       .polygonsData(countryFeatures)
       .polygonAltitude((feat: any) =>
         regionRegions.has(feat.properties.iso_3166_2) ? 0.015 : 0.008
       )
       .polygonCapMaterial((feat: any) => {
-        const region = regionRegions.get(feat.properties.iso_3166_2);
+        const code = feat.properties.iso_3166_2;
+        const region = regionRegions.get(code);
         const mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
-        if (region?.hero_thumbnail_url) {
-          mat.map = new THREE.TextureLoader().load(region.hero_thumbnail_url);
+        const hasTexture = !!region?.hero_thumbnail_url;
+        if (hasTexture) {
+          mat.map = new THREE.TextureLoader().load(region!.hero_thumbnail_url!);
         } else {
-          mat.color.set(regionRegions.size > 0 ? '#dce7e1' : '#f3f6f4');
+          mat.color.set(regionNormalColor(code));
         }
+        regionMatMap.set(code, { mat, hasTexture });
         return mat;
       })
       .polygonSideColor(() => '#e5ebe7')
       .polygonStrokeColor(() => '#cfd8d2')
       .polygonLabel((feat: any) => {
+        const name = feat.properties.name;
+        if (!name) return '';
         const region = regionRegions.get(feat.properties.iso_3166_2);
-        if (!region) return '';
-        return `<div style="background:rgba(255,255,255,0.96);color:#111827;padding:6px 11px;border-radius:6px;font-family:system-ui,sans-serif;font-size:12px;border:1px solid rgba(148,163,184,0.32);box-shadow:0 12px 32px rgba(15,23,42,0.08)">
-          <strong>${feat.properties.name}</strong> &middot; <span style="color:#6b7280">${region.photo_count} photo${region.photo_count !== 1 ? 's' : ''}</span>
-        </div>`;
+        const style = 'background:rgba(255,255,255,0.96);color:#111827;padding:6px 11px;border-radius:6px;font-family:system-ui,sans-serif;font-size:12px;border:1px solid rgba(148,163,184,0.32);box-shadow:0 12px 32px rgba(15,23,42,0.08)';
+        if (region) {
+          return `<div style="${style}"><strong>${name}</strong> &middot; <span style="color:#6b7280">${region.photo_count} photo${region.photo_count !== 1 ? 's' : ''}</span></div>`;
+        }
+        return `<div style="${style}">${name}</div>`;
+      })
+      .onPolygonHover((feat: any, prevFeat: any) => {
+        if (prevFeat) {
+          const code = prevFeat.properties.iso_3166_2;
+          const entry = regionMatMap.get(code);
+          if (entry) {
+            if (entry.hasTexture) entry.mat.color.set('#ffffff');
+            else entry.mat.color.set(regionNormalColor(code));
+            entry.mat.needsUpdate = true;
+          }
+        }
+        if (feat) {
+          const code = feat.properties.iso_3166_2;
+          const entry = regionMatMap.get(code);
+          if (entry) {
+            if (entry.hasTexture) entry.mat.color.set('#d0d0d0');
+            else entry.mat.color.set(regionHoverColor(code));
+            entry.mat.needsUpdate = true;
+          }
+        }
       })
       .onPolygonClick((feat: any) => {
         const code = feat.properties.iso_3166_2;
