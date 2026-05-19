@@ -1,0 +1,37 @@
+{
+  "name": "wenthere",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test:e2e": "playwright test",
+    "setup:geojson": "bash scripts/download-geojson.sh"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.556.0",
+    "exifr": "^7.1.3",
+    "globe.gl": "^2.27.0",
+    "jose": "^5.2.4",
+    "next": "14.2.3",
+    "pg": "^8.11.5",
+    "react": "^18",
+    "react-dom": "^18",
+    "sharp": "^0.33.3",
+    "three": "^0.183.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^20",
+    "@types/pg": "^8.11.5",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/three": "^0.183.0",
+    "autoprefixer": "^10.0.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

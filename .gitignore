@@ -1,0 +1,9 @@
+.env
+.env.local
+node_modules/
+.next/
+playwright-report/
+test-results/
+.superpowers/
+public/geojson/countries.json
+public/geojson/regions.json
