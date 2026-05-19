@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import type { GlobeRegion } from '@/lib/types';
-import type { LightboxPhoto } from '@/components/lightbox/Lightbox';
 import GlobeView from './Globe';
-import type { GlobeHandle } from './Globe';
 
-const Lightbox = dynamic(() => import('@/components/lightbox/Lightbox'), { ssr: false });
+const GalleryOverlay = dynamic(() => import('./GalleryOverlay'), { ssr: false });
 const UploadModal = dynamic(() => import('@/components/upload/UploadModal'), { ssr: false });
 
 interface GlobeSceneProps {
@@ -16,9 +14,9 @@ interface GlobeSceneProps {
   isOwner: boolean;
 }
 
-interface LightboxState {
-  photos: LightboxPhoto[];
-  index: number;
+interface GalleryState {
+  countryCode: string;
+  regionCode: string | null;
   countryName: string;
   regionName: string | null;
 }
@@ -34,26 +32,16 @@ function Wordmark({ href }: { href: string }) {
 
 export default function GlobeScene({ regions: initialRegions, username, isOwner }: GlobeSceneProps) {
   const [regions, setRegions] = useState<GlobeRegion[]>(initialRegions);
-  const [lightbox, setLightbox] = useState<LightboxState | null>(null);
+  const [gallery, setGallery] = useState<GalleryState | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState<'country' | 'region'>('country');
-  const globeRef = useRef<GlobeHandle>(null);
 
-  const handleRegionClick = useCallback(async (countryCode: string, regionCode: string | null) => {
-    const res = await fetch(
-      `/api/photos?country=${countryCode}${regionCode ? `&region=${regionCode}` : ''}`
-    );
-    if (!res.ok) return;
-    const photos: LightboxPhoto[] = await res.json();
-    if (!photos.length) return;
-
+  const handleRegionClick = useCallback((countryCode: string, regionCode: string | null) => {
     const countryName = regions.find(r => r.country_code === countryCode)?.country_name ?? countryCode;
     const regionName = regionCode
       ? regions.find(r => r.country_code === countryCode && r.region_code === regionCode)?.region_name ?? null
       : null;
-
-    setLightbox({ photos, index: 0, countryName, regionName });
+    setGallery({ countryCode, regionCode, countryName, regionName });
   }, [regions]);
 
   const handleUploadComplete = useCallback((updatedRegions: GlobeRegion[]) => {
@@ -99,37 +87,22 @@ export default function GlobeScene({ regions: initialRegions, username, isOwner 
         </div>
       </header>
 
-      {/* Globe — absolute fill ensures correct canvas dimensions */}
+      {/* Globe */}
       <div className="flex-1 relative min-h-0">
         <div className="absolute inset-0">
           <GlobeView
-            ref={globeRef}
             regions={regions}
             onRegionClick={handleRegionClick}
             onUploadRequest={isOwner ? () => setUploadOpen(true) : undefined}
-            onZoomChange={setZoomLevel}
             isOwner={isOwner}
           />
         </div>
-        {zoomLevel === 'region' && (
-          <button
-            onClick={() => globeRef.current?.resetToWorld()}
-            className="absolute top-5 left-6 flex items-center gap-1.5 px-3.5 py-2 rounded-md
-                       bg-white/90 backdrop-blur-sm text-gray-600 border border-gray-200 text-xs
-                       hover:bg-white hover:text-gray-950 transition-colors z-10"
-          >
-            ← World
-          </button>
-        )}
       </div>
 
-      {lightbox && (
-        <Lightbox
-          photos={lightbox.photos}
-          initialIndex={lightbox.index}
-          onClose={() => setLightbox(null)}
-          countryName={lightbox.countryName}
-          regionName={lightbox.regionName}
+      {gallery && (
+        <GalleryOverlay
+          {...gallery}
+          onClose={() => setGallery(null)}
         />
       )}
 
