@@ -11,9 +11,10 @@ interface Props {
   heroPicUrl: string
   onHover: () => void
   onUnhover: () => void
+  onClick: () => void
 }
 
-export function SubdivisionFeature({ feature, isHovered, opacity, heroPicUrl, onHover, onUnhover }: Props) {
+export function SubdivisionFeature({ feature, isHovered, opacity, heroPicUrl, onHover, onUnhover, onClick }: Props) {
   const lineGeo = useMemo(() => featureToLineGeometry(feature, 1.004), [feature])
   const fillGeo = useMemo(() => featureToFillGeometry(feature, 1.003), [feature])
 
@@ -44,6 +45,7 @@ export function SubdivisionFeature({ feature, isHovered, opacity, heroPicUrl, on
         renderOrder={3}
         onPointerOver={(e) => { e.stopPropagation(); onHover() }}
         onPointerOut={onUnhover}
+        onClick={(e) => { e.stopPropagation(); onClick() }}
       >
         <meshLambertMaterial
           map={!textureFailed ? (texture ?? null) : null}

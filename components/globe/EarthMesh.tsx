@@ -5,7 +5,7 @@ export function EarthMesh() {
     <group>
       <mesh>
         <sphereGeometry args={[1, 64, 64]} />
-        <meshStandardMaterial color="#B8C8D8" />
+        <meshStandardMaterial color="#0A1628" />
       </mesh>
 
       {/* Atmosphere glow: BackSide renders the inner face, creating a rim halo */}
@@ -14,7 +14,7 @@ export function EarthMesh() {
         <meshStandardMaterial
           color="#ffffff"
           transparent
-          opacity={0.05}
+          opacity={0.07}
           side={THREE.BackSide}
           depthWrite={false}
         />

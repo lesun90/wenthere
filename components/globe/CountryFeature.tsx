@@ -12,6 +12,7 @@ interface Props {
   heroPicUrl?: string
   onHover: () => void
   onUnhover: () => void
+  onClick: () => void
 }
 
 export function CountryFeature({
@@ -22,6 +23,7 @@ export function CountryFeature({
   heroPicUrl,
   onHover,
   onUnhover,
+  onClick,
 }: Props) {
   const lineGeo = useMemo(() => featureToLineGeometry(feature, 1.002), [feature])
   const fillGeo = useMemo(() => featureToFillGeometry(feature, 1.001), [feature])
@@ -34,7 +36,7 @@ export function CountryFeature({
   const borderColor = '#ffffff'
   const borderOpacity = isHovered ? 0.95 : dimmed ? 0.85 : 0.7
   const borderRenderOrder = dimmed ? 6 : 2
-  const baseFillColor = isHovered ? '#ffffff' : '#F0EAD6'
+  const baseFillColor = isHovered ? '#263D52' : '#1E2D3D'
   const baseFillOpacity = isHovered ? 0.95 : 0.9
 
   let photoFillColor = '#ffffff'
@@ -57,6 +59,7 @@ export function CountryFeature({
         renderOrder={1}
         onPointerOver={(e) => { e.stopPropagation(); onHover() }}
         onPointerOut={onUnhover}
+        onClick={(e) => { e.stopPropagation(); onClick() }}
       >
         <meshLambertMaterial
           color={baseFillColor}
@@ -72,6 +75,7 @@ export function CountryFeature({
           renderOrder={2}
           onPointerOver={(e) => { e.stopPropagation(); onHover() }}
           onPointerOut={onUnhover}
+          onClick={(e) => { e.stopPropagation(); onClick() }}
         >
           <meshLambertMaterial
             map={!textureFailed ? (texture ?? null) : null}
