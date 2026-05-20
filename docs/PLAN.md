@@ -1,7 +1,7 @@
 # Beenthere — Implementation Plan
 
 **Project:** Beenthere travel-photo globe
-**Status:** M1 ready to start
+**Status:** M2 complete
 **Spec:** [design_spec.md](design_spec.md)
 
 ---
@@ -10,8 +10,8 @@
 
 | # | Milestone | Status |
 |---|-----------|--------|
-| M1 | Scaffold & Environment | pending |
-| M2 | Globe UI/UX | pending |
+| M1 | Scaffold & Environment | done |
+| M2 | Globe UI/UX | done |
 | M3 | Gallery | pending |
 | M4 | Testing & Hardening | pending |
 | M5 | Add User | pending |

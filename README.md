@@ -12,9 +12,9 @@ A travel-photo globe. Visited countries and regions covered with your photos.
 docker compose up
 ```
 
-Opens the app at [localhost:3000/demo](http://localhost:3000/demo).
+Opens the app at [localhost:3000](http://localhost:3000).
 
-Hot reload is active — changes to `app/` are reflected immediately without rebuilding the image.
+Hot reload is active — changes to source files are reflected immediately without rebuilding the image.
 
 ### Live Debugger
 
@@ -47,23 +47,20 @@ Builds the standalone Next.js image and serves it at [localhost:3000](http://loc
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` before running if any variables are needed:
-
-```bash
-cp .env.example .env
-```
-
-No variables are required for M1.
+No environment variables are required. See `.env.example` for future milestone placeholders.
 
 ## Project Structure
 
 ```
-app/             Next.js app router
-  demo/          /demo route (placeholder, becomes the globe in M2)
-public/          Static assets
-docs/            Design specs and planning
-Dockerfile       Multi-stage: base → dev → builder → prod
-docker-compose.yml          Base skeleton
+app/                        Next.js app router
+  demo/                     Interactive travel-photo globe
+components/globe/           3D globe React components
+lib/                        Geographic geometry utilities
+data/                       Seeded demo traveler profile and photos
+public/geo/                 TopoJSON/GeoJSON geographic data files
+docs/                       Design specs and planning
+Dockerfile                  Multi-stage: base → dev → builder → prod
+docker-compose.yml          Base service definition
 docker-compose.override.yml Dev overrides (auto-applied by `docker compose up`)
-docker-compose.prod.yml     Prod overrides
+docker-compose.prod.yml     Production overrides
 ```
