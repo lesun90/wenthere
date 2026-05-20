@@ -52,7 +52,13 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap }: P
     }
   }
 
-  function handleHover(id: string, name: string, heroPicUrl: string, centroid: [number, number]) {
+  function handleHover(
+    id: string,
+    name: string,
+    heroPicUrl: string,
+    centroid: [number, number],
+    geometry: import('geojson').Geometry | null,
+  ) {
     setHoveredId(id)
     const memory = subdivisionMemories[id]
     const otherPicUrls = memory
@@ -60,7 +66,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap }: P
       : []
     const placeCount = memory ? memory.photos.length : 0
     const { screenX, screenY } = projectToScreen(centroid)
-    onHoverChange({ name, heroPicUrl, otherPicUrls, placeCount, screenX, screenY })
+    onHoverChange({ name, heroPicUrl, otherPicUrls, placeCount, screenX, screenY, geometry })
   }
 
   function handleUnhover() {
@@ -81,7 +87,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap }: P
             isHovered={hoveredId === id}
             opacity={opacity}
             heroPicUrl={heroPicUrl}
-            onHover={() => handleHover(id, name, heroPicUrl, centroid)}
+            onHover={() => handleHover(id, name, heroPicUrl, centroid, f.geometry ?? null)}
             onUnhover={handleUnhover}
             onClick={() => onSubdivisionTap(id, adm0Code)}
           />

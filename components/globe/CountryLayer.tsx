@@ -64,7 +64,13 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     }
   }
 
-  function handleHover(id: string, name: string, heroPicUrl: string | undefined, centroid: [number, number]) {
+  function handleHover(
+    id: string,
+    name: string,
+    heroPicUrl: string | undefined,
+    centroid: [number, number],
+    geometry: import('geojson').Geometry | null,
+  ) {
     setHoveredId(id)
     if (!heroPicUrl) return
     const memory = countryMemories[id]
@@ -78,7 +84,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
       ? memory.subdivisions.reduce((acc, s) => acc + s.photos.length, 0)
       : 0
     const { screenX, screenY } = projectToScreen(centroid)
-    onHoverChange({ name, heroPicUrl, otherPicUrls, placeCount, screenX, screenY })
+    onHoverChange({ name, heroPicUrl, otherPicUrls, placeCount, screenX, screenY, geometry })
   }
 
   function handleUnhover() {
@@ -107,7 +113,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
             dimmed={dimmed}
             photoOpacity={photoOpacity}
             heroPicUrl={heroPicUrl}
-            onHover={() => handleHover(id, name, heroPicUrl, centroid)}
+            onHover={() => handleHover(id, name, heroPicUrl, centroid, f.geometry ?? null)}
             onUnhover={handleUnhover}
             onClick={() => handleTap(id, centroid)}
           />

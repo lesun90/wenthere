@@ -1,3 +1,5 @@
+import type { Geometry } from 'geojson'
+
 export interface HoverInfo {
   name: string
   heroPicUrl: string
@@ -5,6 +7,7 @@ export interface HoverInfo {
   placeCount: number
   screenX: number
   screenY: number
+  geometry: Geometry | null
 }
 
 export type GlobeState =
