@@ -1,38 +1,69 @@
-# Wenthere
+# Beenthere
 
-A single-owner travel photo album where photos are displayed on an interactive 3D globe. Visited countries and regions are covered by hero thumbnail photos instead of flat colors. The globe is publicly shareable without login.
+A travel-photo globe. Visited countries and regions covered with your photos.
 
-## Components
+## Prerequisites
 
-- **Globe** — 3D globe renderer using Globe.gl (Three.js); country and region zoom levels, hero thumbnail polygon textures, floating badge icons, hover tooltips, and camera animation
-- **Upload pipeline** — server-side file handler: EXIF GPS parsing, Nominatim reverse geocoding, Sharp thumbnail generation (400×400px), S3 storage writes, and Postgres region cache rebuild
-- **Lightbox** — full-screen photo viewer overlay with filmstrip, arrow/swipe navigation, captions, and date/location metadata
-- **Auth** — custom JWT auth (`jose`, HS256); owner email/password from env vars, 30-day `httpOnly` session cookie, middleware protection on upload and dashboard routes
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Compose plugin on Linux).
 
-## Quick Start
+## Development
 
-```bash
-cp .env.example .env   # fill in OWNER_EMAIL, OWNER_PASSWORD, OWNER_USERNAME, JWT_SECRET
-```
-
-**Development — live reload on every file save:**
 ```bash
 docker compose up
 ```
-Source code is mounted into the container. Save a file → browser updates instantly.
-First start installs dependencies inside Docker (~30 s); subsequent starts are fast.
 
-**Production — optimised build:**
-```bash
-docker compose -f docker-compose.yml up --build
+Opens the app at [localhost:3000/demo](http://localhost:3000/demo).
+
+Hot reload is active — changes to `app/` are reflected immediately without rebuilding the image.
+
+### Live Debugger
+
+The dev container exposes the Node.js inspector on port `9229`. Attach any DAP-compatible debugger to `localhost:9229`.
+
+**VS Code** — add to `.vscode/launch.json`:
+
+```json
+{
+  "type": "node",
+  "request": "attach",
+  "name": "Attach to Docker dev",
+  "port": 9229,
+  "address": "localhost",
+  "localRoot": "${workspaceFolder}",
+  "remoteRoot": "/app",
+  "restart": true
+}
 ```
-GeoJSON map data (~17 MB) downloads automatically during build.
 
-App: http://localhost:3000 · MinIO console: http://localhost:9001
+Then run **Attach to Docker dev** from the Run & Debug panel after `docker compose up` is running.
 
-## Docs
+## Production
 
-- [Spec](docs/spec.md)
-- [Design](docs/design.md)
-- [Decisions](docs/decisions.md)
-- [Progress](docs/progress.md)
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+```
+
+Builds the standalone Next.js image and serves it at [localhost:3000](http://localhost:3000).
+
+## Environment Variables
+
+Copy `.env.example` to `.env` before running if any variables are needed:
+
+```bash
+cp .env.example .env
+```
+
+No variables are required for M1.
+
+## Project Structure
+
+```
+app/             Next.js app router
+  demo/          /demo route (placeholder, becomes the globe in M2)
+public/          Static assets
+docs/            Design specs and planning
+Dockerfile       Multi-stage: base → dev → builder → prod
+docker-compose.yml          Base skeleton
+docker-compose.override.yml Dev overrides (auto-applied by `docker compose up`)
+docker-compose.prod.yml     Prod overrides
+```

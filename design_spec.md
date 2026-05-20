@@ -94,7 +94,7 @@ The design should prioritize:
 
 If a photo fails to load, the place still renders as visited with a neutral fallback color or placeholder texture. If subdivision GeoJSON fails or is missing, the globe keeps the country-level photo visible. If a memory has incomplete location data, it can appear in the gallery but should not be mapped until it has at least a country.
 
-If a device struggles with photo textures, the fallback visual can use photo pins or flat thumbnail cards while keeping the same seeded data model. The product behavior should remain understandable even when the full visual treatment is degraded.
+If a device struggles with photo rendering, the fallback visual can use flat thumbnail cards while keeping the same seeded data model. The product behavior should remain understandable even when the full visual treatment is degraded.
 
 ## Testing Expectations
 
@@ -125,7 +125,7 @@ Deliverables:
 
 ### Milestone 2: Globe UI/UX
 
-Build the core Beenthere visual experience. The screen should open directly into the 3D globe, render seeded visited countries, support rotate and zoom interactions, and reveal subdivision detail when zooming into supported countries. Photo display begins here as the visual treatment for visited places, even if the first version uses a simpler texture, thumbnail, or fallback approach.
+Build the core Beenthere visual experience. The screen should open directly into the 3D globe, render seeded visited countries, support rotate and zoom interactions, and reveal subdivision detail when zooming into supported countries. Photo display begins here as the visual treatment for visited places. The base globe uses solid colors (no texture): ocean in `#C0C0C0`, land/visited areas in lighter palette shades.
 
 Deliverables:
 

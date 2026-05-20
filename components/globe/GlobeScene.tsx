@@ -1,117 +1,129 @@
-'use client';
+'use client'
 
-import { useState, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-import type { GlobeRegion } from '@/lib/types';
-import GlobeView from './Globe';
+import { useEffect, useRef, useMemo, useState } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { OrbitControls } from '@react-three/drei'
+import * as THREE from 'three'
+import { EarthMesh } from './EarthMesh'
+import { CountryLayer } from './CountryLayer'
+import type { HoverInfo } from './CountryLayer'
+import { SubdivisionLayer } from './SubdivisionLayer'
+import { DetailToggle } from './DetailToggle'
 
-const GalleryOverlay = dynamic(() => import('./GalleryOverlay'), { ssr: false });
-const UploadModal = dynamic(() => import('@/components/upload/UploadModal'), { ssr: false });
+const MODE_TRANSITION_MS = 300
+const MIN_CAMERA_DISTANCE = 1.2
+const MAX_CAMERA_DISTANCE = 6
+const ZOOM_SPEED = 0.65
 
-interface GlobeSceneProps {
-  regions: GlobeRegion[];
-  username: string;
-  isOwner: boolean;
+function CameraLight() {
+  const lightRef = useRef<THREE.DirectionalLight>(null)
+  const offset = useMemo(() => new THREE.Vector3(2, 2, 4), [])
+  const pos = useMemo(() => new THREE.Vector3(), [])
+
+  useFrame(({ camera }) => {
+    if (!lightRef.current) return
+    pos.copy(offset).applyQuaternion(camera.quaternion).add(camera.position)
+    lightRef.current.position.copy(pos)
+  })
+
+  return <directionalLight ref={lightRef} color="#ffffff" intensity={2.0} />
 }
 
-interface GalleryState {
-  countryCode: string;
-  regionCode: string | null;
-  countryName: string;
-  regionName: string | null;
+function useDetailProgress(detailLevel: 'country' | 'subdivision') {
+  const [progress, setProgress] = useState(detailLevel === 'subdivision' ? 1 : 0)
+  const progressRef = useRef(progress)
+
+  useEffect(() => {
+    progressRef.current = progress
+  }, [progress])
+
+  useEffect(() => {
+    const from = progressRef.current
+    const to = detailLevel === 'subdivision' ? 1 : 0
+    if (from === to) return
+
+    let frame = 0
+    const startedAt = performance.now()
+
+    function tick(now: number) {
+      const t = Math.min((now - startedAt) / MODE_TRANSITION_MS, 1)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setProgress(from + (to - from) * eased)
+      if (t < 1) frame = requestAnimationFrame(tick)
+    }
+
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [detailLevel])
+
+  return progress
 }
 
-function Wordmark({ href }: { href: string }) {
+export function GlobeScene() {
+  const [detailLevel, setDetailLevel] = useState<'country' | 'subdivision'>('country')
+  const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null)
+  const detailProgress = useDetailProgress(detailLevel)
+  const countryPhotoOpacity = 1 - detailProgress
+  const subdivisionOpacity = detailProgress
+  const shouldRenderSubdivisions = detailLevel === 'subdivision' || subdivisionOpacity > 0
+
+  useEffect(() => {
+    setHoverInfo(null)
+  }, [detailLevel])
+
   return (
-    <a href={href} className="flex items-baseline tracking-logotype uppercase text-sm select-none">
-      <span className="font-light text-gray-900">went</span>
-      <span className="font-semibold text-gray-900">here</span>
-    </a>
-  );
-}
-
-export default function GlobeScene({ regions: initialRegions, username, isOwner }: GlobeSceneProps) {
-  const [regions, setRegions] = useState<GlobeRegion[]>(initialRegions);
-  const [gallery, setGallery] = useState<GalleryState | null>(null);
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const handleRegionClick = useCallback((countryCode: string, regionCode: string | null) => {
-    const countryName = regions.find(r => r.country_code === countryCode)?.country_name ?? countryCode;
-    const regionName = regionCode
-      ? regions.find(r => r.country_code === countryCode && r.region_code === regionCode)?.region_name ?? null
-      : null;
-    setGallery({ countryCode, regionCode, countryName, regionName });
-  }, [regions]);
-
-  const handleUploadComplete = useCallback((updatedRegions: GlobeRegion[]) => {
-    setRegions(updatedRegions);
-  }, []);
-
-  const copyShareLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/${username}`).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = `/${username}`;
-  };
-
-  return (
-    <div className="h-screen flex flex-col overflow-hidden bg-white text-gray-950">
-      {/* Header */}
-      <header className="shrink-0 flex items-center justify-between px-8 py-5 bg-white/95 border-b border-gray-200 z-10">
-        <Wordmark href={`/${username}`} />
-
-        <div className="flex items-center gap-5">
-          {isOwner && (
-            <a href={`/${username}`} className="text-xs text-gray-400 hover:text-gray-700 transition-colors">
-              Public view
-            </a>
-          )}
-          <button
-            onClick={copyShareLink}
-            className="text-xs px-3.5 py-2 rounded-md border border-gray-200 text-gray-600
-                       hover:border-gray-300 hover:text-gray-950 hover:bg-gray-50 transition-colors"
-          >
-            {copied ? 'Copied!' : 'Share'}
-          </button>
-          {isOwner && (
-            <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-gray-700 transition-colors">
-              Sign out
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Globe */}
-      <div className="flex-1 relative min-h-0">
-        <div className="absolute inset-0">
-          <GlobeView
-            regions={regions}
-            onRegionClick={handleRegionClick}
-            onUploadRequest={isOwner ? () => setUploadOpen(true) : undefined}
-            isOwner={isOwner}
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <Canvas
+        camera={{ position: [0, 0, 2.5], fov: 45 }}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <color attach="background" args={['#080c14']} />
+        <ambientLight color="#ffffff" intensity={0.15} />
+        <CameraLight />
+        <EarthMesh />
+        <CountryLayer
+          detailLevel={detailLevel}
+          photoOpacity={countryPhotoOpacity}
+          onHoverChange={setHoverInfo}
+        />
+        {shouldRenderSubdivisions && (
+          <SubdivisionLayer opacity={subdivisionOpacity} onHoverChange={setHoverInfo} />
+        )}
+        <OrbitControls
+          enableDamping
+          dampingFactor={0.05}
+          minDistance={MIN_CAMERA_DISTANCE}
+          maxDistance={MAX_CAMERA_DISTANCE}
+          zoomSpeed={ZOOM_SPEED}
+        />
+      </Canvas>
+      <DetailToggle detailLevel={detailLevel} onToggle={setDetailLevel} />
+      {hoverInfo && (
+        <div style={{
+          position: 'absolute',
+          bottom: 32,
+          left: 32,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          background: 'rgba(8, 12, 20, 0.85)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 10,
+          padding: '10px 14px',
+          backdropFilter: 'blur(8px)',
+          pointerEvents: 'none',
+          maxWidth: 280,
+        }}>
+          <img
+            src={hoverInfo.heroPicUrl}
+            alt={hoverInfo.name}
+            style={{ width: 64, height: 44, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
           />
+          <span style={{ color: '#ffffff', fontSize: 14, fontWeight: 500, letterSpacing: 0.2 }}>
+            {hoverInfo.name}
+          </span>
         </div>
-      </div>
-
-      {gallery && (
-        <GalleryOverlay
-          {...gallery}
-          onClose={() => setGallery(null)}
-        />
-      )}
-
-      {uploadOpen && (
-        <UploadModal
-          onClose={() => setUploadOpen(false)}
-          onComplete={handleUploadComplete}
-        />
       )}
     </div>
-  );
+  )
 }
