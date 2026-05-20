@@ -18,9 +18,10 @@ const MODE_TRANSITION_MS = 300
 const MIN_CAMERA_DISTANCE = 1.2
 const MAX_CAMERA_DISTANCE = 6
 const ZOOM_SPEED = 0.65
-const FLY_DURATION = 600
+const FLY_DURATION = 700
 const ENTER_DETAIL_DISTANCE = 1.85
 const EXIT_DETAIL_DISTANCE = 2.35
+const COUNTRY_FLY_DISTANCE = 1.65
 
 const GLOBE_PALETTES: Record<'dark' | 'light', GlobePalette> = {
   dark: {
@@ -66,16 +67,19 @@ function CameraLight() {
 type FlyJob = {
   startPos: THREE.Vector3
   endDir: THREE.Vector3
-  dist: number
+  startDist: number
+  endDist: number
   startedAt: number
 }
 
 function CameraController({
   flyTarget,
+  targetDist,
   orbitRef,
   onComplete,
 }: {
   flyTarget: [number, number] | null
+  targetDist?: number
   orbitRef: React.RefObject<React.ElementRef<typeof OrbitControls> | null>
   onComplete: () => void
 }) {
@@ -88,10 +92,12 @@ function CameraController({
     if (!flyTarget) return
     const [lon, lat] = flyTarget
     const endDir = latLngToVec3(lat, lon, 1).normalize()
+    const startDist = camera.position.length()
     jobRef.current = {
       startPos: camera.position.clone(),
       endDir,
-      dist: camera.position.length(),
+      startDist,
+      endDist: targetDist ?? startDist,
       startedAt: performance.now(),
     }
     if (orbitRef.current) orbitRef.current.enabled = false
@@ -104,9 +110,10 @@ function CameraController({
     const t = Math.min((performance.now() - job.startedAt) / FLY_DURATION, 1)
     const eased = 1 - Math.pow(1 - t, 3)
 
+    const currentDist = job.startDist + (job.endDist - job.startDist) * eased
     const dir = job.startPos.clone().normalize()
     dir.lerp(job.endDir, eased).normalize()
-    camera.position.copy(dir.multiplyScalar(job.dist))
+    camera.position.copy(dir.multiplyScalar(currentDist))
     camera.lookAt(0, 0, 0)
 
     if (t >= 1) {
@@ -122,18 +129,26 @@ function CameraController({
 function ZoomDetailController({
   detailLevel,
   onDetailLevelChange,
+  disabled,
 }: {
   detailLevel: DetailLevel
   onDetailLevelChange: (level: DetailLevel) => void
+  disabled?: boolean
 }) {
   const { camera } = useThree()
   const detailLevelRef = useRef(detailLevel)
+  const disabledRef = useRef(!!disabled)
 
   useEffect(() => {
     detailLevelRef.current = detailLevel
   }, [detailLevel])
 
+  useEffect(() => {
+    disabledRef.current = !!disabled
+  }, [disabled])
+
   useFrame(() => {
+    if (disabledRef.current) return
     const distance = camera.position.length()
     const current = detailLevelRef.current
 
@@ -178,6 +193,8 @@ export function GlobeScene() {
   const pendingFlyRef = useRef<{ countryCode: string; center: [number, number] } | null>(null)
   const orbitRef = useRef<React.ElementRef<typeof OrbitControls>>(null)
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
+  const [clickOrigin, setClickOrigin] = useState<{ x: number; y: number } | null>(null)
+  const [subdivisionHeroOverrides, setSubdivisionHeroOverrides] = useState<Record<string, string>>({})
 
   const current = navStack[navStack.length - 1]
   const showSubdivisions = current.level === 'detail' || current.level === 'subdivision' || current.level === 'gallery'
@@ -255,8 +272,18 @@ export function GlobeScene() {
     }
   }
 
+  function handleSubdivisionHeroChange(subdivisionId: string, heroUrl: string) {
+    setSubdivisionHeroOverrides(currentOverrides => ({
+      ...currentOverrides,
+      [subdivisionId]: heroUrl,
+    }))
+  }
+
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div
+      style={{ position: 'relative', width: '100%', height: '100%' }}
+      onPointerDown={e => { if (!galleryOpen) setClickOrigin({ x: e.clientX, y: e.clientY }) }}
+    >
       <div style={{ width: '100%', height: '100%', opacity: galleryOpen ? 0.4 : 1, transition: 'opacity 300ms' }}>
         <Canvas
           camera={{ position: [0, 0, 2.5], fov: 45 }}
@@ -267,12 +294,14 @@ export function GlobeScene() {
           <CameraLight />
           <CameraController
             flyTarget={flyTarget}
+            targetDist={COUNTRY_FLY_DISTANCE}
             orbitRef={orbitRef}
             onComplete={handleFlyComplete}
           />
           <ZoomDetailController
             detailLevel={detailLevel}
             onDetailLevelChange={handleZoomDetailChange}
+            disabled={flyTarget !== null}
           />
           <EarthMesh palette={palette} />
           <CountryLayer
@@ -288,6 +317,7 @@ export function GlobeScene() {
               onHoverChange={setHoverInfo}
               onSubdivisionTap={handleSubdivisionTap}
               palette={palette}
+              heroOverrides={subdivisionHeroOverrides}
             />
           )}
           <OrbitControls
@@ -309,11 +339,22 @@ export function GlobeScene() {
         />
       )}
 
+      {galleryOpen && (
+        <div
+          onClick={back}
+          style={{ position: 'absolute', inset: 0, zIndex: 40, cursor: 'default' }}
+          aria-label="Close gallery"
+        />
+      )}
+
       {gallerySubdivisionId && (
         <GalleryPanel
           key={gallerySubdivisionId}
           subdivisionId={gallerySubdivisionId}
           onBack={back}
+          initialHeroUrl={subdivisionHeroOverrides[gallerySubdivisionId]}
+          onHeroChange={handleSubdivisionHeroChange}
+          clickOrigin={clickOrigin ?? undefined}
         />
       )}
     </div>

@@ -16,11 +16,14 @@ export function getVisitedCountries(profile: TravelerProfile): Record<string, st
   return result
 }
 
-export function getVisitedSubdivisions(profile: TravelerProfile): Record<string, string> {
+export function getVisitedSubdivisions(
+  profile: TravelerProfile,
+  heroOverrides: Record<string, string> = {},
+): Record<string, string> {
   const result: Record<string, string> = {}
   for (const country of profile.countries) {
     for (const sub of country.subdivisions) {
-      result[sub.subdivisionCode] = sub.heroPic
+      result[sub.subdivisionCode] = heroOverrides[sub.subdivisionCode] ?? sub.heroPic
     }
   }
   return result

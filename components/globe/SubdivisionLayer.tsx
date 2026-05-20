@@ -15,9 +15,10 @@ interface Props {
   onHoverChange: (info: HoverInfo | null) => void
   onSubdivisionTap: (subdivisionId: string, countryCode: string) => void
   palette: GlobePalette
+  heroOverrides?: Record<string, string>
 }
 
-export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette }: Props) {
+export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette, heroOverrides = {} }: Props) {
   const { camera, size } = useThree()
   const [data, setData] = useState<FeatureCollection | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -30,7 +31,10 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
       .catch(() => {})
   }, [])
 
-  const visitedSubdivisions = useMemo(() => getVisitedSubdivisions(travelerProfile), [])
+  const visitedSubdivisions = useMemo(
+    () => getVisitedSubdivisions(travelerProfile, heroOverrides),
+    [heroOverrides],
+  )
   const subdivisionMemories = useMemo(() => getSubdivisionMemoryByCode(travelerProfile), [])
 
   const visitedFeatures = useMemo(() => {

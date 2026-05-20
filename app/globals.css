@@ -94,20 +94,101 @@
 
 /* ─── Gallery panel ───────────────────────────── */
 .gallery-panel {
-  background: rgba(8, 12, 20, 0.95);
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: linear-gradient(170deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.04) 35%, rgba(8,12,20,0.58) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  box-shadow: 0 -12px 48px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.11);
 }
 .light .gallery-panel {
-  background: rgba(255, 255, 255, 0.95);
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: linear-gradient(170deg, rgba(255,255,255,0.88) 0%, rgba(248,250,255,0.76) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  box-shadow: 0 -12px 48px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.95);
 }
 .gallery-panel-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 .light .gallery-panel-header {
   border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* ─── Gallery drag handle ────────────────────── */
+.gallery-drag-handle {
+  background: rgba(255, 255, 255, 0.28);
+}
+.light .gallery-drag-handle {
+  background: rgba(15, 23, 42, 0.20);
+}
+
+/* ─── Gallery nav buttons (Back / Close) ────── */
+.gallery-nav-btn {
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: var(--text-secondary);
+  transition: background 150ms ease, color 150ms ease;
+}
+.gallery-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text-primary);
+}
+.light .gallery-nav-btn {
+  background: rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(15, 23, 42, 0.10);
+}
+.light .gallery-nav-btn:hover {
+  background: rgba(15, 23, 42, 0.10);
+}
+
+/* ─── Hero image fade on switch ─────────────── */
+@keyframes gallery-hero-fade {
+  from { opacity: 0.55; transform: scale(1.012); }
+  to   { opacity: 1;    transform: scale(1); }
+}
+.gallery-hero-img {
+  animation: gallery-hero-fade 220ms cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ─── Thumbnail strip scrollbar ─────────────── */
+.gallery-thumbs::-webkit-scrollbar { display: none; }
+
+/* ─── Lightbox overlay ───────────────────────── */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 7, 16, 0.82);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+  padding: 24px;
+}
+.light .lightbox-overlay {
+  background: rgba(200, 210, 230, 0.72);
+}
+.lightbox-card {
+  position: relative;
+  max-width: min(90vw, 900px);
+  max-height: min(90vh, 700px);
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(160deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 50%, rgba(8,12,20,0.60) 100%);
+  border: 1px solid rgba(255,255,255,0.20);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.14);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.light .lightbox-card {
+  background: linear-gradient(160deg, rgba(255,255,255,0.88) 0%, rgba(240,245,255,0.80) 100%);
+  border: 1px solid rgba(255,255,255,0.80);
+  box-shadow: 0 24px 80px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.95);
+}
+.lightbox-caption {
+  background: linear-gradient(to top, rgba(4,7,16,0.88) 0%, rgba(4,7,16,0.50) 60%, transparent 100%);
+}
+.light .lightbox-caption {
+  background: linear-gradient(to top, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.60) 60%, transparent 100%);
 }
