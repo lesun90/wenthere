@@ -9,6 +9,7 @@ import { CountryLayer } from './CountryLayer'
 import { SubdivisionLayer } from './SubdivisionLayer'
 import { FloatingCard } from './FloatingCard'
 import { GalleryPanel } from './GalleryPanel'
+import { usePerformancePreload } from './usePerformancePreload'
 import type { HoverInfo, GlobeState } from './types'
 import { latLngToVec3 } from '../../lib/geo'
 
@@ -17,6 +18,10 @@ const MIN_CAMERA_DISTANCE = 1.2
 const MAX_CAMERA_DISTANCE = 6
 const ZOOM_SPEED = 0.65
 const FLY_DURATION = 600
+const ENTER_DETAIL_DISTANCE = 1.85
+const EXIT_DETAIL_DISTANCE = 2.35
+
+type DetailLevel = 'world' | 'detail'
 
 function CameraLight() {
   const lightRef = useRef<THREE.DirectionalLight>(null)
@@ -88,36 +93,53 @@ function CameraController({
   return null
 }
 
-function useDetailProgress(show: boolean) {
-  const [progress, setProgress] = useState(show ? 1 : 0)
-  const progressRef = useRef(progress)
+function ZoomDetailController({
+  detailLevel,
+  onDetailLevelChange,
+}: {
+  detailLevel: DetailLevel
+  onDetailLevelChange: (level: DetailLevel) => void
+}) {
+  const { camera } = useThree()
+  const detailLevelRef = useRef(detailLevel)
 
   useEffect(() => {
-    progressRef.current = progress
-  }, [progress])
+    detailLevelRef.current = detailLevel
+  }, [detailLevel])
 
-  useEffect(() => {
-    const from = progressRef.current
-    const to = show ? 1 : 0
-    if (from === to) return
+  useFrame(() => {
+    const distance = camera.position.length()
+    const current = detailLevelRef.current
 
-    let frame = 0
-    const startedAt = performance.now()
-
-    function tick(now: number) {
-      const t = Math.min((now - startedAt) / MODE_TRANSITION_MS, 1)
-      const eased = 1 - Math.pow(1 - t, 3)
-      const next = from + (to - from) * eased
-      setProgress(next)
-      progressRef.current = next
-      if (t < 1) frame = requestAnimationFrame(tick)
+    if (current === 'world' && distance <= ENTER_DETAIL_DISTANCE) {
+      detailLevelRef.current = 'detail'
+      onDetailLevelChange('detail')
+      return
     }
 
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
+    if (current === 'detail' && distance >= EXIT_DETAIL_DISTANCE) {
+      detailLevelRef.current = 'world'
+      onDetailLevelChange('world')
+    }
+  })
+
+  return null
+}
+
+function useLayerPresence(show: boolean) {
+  const [present, setPresent] = useState(show)
+
+  useEffect(() => {
+    if (show) {
+      setPresent(true)
+      return
+    }
+
+    const timeout = window.setTimeout(() => setPresent(false), MODE_TRANSITION_MS)
+    return () => window.clearTimeout(timeout)
   }, [show])
 
-  return progress
+  return present
 }
 
 export function GlobeScene() {
@@ -129,14 +151,16 @@ export function GlobeScene() {
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
 
   const current = navStack[navStack.length - 1]
-  const showSubdivisions = current.level === 'subdivision' || current.level === 'gallery'
+  const showSubdivisions = current.level === 'detail' || current.level === 'subdivision' || current.level === 'gallery'
+  const detailLevel: DetailLevel = showSubdivisions ? 'detail' : 'world'
   const galleryOpen = current.level === 'gallery'
   const gallerySubdivisionId = current.level === 'gallery' ? current.subdivisionId : null
 
-  const detailProgress = useDetailProgress(showSubdivisions)
-  const countryPhotoOpacity = 1 - detailProgress
-  const subdivisionOpacity = detailProgress
-  const shouldRenderSubdivisions = showSubdivisions || subdivisionOpacity > 0
+  const countryPhotoOpacity = showSubdivisions ? 0 : 1
+  const subdivisionOpacity = showSubdivisions ? 1 : 0
+  const shouldRenderSubdivisions = useLayerPresence(showSubdivisions)
+
+  usePerformancePreload(showSubdivisions || flyTarget !== null)
 
   function push(state: GlobeState) {
     setNavStack(s => [...s, state])
@@ -144,6 +168,18 @@ export function GlobeScene() {
 
   function back() {
     setNavStack(s => s.length > 1 ? s.slice(0, -1) : s)
+  }
+
+  function handleZoomDetailChange(level: DetailLevel) {
+    setNavStack(stack => {
+      const top = stack[stack.length - 1]
+
+      if (level === 'detail') {
+        return top.level === 'world' ? [...stack, { level: 'detail' }] : stack
+      }
+
+      return top.level === 'world' ? stack : [{ level: 'world' }]
+    })
   }
 
   useEffect(() => {
@@ -181,8 +217,13 @@ export function GlobeScene() {
       ])
       return
     }
-    if (current.level !== 'subdivision') return
-    push({ level: 'gallery', countryCode: current.countryCode, countryCenter: current.countryCenter, subdivisionId })
+    if (current.level === 'detail') {
+      push({ level: 'gallery', subdivisionId })
+      return
+    }
+    if (current.level === 'subdivision') {
+      push({ level: 'gallery', subdivisionId })
+    }
   }
 
   return (
@@ -199,6 +240,10 @@ export function GlobeScene() {
             flyTarget={flyTarget}
             orbitRef={orbitRef}
             onComplete={handleFlyComplete}
+          />
+          <ZoomDetailController
+            detailLevel={detailLevel}
+            onDetailLevelChange={handleZoomDetailChange}
           />
           <EarthMesh />
           <CountryLayer

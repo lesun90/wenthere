@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import { feature } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
@@ -8,7 +8,7 @@ import { CountryFeature } from './CountryFeature'
 import type { HoverInfo } from './types'
 import { travelerProfile } from '../../data/seed'
 import { getVisitedCountries, getCountryMemoryByNumericId } from '../../lib/geodata'
-import { featureCentroid } from '../../lib/geomath'
+import { prepareCountryRecords } from '../../lib/geo-cache'
 import { latLngToVec3 } from '../../lib/geo'
 
 interface Props {
@@ -22,6 +22,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
   const { camera, size } = useThree()
   const [topology, setTopology] = useState<Topology<{ countries: GeometryCollection }> | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const hoveredIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     fetch('/geo/countries-50m.json')
@@ -31,25 +32,13 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
   }, [])
 
   useEffect(() => {
+    hoveredIdRef.current = null
     setHoveredId(null)
   }, [showSubdivisions])
 
   const features = useMemo(() => {
     if (!topology) return []
-    const all = feature(topology, topology.objects.countries).features
-    const seen = new Set<string>()
-    return all
-      .filter(f => {
-        const key = f.id != null ? String(f.id) : (f.properties as Record<string, string> | null)?.name ?? ''
-        if (!key || seen.has(key)) return false
-        seen.add(key)
-        return true
-      })
-      .map(f => ({
-        f,
-        id: f.id != null ? String(f.id) : (f.properties as Record<string, string> | null)?.name ?? '',
-        centroid: featureCentroid(f),
-      }))
+    return prepareCountryRecords(feature(topology, topology.objects.countries).features)
   }, [topology])
 
   const visitedCountries = useMemo(() => getVisitedCountries(travelerProfile), [])
@@ -71,6 +60,8 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     centroid: [number, number],
     geometry: import('geojson').Geometry | null,
   ) {
+    if (hoveredIdRef.current === id) return
+    hoveredIdRef.current = id
     setHoveredId(id)
     if (!heroPicUrl) return
     const memory = countryMemories[id]
@@ -88,6 +79,8 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
   }
 
   function handleUnhover() {
+    if (hoveredIdRef.current === null) return
+    hoveredIdRef.current = null
     setHoveredId(null)
     onHoverChange(null)
   }
@@ -99,21 +92,24 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
   }
 
   const dimmed = showSubdivisions
+  const countryInteractionsEnabled = !showSubdivisions
 
   return (
     <>
-      {features.map(({ f, id, centroid }) => {
-        const name = (f.properties as Record<string, string> | null)?.name ?? ''
+      {features.map(({ id, name, centroid, geometry, fillGeometry, photoGeometry, lineGeometry }) => {
         const heroPicUrl = visitedCountries[id]
         return (
           <CountryFeature
             key={id}
-            feature={f}
-            isHovered={hoveredId === id}
+            fillGeometry={fillGeometry}
+            photoGeometry={photoGeometry}
+            lineGeometry={lineGeometry}
+            isHovered={countryInteractionsEnabled && hoveredId === id}
             dimmed={dimmed}
-            photoOpacity={photoOpacity}
+            interactive={countryInteractionsEnabled}
+            photoOpacityTarget={photoOpacity}
             heroPicUrl={heroPicUrl}
-            onHover={() => handleHover(id, name, heroPicUrl, centroid, f.geometry ?? null)}
+            onHover={() => handleHover(id, name, heroPicUrl, centroid, geometry)}
             onUnhover={handleUnhover}
             onClick={() => handleTap(id, centroid)}
           />

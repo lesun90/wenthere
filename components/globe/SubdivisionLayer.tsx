@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import type { FeatureCollection } from 'geojson'
 import { SubdivisionFeature } from './SubdivisionFeature'
 import type { HoverInfo } from './types'
 import { travelerProfile } from '../../data/seed'
 import { getVisitedSubdivisions, getSubdivisionMemoryByCode } from '../../lib/geodata'
-import { featureCentroid } from '../../lib/geomath'
+import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { latLngToVec3 } from '../../lib/geo'
 
 interface Props {
@@ -20,6 +20,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap }: P
   const { camera, size } = useThree()
   const [data, setData] = useState<FeatureCollection | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const hoveredIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     fetch('/geo/states-provinces-50m.json')
@@ -33,12 +34,14 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap }: P
 
   const visitedFeatures = useMemo(() => {
     if (!data) return []
-    return data.features
-      .map(f => ({
-        f,
-        id: String(f.properties?.adm1_code ?? ''),
-        heroPicUrl: visitedSubdivisions[String(f.properties?.adm1_code ?? '')] as string | undefined,
-        centroid: featureCentroid(f),
+    const rawVisitedFeatures = data.features.filter(feature => {
+      const id = String(feature.properties?.adm1_code ?? '')
+      return !!visitedSubdivisions[id]
+    })
+    return prepareSubdivisionRecords(rawVisitedFeatures)
+      .map(record => ({
+        ...record,
+        heroPicUrl: visitedSubdivisions[record.id] as string | undefined,
       }))
       .filter((item): item is typeof item & { heroPicUrl: string } => !!item.heroPicUrl)
   }, [data, visitedSubdivisions])
@@ -59,6 +62,8 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap }: P
     centroid: [number, number],
     geometry: import('geojson').Geometry | null,
   ) {
+    if (hoveredIdRef.current === id) return
+    hoveredIdRef.current = id
     setHoveredId(id)
     const memory = subdivisionMemories[id]
     const otherPicUrls = memory
@@ -70,26 +75,26 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap }: P
   }
 
   function handleUnhover() {
+    if (hoveredIdRef.current === null) return
+    hoveredIdRef.current = null
     setHoveredId(null)
     onHoverChange(null)
   }
 
   return (
     <>
-      {visitedFeatures.map(({ f, id, heroPicUrl, centroid }) => {
-        const props = f.properties as Record<string, string> | null
-        const name = props?.name ?? ''
-        const adm0Code = props?.adm0_a3 ?? ''
+      {visitedFeatures.map(({ id, name, countryCode, heroPicUrl, centroid, geometry, fillGeometry, lineGeometry }) => {
         return (
           <SubdivisionFeature
             key={id}
-            feature={f}
+            fillGeometry={fillGeometry}
+            lineGeometry={lineGeometry}
             isHovered={hoveredId === id}
-            opacity={opacity}
+            opacityTarget={opacity}
             heroPicUrl={heroPicUrl}
-            onHover={() => handleHover(id, name, heroPicUrl, centroid, f.geometry ?? null)}
+            onHover={() => handleHover(id, name, heroPicUrl, centroid, geometry)}
             onUnhover={handleUnhover}
-            onClick={() => onSubdivisionTap(id, adm0Code)}
+            onClick={() => onSubdivisionTap(id, countryCode)}
           />
         )
       })}

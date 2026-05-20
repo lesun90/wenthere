@@ -12,5 +12,6 @@ export interface HoverInfo {
 
 export type GlobeState =
   | { level: 'world' }
+  | { level: 'detail' }
   | { level: 'subdivision'; countryCode: string; countryCenter: [number, number] }
-  | { level: 'gallery'; countryCode: string; countryCenter: [number, number]; subdivisionId: string }
+  | { level: 'gallery'; subdivisionId: string }

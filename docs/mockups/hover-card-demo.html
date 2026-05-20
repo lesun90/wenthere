@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hover Card Demo</title>
+  <style>
+    :root {
+      --bg: #080c14;
+      --surface: rgba(8, 12, 20, 0.78);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #60a5fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% 52%, rgba(96, 165, 250, 0.18), transparent 28%),
+        radial-gradient(circle at 48% 48%, #1e2d3d 0 23%, #0a1628 24% 34%, transparent 35%),
+        var(--bg);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .stage {
+      position: relative;
+      width: min(960px, 100vw);
+      height: min(640px, 100dvh);
+    }
+
+    .globe {
+      position: absolute;
+      inset: 80px 180px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 34% 28%, rgba(255,255,255,0.24), transparent 9%),
+        radial-gradient(circle at 58% 52%, rgba(200,135,74,0.78), transparent 13%),
+        radial-gradient(circle at 42% 58%, rgba(96,165,250,0.24), transparent 18%),
+        #0a1628;
+      box-shadow:
+        inset -36px -28px 60px rgba(0,0,0,0.45),
+        0 0 90px rgba(96,165,250,0.22);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .pin {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 7px rgba(96,165,250,0.18), 0 0 24px rgba(96,165,250,0.72);
+      left: 50%;
+      top: 46%;
+    }
+
+    .hover-card {
+      position: absolute;
+      left: calc(50% + 36px);
+      top: calc(46% - 88px);
+      width: 282px;
+      min-height: 168px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background:
+        linear-gradient(140deg, rgba(255,255,255,0.10), transparent 34%),
+        var(--surface);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.36);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .hover-card::before {
+      content: "";
+      position: absolute;
+      left: -7px;
+      top: 68px;
+      width: 12px;
+      height: 12px;
+      border-left: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(8, 12, 20, 0.78);
+      transform: rotate(45deg);
+      backdrop-filter: blur(18px);
+    }
+
+    .card-head {
+      display: grid;
+      grid-template-columns: 128px 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .region-shape {
+      position: relative;
+      width: 128px;
+      height: 94px;
+      filter: drop-shadow(0 16px 24px rgba(0,0,0,0.34)) drop-shadow(0 0 18px rgba(96,165,250,0.22));
+    }
+
+    .region-shape svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .eyebrow {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.05;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .photos {
+      position: relative;
+      width: 74px;
+      height: 34px;
+      margin-top: 11px;
+    }
+
+    .photo {
+      position: absolute;
+      overflow: hidden;
+      border-radius: 999px;
+      border: 2px solid rgba(248,250,252,0.88);
+      background: #1e2d3d;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.26);
+    }
+
+    .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .photo.main {
+      left: 0;
+      top: 0;
+      width: 34px;
+      height: 34px;
+    }
+
+    .photo.small-a {
+      left: 22px;
+      top: 0;
+      width: 34px;
+      height: 34px;
+    }
+
+    .photo.small-b {
+      left: 44px;
+      top: 0;
+      width: 34px;
+      height: 34px;
+    }
+
+    .chips {
+      display: flex;
+      gap: 6px;
+      margin-top: 14px;
+    }
+
+    .chip {
+      height: 22px;
+      padding: 0 9px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      color: #dbeafe;
+      background: rgba(96,165,250,0.14);
+      border: 1px solid rgba(96,165,250,0.24);
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .caption {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      color: rgba(248,250,252,0.7);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="Hover card visual demo">
+    <div class="globe"></div>
+    <div class="pin"></div>
+
+    <section class="hover-card" aria-label="California hover card preview">
+      <div class="card-head">
+        <div class="region-shape" aria-hidden="true">
+          <svg viewBox="0 0 128 94" role="img">
+            <defs>
+              <clipPath id="california-shape">
+                <path d="M 34 7 C 48 4, 63 8, 79 11 C 84 22, 89 33, 94 45 C 101 62, 109 72, 121 85 C 107 91, 92 88, 81 76 C 72 66, 62 61, 49 59 C 36 57, 26 50, 20 39 C 15 28, 21 16, 34 7 Z"></path>
+              </clipPath>
+              <linearGradient id="shape-shine" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="rgba(255,255,255,0.34)"></stop>
+                <stop offset="0.42" stop-color="rgba(255,255,255,0)"></stop>
+              </linearGradient>
+            </defs>
+            <image
+              href="../../public/demo/10.jpg"
+              x="0"
+              y="0"
+              width="128"
+              height="94"
+              preserveAspectRatio="xMidYMid slice"
+              clip-path="url(#california-shape)"
+            ></image>
+            <path
+              d="M 34 7 C 48 4, 63 8, 79 11 C 84 22, 89 33, 94 45 C 101 62, 109 72, 121 85 C 107 91, 92 88, 81 76 C 72 66, 62 61, 49 59 C 36 57, 26 50, 20 39 C 15 28, 21 16, 34 7 Z"
+              fill="url(#shape-shine)"
+            ></path>
+            <path
+              d="M 34 7 C 48 4, 63 8, 79 11 C 84 22, 89 33, 94 45 C 101 62, 109 72, 121 85 C 107 91, 92 88, 81 76 C 72 66, 62 61, 49 59 C 36 57, 26 50, 20 39 C 15 28, 21 16, 34 7 Z"
+              fill="none"
+              stroke="rgba(248,250,252,0.76)"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+            ></path>
+          </svg>
+        </div>
+
+        <div>
+          <p class="eyebrow">Visited region</p>
+          <h1 class="title">California</h1>
+          <p class="meta">2 places visited</p>
+
+          <div class="photos" aria-hidden="true">
+            <span class="photo main"><img src="../../public/demo/10.jpg" alt=""></span>
+            <span class="photo small-a"><img src="../../public/demo/11.jpg" alt=""></span>
+            <span class="photo small-b"><img src="../../public/demo/18.jpg" alt=""></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chips" aria-hidden="true">
+        <span class="chip">Golden Gate</span>
+        <span class="chip">Big Sur</span>
+      </div>
+    </section>
+
+    <p class="caption">Region shape stays. The square frame is gone.</p>
+  </main>
+</body>
+</html>
