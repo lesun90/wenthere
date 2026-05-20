@@ -15,3 +15,15 @@ export type GlobeState =
   | { level: 'detail' }
   | { level: 'subdivision'; countryCode: string; countryCenter: [number, number] }
   | { level: 'gallery'; subdivisionId: string }
+
+export interface GlobePalette {
+  background: string
+  earth: string
+  atmosphereColor: string
+  atmosphereOpacity: number
+  countryFill: string
+  countryFillHover: string
+  countryBorder: string
+  subdivisionBorder: string
+  subdivisionBorderHover: string
+}

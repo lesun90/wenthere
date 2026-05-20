@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { FALLBACK_COLOR, useSharedTexture } from './useSharedTexture'
+import type { GlobePalette } from './types'
 
 interface Props {
   fillGeometry: THREE.BufferGeometry
@@ -9,6 +10,7 @@ interface Props {
   isHovered: boolean
   opacityTarget: number
   heroPicUrl: string
+  palette: GlobePalette
   onHover: () => void
   onUnhover: () => void
   onClick: () => void
@@ -20,6 +22,7 @@ export function SubdivisionFeature({
   isHovered,
   opacityTarget,
   heroPicUrl,
+  palette,
   onHover,
   onUnhover,
   onClick,
@@ -32,7 +35,7 @@ export function SubdivisionFeature({
   const texture = textureState.status === 'ready' ? textureState.texture : null
   const textureFailed = textureState.status === 'failed'
 
-  const borderColor = isHovered ? '#ffffff' : '#c8d3e1'
+  const borderColor = isHovered ? palette.subdivisionBorderHover : palette.subdivisionBorder
   const borderOpacity = (isHovered ? 0.95 : 0.4) * opacityTarget
 
   let fillColor: string

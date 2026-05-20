@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import type { FeatureCollection } from 'geojson'
 import { SubdivisionFeature } from './SubdivisionFeature'
-import type { HoverInfo } from './types'
+import type { HoverInfo, GlobePalette } from './types'
 import { travelerProfile } from '../../data/seed'
 import { getVisitedSubdivisions, getSubdivisionMemoryByCode } from '../../lib/geodata'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
@@ -14,9 +14,10 @@ interface Props {
   opacity: number
   onHoverChange: (info: HoverInfo | null) => void
   onSubdivisionTap: (subdivisionId: string, countryCode: string) => void
+  palette: GlobePalette
 }
 
-export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap }: Props) {
+export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette }: Props) {
   const { camera, size } = useThree()
   const [data, setData] = useState<FeatureCollection | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -92,6 +93,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap }: P
             isHovered={hoveredId === id}
             opacityTarget={opacity}
             heroPicUrl={heroPicUrl}
+            palette={palette}
             onHover={() => handleHover(id, name, heroPicUrl, centroid, geometry)}
             onUnhover={handleUnhover}
             onClick={() => onSubdivisionTap(id, countryCode)}

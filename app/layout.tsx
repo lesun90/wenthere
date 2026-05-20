@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Caveat, DM_Sans } from 'next/font/google'
+import { ThemeProvider } from '../lib/theme-context'
 import './globals.css'
 
 const caveat = Caveat({
@@ -22,7 +23,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${caveat.variable} ${dmSans.variable}`}>
-      <body style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}>{children}</body>
+      <head>
+        {/* Prevent dark→light flash on reload when light theme is saved */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.add('light');})()` }} />
+      </head>
+      <body style={{ fontFamily: 'var(--font-dm-sans), sans-serif' }}>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   )
 }

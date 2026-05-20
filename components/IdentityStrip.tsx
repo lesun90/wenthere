@@ -2,9 +2,28 @@
 
 import { useState } from 'react'
 import { travelerProfile } from '../data/seed'
+import { useTheme } from '../lib/theme-context'
+
+function SunIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  )
+}
 
 export function IdentityStrip() {
   const [copied, setCopied] = useState(false)
+  const { theme, toggle } = useTheme()
 
   const countryCount = travelerProfile.countries.length
   const placeCount = travelerProfile.countries.reduce(
@@ -20,25 +39,26 @@ export function IdentityStrip() {
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 16,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      zIndex: 40,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      background: 'rgba(8, 12, 20, 0.72)',
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
-      border: '1px solid rgba(255,255,255,0.10)',
-      borderRadius: 9999,
-      padding: '8px 20px',
-      whiteSpace: 'nowrap',
-    }}>
+    <div
+      className="identity-strip"
+      style={{
+        position: 'fixed',
+        top: 16,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 40,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderRadius: 9999,
+        padding: '8px 20px',
+        whiteSpace: 'nowrap',
+      }}
+    >
       <span style={{
-        color: '#F8FAFC',
+        color: 'var(--text-primary)',
         fontSize: 18,
         fontFamily: 'var(--font-caveat), cursive',
         fontWeight: 600,
@@ -46,25 +66,25 @@ export function IdentityStrip() {
       }}>
         beenthere
       </span>
-      <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>·</span>
+      <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>·</span>
       <span style={{
-        color: '#94A3B8',
+        color: 'var(--text-secondary)',
         fontSize: 13,
         fontFamily: 'var(--font-dm-sans), sans-serif',
       }}>
         {travelerProfile.name}
       </span>
-      <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>·</span>
+      <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>·</span>
       <span style={{
-        color: '#94A3B8',
+        color: 'var(--text-secondary)',
         fontSize: 13,
         fontFamily: 'var(--font-dm-sans), sans-serif',
       }}>
         {countryCount} {countryCount === 1 ? 'country' : 'countries'}
       </span>
-      <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>·</span>
+      <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>·</span>
       <span style={{
-        color: '#94A3B8',
+        color: 'var(--text-secondary)',
         fontSize: 13,
         fontFamily: 'var(--font-dm-sans), sans-serif',
       }}>
@@ -72,21 +92,36 @@ export function IdentityStrip() {
       </span>
       <button
         onClick={handleShare}
+        className={`share-btn${copied ? ' copied' : ''}`}
         style={{
           marginLeft: 4,
           background: 'none',
-          border: '1px solid rgba(255,255,255,0.18)',
           borderRadius: 9999,
-          color: copied ? '#60A5FA' : '#94A3B8',
           fontSize: 12,
           fontFamily: 'var(--font-dm-sans), sans-serif',
           cursor: 'pointer',
           padding: '3px 10px',
-          transition: 'color 150ms, border-color 150ms',
           lineHeight: 1.5,
         }}
       >
         {copied ? 'Copied!' : '↗ Share'}
+      </button>
+      <button
+        onClick={toggle}
+        className="theme-toggle"
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        style={{
+          background: 'none',
+          borderRadius: 9999,
+          cursor: 'pointer',
+          padding: '4px 7px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: 1,
+        }}
+      >
+        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
       </button>
     </div>
   )

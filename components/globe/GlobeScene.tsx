@@ -10,7 +10,8 @@ import { SubdivisionLayer } from './SubdivisionLayer'
 import { FloatingCard } from './FloatingCard'
 import { GalleryPanel } from './GalleryPanel'
 import { usePerformancePreload } from './usePerformancePreload'
-import type { HoverInfo, GlobeState } from './types'
+import { useTheme } from '../../lib/theme-context'
+import type { HoverInfo, GlobeState, GlobePalette } from './types'
 import { latLngToVec3 } from '../../lib/geo'
 
 const MODE_TRANSITION_MS = 300
@@ -20,6 +21,31 @@ const ZOOM_SPEED = 0.65
 const FLY_DURATION = 600
 const ENTER_DETAIL_DISTANCE = 1.85
 const EXIT_DETAIL_DISTANCE = 2.35
+
+const GLOBE_PALETTES: Record<'dark' | 'light', GlobePalette> = {
+  dark: {
+    background: '#080c14',
+    earth: '#0A1628',
+    atmosphereColor: '#ffffff',
+    atmosphereOpacity: 0.07,
+    countryFill: '#1E2D3D',
+    countryFillHover: '#263D52',
+    countryBorder: '#ffffff',
+    subdivisionBorder: '#c8d3e1',
+    subdivisionBorderHover: '#ffffff',
+  },
+  light: {
+    background: '#FFFFFF',
+    earth: '#EDECEA',        // barely-there warm off-white, just enough to define the sphere
+    atmosphereColor: '#94A3B8',
+    atmosphereOpacity: 0.12,
+    countryFill: '#B8B0A4',
+    countryFillHover: '#A8A098',
+    countryBorder: '#ffffff',
+    subdivisionBorder: '#D0C8C0',
+    subdivisionBorderHover: '#ffffff',
+  },
+}
 
 type DetailLevel = 'world' | 'detail'
 
@@ -143,6 +169,9 @@ function useLayerPresence(show: boolean) {
 }
 
 export function GlobeScene() {
+  const { theme } = useTheme()
+  const palette = GLOBE_PALETTES[theme]
+
   const [navStack, setNavStack] = useState<GlobeState[]>([{ level: 'world' }])
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null)
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null)
@@ -233,7 +262,7 @@ export function GlobeScene() {
           camera={{ position: [0, 0, 2.5], fov: 45 }}
           style={{ width: '100%', height: '100%' }}
         >
-          <color attach="background" args={['#080c14']} />
+          <color attach="background" args={[palette.background]} />
           <ambientLight color="#ffffff" intensity={0.15} />
           <CameraLight />
           <CameraController
@@ -245,18 +274,20 @@ export function GlobeScene() {
             detailLevel={detailLevel}
             onDetailLevelChange={handleZoomDetailChange}
           />
-          <EarthMesh />
+          <EarthMesh palette={palette} />
           <CountryLayer
             showSubdivisions={showSubdivisions}
             photoOpacity={countryPhotoOpacity}
             onHoverChange={setHoverInfo}
             onCountryTap={handleCountryTap}
+            palette={palette}
           />
           {shouldRenderSubdivisions && (
             <SubdivisionLayer
               opacity={subdivisionOpacity}
               onHoverChange={setHoverInfo}
               onSubdivisionTap={handleSubdivisionTap}
+              palette={palette}
             />
           )}
           <OrbitControls

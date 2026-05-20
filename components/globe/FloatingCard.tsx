@@ -58,6 +58,7 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
 
   return (
     <div
+      className="floating-card"
       style={{
         position: 'absolute',
         left,
@@ -67,12 +68,9 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
         zIndex: 30,
         opacity: visible ? 1 : 0,
         transition: visible ? 'opacity 150ms ease-out' : 'opacity 100ms ease-in',
-        background: 'linear-gradient(140deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02) 36%, rgba(8, 12, 20, 0.78) 100%)',
         backdropFilter: 'blur(18px)',
         WebkitBackdropFilter: 'blur(18px)',
-        border: '1px solid rgba(255,255,255,0.12)',
         borderRadius: 18,
-        boxShadow: '0 18px 60px rgba(0,0,0,0.36)',
         padding: 16,
       }}
     >
@@ -116,7 +114,7 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
               <path
                 d={shapePath}
                 fill="none"
-                stroke="rgba(248,250,252,0.76)"
+                stroke="var(--card-shape-stroke)"
                 strokeWidth="1.5"
                 strokeLinejoin="round"
               />
@@ -131,7 +129,7 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
                 objectFit: 'cover',
                 display: 'block',
                 borderRadius: 999,
-                border: '2px solid rgba(248,250,252,0.84)',
+                border: '2px solid var(--card-shape-stroke)',
                 boxShadow: '0 12px 28px rgba(0,0,0,0.30)',
               }}
             />
@@ -141,7 +139,7 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
         <div style={{ minWidth: 0 }}>
           <span style={{
             display: 'block',
-            color: '#F8FAFC',
+            color: 'var(--text-primary)',
             fontSize: 22,
             fontWeight: 700,
             fontFamily: 'var(--font-dm-sans), sans-serif',
@@ -152,7 +150,7 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
 
           <span style={{
             display: 'block',
-            color: '#94A3B8',
+            color: 'var(--text-secondary)',
             fontSize: 12,
             fontFamily: 'var(--font-dm-sans), sans-serif',
             marginTop: 8,
@@ -176,7 +174,7 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
                     height: 34,
                     objectFit: 'cover',
                     borderRadius: 999,
-                    border: '2px solid rgba(248,250,252,0.88)',
+                    border: '2px solid var(--card-shape-stroke)',
                     boxShadow: '0 8px 20px rgba(0,0,0,0.26)',
                   }}
                 />

@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { FALLBACK_COLOR, useSharedTexture } from './useSharedTexture'
+import type { GlobePalette } from './types'
 
 interface Props {
   fillGeometry: THREE.BufferGeometry
@@ -13,6 +14,7 @@ interface Props {
   interactive: boolean
   photoOpacityTarget: number
   heroPicUrl?: string
+  palette: GlobePalette
   onHover: () => void
   onUnhover: () => void
   onClick: () => void
@@ -27,6 +29,7 @@ export function CountryFeature({
   interactive,
   photoOpacityTarget,
   heroPicUrl,
+  palette,
   onHover,
   onUnhover,
   onClick,
@@ -41,10 +44,10 @@ export function CountryFeature({
   const textureFailed = textureState.status === 'failed'
 
   const hasPhoto = !!heroPicUrl
-  const borderColor = '#ffffff'
+  const borderColor = palette.countryBorder
   const borderOpacity = isHovered ? 0.95 : dimmed ? 0.85 : 0.7
   const borderRenderOrder = dimmed ? 6 : 2
-  const baseFillColor = isHovered ? '#263D52' : '#1E2D3D'
+  const baseFillColor = isHovered ? palette.countryFillHover : palette.countryFill
   const baseFillOpacity = isHovered ? 0.95 : 0.9
 
   let photoFillColor = '#ffffff'

@@ -7,7 +7,7 @@ function GlobeLoader() {
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: '#080c14',
+      background: 'var(--bg, #080c14)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -22,7 +22,7 @@ function GlobeLoader() {
         fontFamily: 'var(--font-caveat), cursive',
         fontSize: 28,
         fontWeight: 600,
-        color: '#F8FAFC',
+        color: 'var(--text-primary, #F8FAFC)',
         animation: 'pulse 1.5s ease-in-out infinite',
       }}>
         beenthere

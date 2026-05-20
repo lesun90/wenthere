@@ -58,6 +58,7 @@ export function GalleryPanel({ subdivisionId, onBack }: Props) {
 
   return (
     <div
+      className="gallery-panel"
       style={{
         position: 'absolute',
         bottom: 0,
@@ -65,10 +66,6 @@ export function GalleryPanel({ subdivisionId, onBack }: Props) {
         right: 0,
         height: '60vh',
         zIndex: 50,
-        background: 'rgba(8, 12, 20, 0.95)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(255,255,255,0.10)',
         borderRadius: '20px 20px 0 0',
         display: 'flex',
         flexDirection: 'column',
@@ -80,19 +77,21 @@ export function GalleryPanel({ subdivisionId, onBack }: Props) {
       }}
     >
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '16px 20px 12px',
-        flexShrink: 0,
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-      }}>
+      <div
+        className="gallery-panel-header"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '16px 20px 12px',
+          flexShrink: 0,
+        }}
+      >
         <button
           onClick={handleClose}
           style={{
             background: 'none',
             border: 'none',
-            color: '#94A3B8',
+            color: 'var(--text-secondary)',
             fontSize: 13,
             fontFamily: 'var(--font-dm-sans), sans-serif',
             cursor: 'pointer',
@@ -108,7 +107,7 @@ export function GalleryPanel({ subdivisionId, onBack }: Props) {
         <span style={{
           flex: 1,
           textAlign: 'center',
-          color: '#F8FAFC',
+          color: 'var(--text-primary)',
           fontSize: 22,
           fontFamily: 'var(--font-caveat), cursive',
           fontWeight: 600,
@@ -116,7 +115,7 @@ export function GalleryPanel({ subdivisionId, onBack }: Props) {
           {name}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 60, justifyContent: 'flex-end' }}>
-          <span style={{ color: '#94A3B8', fontSize: 12, fontFamily: 'var(--font-dm-sans), sans-serif' }}>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-dm-sans), sans-serif' }}>
             {placeCount} {placeCount === 1 ? 'place' : 'places'}
           </span>
           <button
@@ -125,7 +124,7 @@ export function GalleryPanel({ subdivisionId, onBack }: Props) {
             style={{
               background: 'none',
               border: 'none',
-              color: '#94A3B8',
+              color: 'var(--text-secondary)',
               fontSize: 18,
               cursor: 'pointer',
               lineHeight: 1,
@@ -147,10 +146,10 @@ export function GalleryPanel({ subdivisionId, onBack }: Props) {
         gap: 12,
         padding: '16px',
         scrollbarWidth: 'thin',
-        scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+        scrollbarColor: 'var(--scrollbar) transparent',
       }}>
         {photos.length === 0 ? (
-          <span style={{ color: '#94A3B8', fontSize: 14, fontFamily: 'var(--font-dm-sans), sans-serif' }}>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 14, fontFamily: 'var(--font-dm-sans), sans-serif' }}>
             No photos found
           </span>
         ) : (

@@ -5,7 +5,7 @@ import { useThree } from '@react-three/fiber'
 import { feature } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import { CountryFeature } from './CountryFeature'
-import type { HoverInfo } from './types'
+import type { HoverInfo, GlobePalette } from './types'
 import { travelerProfile } from '../../data/seed'
 import { getVisitedCountries, getCountryMemoryByNumericId } from '../../lib/geodata'
 import { prepareCountryRecords } from '../../lib/geo-cache'
@@ -16,9 +16,10 @@ interface Props {
   photoOpacity: number
   onHoverChange: (info: HoverInfo | null) => void
   onCountryTap: (countryCode: string, centroid: [number, number]) => void
+  palette: GlobePalette
 }
 
-export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, onCountryTap }: Props) {
+export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, onCountryTap, palette }: Props) {
   const { camera, size } = useThree()
   const [topology, setTopology] = useState<Topology<{ countries: GeometryCollection }> | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -109,6 +110,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
             interactive={countryInteractionsEnabled}
             photoOpacityTarget={photoOpacity}
             heroPicUrl={heroPicUrl}
+            palette={palette}
             onHover={() => handleHover(id, name, heroPicUrl, centroid, geometry)}
             onUnhover={handleUnhover}
             onClick={() => handleTap(id, centroid)}

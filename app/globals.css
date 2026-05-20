@@ -1,10 +1,113 @@
 @import "tailwindcss";
 
+/* ─── Dark theme (default) ───────────────────── */
 :root {
+  --bg: #080c14;
   --surface: rgba(8, 12, 20, 0.82);
+  --surface-panel: rgba(8, 12, 20, 0.95);
   --border: rgba(255, 255, 255, 0.10);
+  --divider: rgba(255, 255, 255, 0.06);
   --text-primary: #F8FAFC;
   --text-secondary: #94A3B8;
+  --text-muted: rgba(255, 255, 255, 0.20);
   --accent: #60A5FA;
   --ring: rgba(96, 165, 250, 0.50);
+  --scrollbar: rgba(255, 255, 255, 0.15);
+  --card-shape-stroke: rgba(248, 250, 252, 0.76);
+}
+
+/* ─── Light theme ─────────────────────────────── */
+.light {
+  --bg: #FFFFFF;
+  --surface: rgba(255, 255, 255, 0.85);
+  --surface-panel: rgba(255, 255, 255, 0.98);
+  --border: rgba(15, 23, 42, 0.08);
+  --divider: rgba(15, 23, 42, 0.06);
+  --text-primary: #0C1525;
+  --text-secondary: #64748B;
+  --text-muted: rgba(15, 23, 42, 0.18);
+  --accent: #3B82F6;
+  --ring: rgba(59, 130, 246, 0.40);
+  --scrollbar: rgba(15, 23, 42, 0.14);
+  --card-shape-stroke: rgba(248, 250, 252, 0.76);
+}
+
+/* ─── Identity strip ──────────────────────────── */
+.identity-strip {
+  background: rgba(8, 12, 20, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.light .identity-strip {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+/* ─── Share button ────────────────────────────── */
+.share-btn {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #94A3B8;
+  transition: color 150ms, border-color 150ms;
+}
+.share-btn.copied {
+  color: #60A5FA;
+  border-color: rgba(96, 165, 250, 0.40);
+}
+.light .share-btn {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  color: #64748B;
+}
+.light .share-btn.copied {
+  color: #3B82F6;
+  border-color: rgba(59, 130, 246, 0.36);
+}
+
+/* ─── Theme toggle button ─────────────────────── */
+.theme-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #94A3B8;
+  transition: color 150ms, border-color 150ms;
+}
+.theme-toggle:hover {
+  color: #F8FAFC;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.light .theme-toggle {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  color: #64748B;
+}
+.light .theme-toggle:hover {
+  color: #0C1525;
+  border-color: rgba(15, 23, 42, 0.28);
+}
+
+/* ─── Floating card ───────────────────────────── */
+.floating-card {
+  background: linear-gradient(140deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02) 36%, rgba(8,12,20,0.78) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.36);
+}
+.light .floating-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.10);
+}
+
+/* ─── Gallery panel ───────────────────────────── */
+.gallery-panel {
+  background: rgba(8, 12, 20, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.light .gallery-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.gallery-panel-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.light .gallery-panel-header {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
 }
