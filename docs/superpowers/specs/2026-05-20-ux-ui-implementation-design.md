@@ -1,7 +1,7 @@
 # UX/UI Implementation Design
 
 **Date:** 2026-05-20
-**Status:** Approved for implementation planning
+**Status:** Implemented
 
 ---
 
@@ -20,8 +20,9 @@ Replace `detailLevel: 'country' | 'subdivision'` and the existing `hoverInfo` pr
 ```ts
 type GlobeState =
   | { level: 'world' }
+  | { level: 'detail' }
   | { level: 'subdivision'; countryCode: string; countryCenter: [number, number] }
-  | { level: 'gallery'; countryCode: string; countryCenter: [number, number]; subdivisionId: string }
+  | { level: 'gallery'; countryCode: string; subdivisionId: string }
 
 const [navStack, setNavStack] = useState<GlobeState[]>([{ level: 'world' }])
 const current = navStack[navStack.length - 1]
@@ -30,12 +31,12 @@ function push(state: GlobeState) { setNavStack(s => [...s, state]) }
 function back() { setNavStack(s => s.length > 1 ? s.slice(0, -1) : s) }
 ```
 
-`countryCenter` is a `[lon, lat]` pair stored when the user taps a country so that Back can restore the camera position exactly.
+`countryCenter` is a `[lon, lat]` pair stored on the subdivision state when the user taps a country.
 
 ### Derived values
 
 ```ts
-const showSubdivisions = current.level === 'subdivision' || current.level === 'gallery'
+const showSubdivisions = current.level === 'detail' || current.level === 'subdivision' || current.level === 'gallery'
 const galleryOpen = current.level === 'gallery'
 ```
 
@@ -49,16 +50,18 @@ The `HoverInfo` type (currently in `CountryLayer.tsx`, imported by `SubdivisionL
 export interface HoverInfo {
   name: string
   heroPicUrl: string
+  heroTransform?: HeroTransform
   otherPicUrls: string[]   // up to 4 additional photos for the mini strip
   placeCount: number       // number of photos in this region
   screenX: number          // projected CSS pixel X
   screenY: number          // projected CSS pixel Y
+  geometry: Geometry | null
 }
 ```
 
 `CountryLayer` and `SubdivisionLayer` import `HoverInfo` from the shared types file. Both layers already have access to the memory data needed to populate `otherPicUrls` and `placeCount` from `travelerProfile`.
 
-`screenX` / `screenY` are computed inside a new `useProjectedPosition` hook (see §3).
+`screenX` / `screenY` are computed inside `CountryLayer` and `SubdivisionLayer` by projecting the feature centroid with the active Three.js camera.
 
 ---
 
@@ -82,22 +85,13 @@ This is called in `CountryLayer` when building the feature list, so the centroid
 
 ### Camera tween
 
-A new hook `components/globe/useCameraFly.ts`:
-
-```ts
-export function useCameraFly(): {
-  flyTo: (lonLat: [number, number], onComplete: () => void) => void
-  isTweening: boolean
-}
-```
+`GlobeScene` defines an internal `CameraController` component that receives `flyTarget`, `targetDist`, the `OrbitControls` ref, and `onComplete`.
 
 Internally:
 - Converts `[lon, lat]` to a unit vector on the sphere
 - On each `useFrame` tick, spherically interpolates (`slerp`) the camera position vector toward `targetPos * cameraDistance` over ~600ms with ease-out
 - Disables `OrbitControls` during the tween via a forwarded ref (`orbitControlsRef.current.enabled = false`), re-enables on complete
 - Calls `onComplete` when the tween finishes; `GlobeScene` then calls `push({ level: 'subdivision', countryCode, countryCenter })`
-
-`GlobeScene` passes `orbitControlsRef` to both `useCameraFly` and the `<OrbitControls>` element.
 
 ---
 
@@ -107,17 +101,7 @@ Replaces the current bottom-left tooltip div in `GlobeScene`.
 
 ### Position projection
 
-A new hook `components/globe/useProjectedPosition.ts`:
-
-```ts
-export function useProjectedPosition(
-  lonLat: [number, number] | null
-): { screenX: number; screenY: number } | null
-```
-
-Uses `useThree()` to access the camera and `gl.domElement` size. Converts the sphere-surface point to NDC via `Vector3.project(camera)`, then maps to CSS pixel coordinates. Returns `null` when `lonLat` is null.
-
-This hook runs inside `CountryLayer` and `SubdivisionLayer` on the hovered feature's centroid, and the result is included in the `HoverInfo` passed up to `GlobeScene`.
+`CountryLayer` and `SubdivisionLayer` each use `useThree()` to access the camera and viewport size. They convert the sphere-surface centroid to NDC via `Vector3.project(camera)`, map it to CSS pixel coordinates, and include the result in the `HoverInfo` passed up to `GlobeScene`.
 
 ### FloatingCard component
 
@@ -154,33 +138,38 @@ New file `components/globe/GalleryPanel.tsx`. Renders when `galleryOpen` is true
 
 **Data**: looks up the matching `SubdivisionMemory` from `travelerProfile` using `subdivisionId`.
 
-**Layout** (60vh, full width, slides up from bottom):
+**Layout** (72vh, full width, blooms from the tap point):
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  ← Back      California          8 places  [×]  │  header: 56px
+│  drag handle                                    │
+│  ← Back      California                  [×]    │
+│              N memories                         │
 ├─────────────────────────────────────────────────┤
-│  ← scroll →                                     │
-│  [160×120] [160×120] [160×120] [160×120] ···    │  single row, horizontal scroll
-│   caption    caption   caption   caption         │
+│                                                 │
+│        selected hero photo + caption            │
+│        shape preview buttons when applicable    │
+│                                                 │
+├─────────────────────────────────────────────────┤
+│  [thumb][★🌐] [thumb][★🌐] [thumb][★🌐] ···      │
 └─────────────────────────────────────────────────┘
 ```
 
-- Header: DM Sans 13px Back/close, Caveat 22px `#F8FAFC` name centered, place count badge
-- Photo cards: `160×120px`, `border-radius: 12px`, `object-fit: cover`, bottom gradient scrim (`rgba(0,0,0,0)→rgba(0,0,0,0.6)`) with DM Sans 11px caption
-- Gap: `12px`, horizontal padding: `16px`
+- Header: DM Sans 13px Back/close, Caveat 22px name centered, memory count subtitle
+- Hero photo: flexes to available space with `object-fit: contain`, caption gradient, counter, and lightbox affordance
+- Thumbnail strip: horizontal scroll, 96x66 thumbnails, region hero star and country hero globe buttons below each thumbnail
 - Background: `rgba(8,12,20,0.95)` + `blur(20px)`, `border-radius: 20px 20px 0 0`, `1px solid rgba(255,255,255,0.10)` top border
 
-**Globe overlay**: when `galleryOpen`, the globe Canvas wrapper gets `opacity: 0.4` and `pointer-events: none` via an inline style.
+**Hero editing**: region/country shape preview buttons appear over the hero image when the displayed photo is the active hero. Tapping a preview opens `HeroFramingOverlay` in place; the thumbnail strip remains visible.
+
+**Globe overlay**: when `galleryOpen`, the globe Canvas wrapper gets `opacity: 0.4`; a backdrop div behind the gallery catches clicks and calls `back()`.
 
 **Dismiss**: Back button, `×` button, and `ESC` keydown all call `onBack` (which calls `back()`).
 
 **Motion**:
-- Enter: `transform: translateY(100%) → translateY(0)`, `320ms cubic-bezier(0.16,1,0.3,1)`
-- Exit: `transform: translateY(0) → translateY(100%)`, `200ms ease-in`
-- `prefers-reduced-motion`: `opacity 0→1 / 1→0` only, no translate
-
-Motion is implemented with a `mounted` + `visible` state pair: mount on open, trigger visible on next frame for the enter animation, set visible=false then unmount after the exit duration.
+- Enter: `scale(0.72) → scale(1)`, `340ms cubic-bezier(0.16,1,0.3,1)`, with dynamic `transform-origin` based on click coordinates
+- Exit: `scale(1) → scale(0.72)`, `200ms cubic-bezier(0.4,0,1,1)`
+- `prefers-reduced-motion`: opacity-only transition
 
 ---
 
@@ -256,9 +245,8 @@ Added to `app/globals.css` under `:root`:
 | `components/globe/types.ts` | Shared `HoverInfo`, `GlobeState` types |
 | `components/globe/FloatingCard.tsx` | Hover floating card |
 | `components/globe/GalleryPanel.tsx` | Subdivision gallery panel |
-| `components/globe/useCameraFly.ts` | Camera tween hook |
-| `components/globe/useProjectedPosition.ts` | 3D → 2D screen projection hook |
 | `components/IdentityStrip.tsx` | Top identity bar |
+| `lib/geo-registry.ts` | Runtime geometry registry for gallery shape previews |
 | `lib/geomath.ts` | `featureCentroid` utility |
 
 ## Modified Files
@@ -275,6 +263,7 @@ Added to `app/globals.css` under `:root`:
 | `components/globe/SubdivisionFeature.tsx` | Add `onClick` prop, update unvisited-land colors |
 | `components/globe/DetailToggle.tsx` | Remove — replaced by nav stack (detail level is now derived, not toggled manually) |
 | `components/globe/EarthMesh.tsx` | Update ocean color |
+| `lib/geodata.ts` | Add hero override helpers for country and subdivision maps |
 
 ---
 
@@ -282,7 +271,7 @@ Added to `app/globals.css` under `:root`:
 
 - `featureCentroid` returns `[0, 0]` as a safe fallback if coordinate parsing fails; the camera tween will fly to the prime meridian/equator, which is recoverable by the user.
 - If `FloatingCard` thumbnail URLs fail to load, the `<img>` elements show nothing (no alt text needed for decorative thumbnails); the hero photo has `alt={name}`.
-- If `GalleryPanel` cannot find the `SubdivisionMemory` for the given `subdivisionId`, it renders a minimal panel with the subdivision name and a "No photos found" message rather than crashing.
+- If `GalleryPanel` has no photos for the selected subdivision, it renders a minimal "No memories yet" state rather than crashing.
 - The `DetailToggle` component is removed. Users navigate via taps; there is no manual mode switch. If a user wants to return to world mode they use Back from the subdivision level.
 
 ---
@@ -290,6 +279,5 @@ Added to `app/globals.css` under `:root`:
 ## Out of Scope
 
 - Swipe-down gesture to dismiss gallery panel (future)
-- Region shape clip mask in hover card (future)
-- Photo lightbox / full-screen view from gallery
+- Country-level gallery panel
 - Multiple user profiles

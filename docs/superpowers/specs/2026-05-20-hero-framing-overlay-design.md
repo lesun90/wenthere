@@ -1,8 +1,8 @@
 # Hero Framing Overlay (In-Place Editor)
 
 **Date:** 2026-05-20  
-**Status:** Approved  
-**Replaces:** `HeroEditorSheet` section of `2026-05-20-hero-image-selection-repositioning-design.md`
+**Status:** Implemented
+**Replaces:** the original `HeroEditorSheet` section of `2026-05-20-hero-image-selection-repositioning-design.md`
 
 ---
 
@@ -18,17 +18,17 @@ Rendered as `position: absolute, inset: 0, zIndex: 20` inside the hero image con
 
 ### Contents
 
-- **Draggable image** — same `<img>` as the hero photo, `inset: 0`, `objectFit: cover`, transformed via DOM ref during drag (zero React renders)
-- **SVG mask overlay** — `position: absolute, inset: 0, pointerEvents: none`; dims area outside shape using a mask, draws shape border stroke on top
+- **Static image** — same photo as the hero area, `inset: 0`, `objectFit: cover`
+- **SVG mask overlay** — `position: absolute, inset: 0, pointerEvents: none`; dims area outside shape using a mask, draws shape border stroke on top. The mask and border groups are transformed directly during drag/resize.
 - **Top bar** — Cancel button (left) + "Adjust framing" label (center); `position: absolute, top: 0, left: 0, right: 0`
-- **Hint text** — "Drag to pan · Scroll or pinch to zoom"; `position: absolute, bottom: 0`
+- **Hint text** — "Drag frame · Scroll or pinch to resize · Tap to apply"; `position: absolute, bottom: 0`
 
 ### Dismiss mechanisms
 
 | Action | Result |
 |--------|--------|
 | Tap overlay (pointer moved < 5 px) | Stage current transform → close |
-| Cancel button | Restore snapshot transform → close |
+| Cancel button | Discard overlay edits → close |
 
 No "Apply" or "Done" button — tapping anywhere on the overlay (as long as it's not a drag) commits the transform.
 
@@ -59,7 +59,7 @@ No "Apply" or "Done" button — tapping anywhere on the overlay (as long as it's
 
 ## Performance
 
-Identical to the previous design:
-- Drag updates `<img>` transform via `ref.current.style.transform` — zero React renders
-- Dismiss triggers one `setState` call to commit or revert the staged transform
-- SVG shape path computed once via `useLayoutEffect` after mount
+Drag and resize remain off React's render cycle:
+- Drag and pinch update the SVG mask and border `<g>` transforms via refs — zero React renders
+- Dismiss triggers one `setState` call when the staged transform is committed, or no staged update when canceled
+- SVG shape path is computed once via `useLayoutEffect` after mount

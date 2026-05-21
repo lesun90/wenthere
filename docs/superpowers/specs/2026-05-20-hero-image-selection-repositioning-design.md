@@ -1,7 +1,7 @@
 # Hero Image Selection & Repositioning
 
 **Date:** 2026-05-20  
-**Status:** Approved
+**Status:** Implemented
 
 ---
 
@@ -10,7 +10,7 @@
 Two related features:
 
 1. **Country hero selection** — inside the subdivision GalleryPanel, allow the user to designate any photo as the country-level hero (alongside existing region hero selection).
-2. **Hero image repositioning** — a tap-to-edit interaction on a small shape-clipped preview lets the user drag/scale how the hero image is framed within the country or region border. Changes are committed when the gallery is closed; Cancel reverts while the editor is open.
+2. **Hero image repositioning** — a tap-to-edit interaction on a small shape-clipped preview opens an in-place framing overlay. The hero photo stays fixed while the geographic frame is dragged or scaled over it; this is inverted back into the saved `HeroTransform`. Changes are staged when the overlay is dismissed and committed to `GlobeScene` when the gallery is closed. Cancel closes the overlay without staging the edit.
 
 ---
 
@@ -20,9 +20,9 @@ No changes to `seed.ts`. All overrides live as runtime state in `GlobeScene`, mi
 
 ```ts
 type HeroTransform = {
-  x: number     // horizontal offset, % of image width (0 = centered)
-  y: number     // vertical offset, % of image height (0 = centered)
-  scale: number // zoom multiplier (1.0 = default fill)
+  x: number
+  y: number
+  scale: number
 }
 ```
 
@@ -45,8 +45,6 @@ countryHeroTransforms:     Record<string, HeroTransform> // countryCode   → tr
 
 ```ts
 countryCode:              string
-subdivisionGeometry:      Geometry | null   // GeoJSON for region shape preview
-countryGeometry:          Geometry | null   // GeoJSON for country shape preview
 initialCountryHeroUrl?:   string
 initialSubdivisionTransform?: HeroTransform
 initialCountryTransform?:     HeroTransform
@@ -54,6 +52,8 @@ onCountryHeroChange?:     (countryCode: string, url: string) => void
 onSubdivisionTransformChange?: (subdivisionId: string, t: HeroTransform) => void
 onCountryTransformChange?:     (countryCode: string, t: HeroTransform) => void
 ```
+
+Geometry for the region and country previews is read by `GalleryPanel` from `lib/geo-registry.ts`, keyed by the stable `subdivisionId` and `countryCode`. The registry is populated by `SubdivisionLayer` and `CountryLayer` as GeoJSON is processed.
 
 ### Thumbnail strip — two action buttons per photo
 
@@ -75,43 +75,43 @@ Each preview:
 - SVG with `clipPath` using the region/country `geoJsonToSvgPath` output
 - `<image>` inside the clip with the current `HeroTransform` applied
 - Subtle border + shadow matching the FloatingCard aesthetic
-- Tapping opens the editor sheet for that shape
+- Tapping opens the in-place framing overlay for that shape
 
-### Editor sheet
+### Framing overlay
 
-Slides up over the thumbnail strip (~200–240px tall, replacing the strip). Triggered by tapping a shape preview.
+Rendered directly over the large hero image area. The thumbnail strip remains visible and the gallery layout does not shift. Triggered by tapping a shape preview.
 
 **Layout:**
 ```
 ┌──────────────────────────────────┐
-│  [Cancel]   Adjust position      │
-│  ┌────────────────────────────┐  │
-│  │  full image (draggable)    │  │
-│  │       ┌──────┐             │  │
-│  │       │shape │ ← clip mask │  │
-│  │       └──────┘             │  │
-│  └────────────────────────────┘  │
-│  Drag · Scroll to zoom           │
+│  [Cancel]   Adjust framing       │
+│                                  │
+│  fixed hero image                │
+│       ┌──────┐                   │
+│       │shape │ ← draggable frame │
+│       └──────┘                   │
+│                                  │
+│  Drag frame · Scroll/pinch resize│
 └──────────────────────────────────┘
 ```
 
 **Interaction:**
-- Drag: pan the image within the clip mask
-- Scroll / pinch: scale
-- Dismiss (swipe down or tap outside): commits the current transform → updates the small preview
-- Cancel: restores the transform snapshot taken when the editor opened
+- Drag: move the shape frame over the fixed image
+- Scroll / pinch: resize the frame
+- Tap without dragging: stage the current transform and close
+- Cancel: discard overlay edits and close
 
 **Performance — drag is off React's render cycle:**
-- On editor open: snapshot current `HeroTransform` in a ref
-- During drag/scroll: update a live ref; apply transform directly to the SVG `<image>` via `ref.current.setAttribute('transform', ...)` — zero React renders
-- On dismiss: commit live ref → `GalleryPanel` staged state (1 render — updates small preview only)
-- On Cancel: discard live ref, restore snapshot (0 renders)
+- On overlay open: convert the stored image-offset transform into frame position/scale
+- During drag/scroll/pinch: update live refs and apply SVG group transforms directly with `setAttribute` — zero React renders
+- On tap-dismiss: commit live ref → `GalleryPanel` staged state (1 render — updates small preview only)
+- On Cancel: discard live ref
 
 ### Staging / commit pipeline
 
 ```
-drag → DOM ref (0 renders)
-    ↓ editor dismissed
+drag/resize → DOM ref (0 renders)
+    ↓ overlay dismissed
 GalleryPanel staged state (1 render — small preview updates)
     ↓ gallery closed (onBack)
 GlobeScene state (1 render — FloatingCard SVG + 3D texture uniform)
@@ -131,14 +131,16 @@ Currently uses:
 With a `HeroTransform`, wrap the image in a `<g transform>` to pan and scale while preserving aspect ratio. The transform origin is the center of the viewBox:
 
 ```svg
-<g transform={`translate(${cx + tx}, ${cy + ty}) scale(${scale})`}>
+<g
+  transform={`translate(${cx + tx}, ${cy + ty}) scale(${scale})`}
+  clipPath={`url(#${clipId})`}
+>
   <image
     x={-FRAME_VIEW_W / 2}
     y={-FRAME_VIEW_H / 2}
     width={FRAME_VIEW_W}
     height={FRAME_VIEW_H}
     preserveAspectRatio="xMidYMid slice"
-    clipPath={`url(#${clipId})`}
   />
 </g>
 ```
@@ -156,8 +158,8 @@ Three.js UV transforms (`texture.offset`, `texture.repeat`, `texture.center`) ar
 **Lazy clone strategy:**
 - `useSharedTexture` returns a shared `THREE.Texture` instance cached by URL
 - When a `HeroTransform` is first applied to a subdivision, clone the texture once: `const clone = sharedTexture.clone()` — the clone shares the same underlying `WebGLTexture` on the GPU
-- Apply transforms to the clone only: `clone.offset.set(x, y)`, `clone.repeat.set(1/scale, 1/scale)`, `clone.center.set(0.5, 0.5)`
-- When `HeroTransform` is removed (reset), revert to the shared instance
+- Apply transforms to the clone only: `clone.repeat.set(1 / scale, 1 / scale)`, then derive `offset.x` and `offset.y` from the transform
+- When no transform or an identity transform is active, revert to the shared instance
 
 This is implemented inside `SubdivisionFeature` using a `useRef` for the clone. Cleanup disposes the clone on unmount.
 
@@ -169,12 +171,13 @@ This is implemented inside `SubdivisionFeature` using a `useRef` for the clone. 
 
 - `SubdivisionLayer` receives `subdivisionHeroTransforms` → forwards per-feature to `SubdivisionFeature`
 - `CountryLayer` receives `countryHeroOverrides` (new) and `countryHeroTransforms`
-- `GalleryPanel` receives all initial values and four new callbacks
+- `GalleryPanel` receives all initial values and four callbacks; it resolves preview geometry through `geo-registry`
 
 On `onBack` from `GalleryPanel`:
-1. `onCountryHeroChange` → update `countryHeroOverrides`
-2. `onSubdivisionTransformChange` → update `subdivisionHeroTransforms`
-3. `onCountryTransformChange` → update `countryHeroTransforms`
+1. `onHeroChange` → update `subdivisionHeroOverrides`
+2. `onCountryHeroChange` → update `countryHeroOverrides`
+3. `onSubdivisionTransformChange` → update `subdivisionHeroTransforms`
+4. `onCountryTransformChange` → update `countryHeroTransforms`
 
 All four are optional — no-ops if the user made no changes during the session.
 

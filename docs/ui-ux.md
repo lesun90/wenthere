@@ -164,7 +164,7 @@ Bottom sheet. Opens when a visited subdivision is tapped. 72vh tall, rounded top
 │  │  Caption gradient overlay│   │
 │  └──────────────────────────┘   │
 ├──────────────────────────────────┤
-│  [img][★]  [img][★]  [img][★]   │  108px thumbnail strip
+│  [img][★🌐] [img][★🌐] [img][★🌐]│  thumbnail strip
 └──────────────────────────────────┘
 ```
 
@@ -176,13 +176,13 @@ Bottom sheet. Opens when a visited subdivision is tapped. 72vh tall, rounded top
 
 #### Thumbnail Strip
 
-Horizontal scroll row. Each item is a **flex column** (image on top, star button below — no overlap, no z-index needed):
+Horizontal scroll row. Each item is a **flex column** (image on top, hero action buttons below — no overlap, no z-index needed):
 
 ```
 ┌──────────┐   ← 96×66, div[role=button], objectFit:cover
 │  image   │     box-shadow ring when selected
 └──────────┘
-    [★]        ← 22×22 button, separate row
+  [★][🌐]      ← two 22×22 buttons, separate row
 ```
 
 - **Selected state:** `scale(1.05)`, `box-shadow: 0 0 0 2.5px rgba(255,255,255,0.82)`
@@ -190,13 +190,23 @@ Horizontal scroll row. Each item is a **flex column** (image on top, star button
 - **Scrollbar:** hidden via `scrollbarWidth: none` + `::-webkit-scrollbar { display: none }`
 - **Auto-scroll:** selected thumbnail scrolls into view with `scrollIntoView({ behavior: 'smooth', inline: 'center' })`
 
-#### Hero Star Button
+#### Hero Buttons
 
-Marks which photo is the cover/hero for that location. The gallery initializes from `memory.heroPic` or the current subdivision hero override, then reports star changes back to `GlobeScene` so the gallery, hover card, and subdivision texture use the same hero URL. Clicking a star also selects that thumbnail so the newly marked hero immediately appears in the large display.
+Marks which photo is the cover/hero for the region or country. The gallery initializes from `memory.heroPic`, the seed country hero, or the current in-memory overrides, then reports changes back to `GlobeScene` on gallery close so the gallery, hover card, country fill, and subdivision texture use the same hero URLs. Clicking the region star also selects that thumbnail so the newly marked region hero immediately appears in the large display.
 
-- **Unset:** dark glass pill, outline white star
-- **Set:** amber background `rgba(251,191,36,0.88)`, filled white star, amber border
-- **Hero badge:** when viewing the hero photo in the big display, a gold `★ Hero` pill appears in the top-right corner alongside the photo counter
+- **Region unset:** dark glass pill, outline white star
+- **Region set:** amber background `rgba(251,191,36,0.88)`, filled white star, amber border
+- **Country unset:** dark glass pill, white globe outline
+- **Country set:** blue background `rgba(96,165,250,0.88)`, white globe outline, blue border
+
+#### Hero Framing
+
+When the currently displayed photo is the region hero and/or country hero, small shape-clipped preview buttons appear in the lower-right corner of the hero image. Region framing uses the subdivision geometry; country framing uses the country geometry. Tapping a preview opens the in-place `HeroFramingOverlay` over the hero image area.
+
+- The photo remains fixed while the geographic frame moves and scales over it.
+- Drag moves the frame, scroll/pinch resizes it, and tap applies the staged transform.
+- Cancel closes the overlay without staging the edit.
+- The thumbnail strip remains visible while the overlay is open.
 
 ### Lightbox
 

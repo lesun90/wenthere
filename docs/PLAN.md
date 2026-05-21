@@ -12,7 +12,7 @@
 |---|-----------|--------|
 | M1 | Scaffold & Environment | done |
 | M2 | Globe UI/UX | done |
-| M3 | Gallery | pending |
+| M3 | Gallery | done |
 | M4 | Testing & Hardening | pending |
 | M5 | Add User | pending |
 
@@ -94,14 +94,16 @@ Zooming into a supported country dissolves the country fill and reveals province
 
 ---
 
-## M3 — Gallery *(upcoming)*
+## M3 — Gallery
 
 Lightweight photo panel that appears when a viewer selects a visited place.
 
-- Gallery overlay or side panel for selected country/subdivision
-- Photo list, captions, location labels
-- Close/back behavior
-- Responsive for desktop and mobile
+- [x] Gallery bottom panel for selected subdivisions
+- [x] Photo list with captions and thumbnail strip
+- [x] Close/back behavior via Back, close button, backdrop, and Escape
+- [x] Lightbox for the selected photo
+- [x] Region and country hero selection
+- [x] In-place hero framing overlay for region and country shapes
 
 ---
 

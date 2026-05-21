@@ -32,6 +32,7 @@ const EXIT_DURATION = 200
 const DEFAULT_TRANSFORM: HeroTransform = { x: 0, y: 0, scale: 1 }
 const MIN_SHAPE_SCALE = 0.2
 const MAX_SHAPE_SCALE = 3.0
+const HERO_IMAGE_OBJECT_FIT = 'contain'
 
 const GLASS_BTN: React.CSSProperties = {
   backdropFilter: 'blur(10px)',
@@ -516,7 +517,7 @@ function HeroFramingOverlay({
           inset: 0,
           width: '100%',
           height: '100%',
-          objectFit: 'cover',
+          objectFit: HERO_IMAGE_OBJECT_FIT,
           pointerEvents: 'none',
           userSelect: 'none',
         }}
@@ -825,7 +826,7 @@ export function GalleryPanel({
               src={heroPhoto.url}
               alt={heroPhoto.caption}
               className="gallery-hero-img"
-              style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+              style={{ width: '100%', height: '100%', objectFit: HERO_IMAGE_OBJECT_FIT, display: 'block' }}
             />
 
             <div style={{
