@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
-import type { FeatureCollection } from 'geojson'
+import type { FeatureCollection, Geometry } from 'geojson'
 import { SubdivisionFeature } from './SubdivisionFeature'
-import type { HoverInfo, GlobePalette } from './types'
+import type { HoverInfo, GlobePalette, HeroTransform } from './types'
 import { travelerProfile } from '../../data/seed'
 import { getVisitedSubdivisions, getSubdivisionMemoryByCode } from '../../lib/geodata'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
+import { registerSubdivisionGeometry } from '../../lib/geo-registry'
 import { latLngToVec3 } from '../../lib/geo'
 
 interface Props {
@@ -16,9 +17,10 @@ interface Props {
   onSubdivisionTap: (subdivisionId: string, countryCode: string) => void
   palette: GlobePalette
   heroOverrides?: Record<string, string>
+  heroTransforms?: Record<string, HeroTransform>
 }
 
-export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette, heroOverrides = {} }: Props) {
+export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette, heroOverrides = {}, heroTransforms = {} }: Props) {
   const { camera, size } = useThree()
   const [data, setData] = useState<FeatureCollection | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -51,6 +53,12 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
       .filter((item): item is typeof item & { heroPicUrl: string } => !!item.heroPicUrl)
   }, [data, visitedSubdivisions])
 
+  useEffect(() => {
+    for (const { id, geometry } of visitedFeatures) {
+      registerSubdivisionGeometry(id, geometry)
+    }
+  }, [visitedFeatures])
+
   function projectToScreen(lonLat: [number, number]): { screenX: number; screenY: number } {
     const [lon, lat] = lonLat
     const vec = latLngToVec3(lat, lon, 1.001).project(camera)
@@ -65,7 +73,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
     name: string,
     heroPicUrl: string,
     centroid: [number, number],
-    geometry: import('geojson').Geometry | null,
+    geometry: Geometry | null,
   ) {
     if (hoveredIdRef.current === id) return
     hoveredIdRef.current = id
@@ -76,7 +84,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
       : []
     const placeCount = memory ? memory.photos.length : 0
     const { screenX, screenY } = projectToScreen(centroid)
-    onHoverChange({ name, heroPicUrl, otherPicUrls, placeCount, screenX, screenY, geometry })
+    onHoverChange({ name, heroPicUrl, heroTransform: heroTransforms[id], otherPicUrls, placeCount, screenX, screenY, geometry })
   }
 
   function handleUnhover() {
@@ -97,6 +105,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
             isHovered={hoveredId === id}
             opacityTarget={opacity}
             heroPicUrl={heroPicUrl}
+            heroTransform={heroTransforms[id]}
             palette={palette}
             onHover={() => handleHover(id, name, heroPicUrl, centroid, geometry)}
             onUnhover={handleUnhover}

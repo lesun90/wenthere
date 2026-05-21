@@ -7,11 +7,14 @@ const alpha3ToNumeric: Record<string, string> = {
   VNM: '704',
 }
 
-export function getVisitedCountries(profile: TravelerProfile): Record<string, string> {
+export function getVisitedCountries(
+  profile: TravelerProfile,
+  heroOverrides: Record<string, string> = {}, // keyed by alpha-3 countryCode
+): Record<string, string> { // keyed by numeric id
   const result: Record<string, string> = {}
   for (const country of profile.countries) {
     const numericId = alpha3ToNumeric[country.countryCode] ?? country.countryCode
-    result[numericId] = country.heroPic
+    result[numericId] = heroOverrides[country.countryCode] ?? country.heroPic
   }
   return result
 }
@@ -44,6 +47,15 @@ export function getSubdivisionMemoryByCode(profile: TravelerProfile): Record<str
     for (const sub of country.subdivisions) {
       result[sub.subdivisionCode] = sub
     }
+  }
+  return result
+}
+
+// Maps alpha-3 countryCode → seed heroPic URL (fallback when no override exists)
+export function getCountryHeroByCode(profile: TravelerProfile): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const country of profile.countries) {
+    result[country.countryCode] = country.heroPic
   }
   return result
 }

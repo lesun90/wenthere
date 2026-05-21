@@ -115,6 +115,9 @@ Tests around core product behavior, fallback states, and final polish.
 
 Move from single seeded demo toward a real profile model.
 
+**Must include — customization persistence:**
+All user customizations (hero image selection, hero image position/scale transforms for both country and region level) are currently in-memory only. M5 must persist these to a database so the globe can be shared via `[username]` URL. See the deferred section in [2026-05-20-hero-image-selection-repositioning-design.md](superpowers/specs/2026-05-20-hero-image-selection-repositioning-design.md) for the full list of what needs saving and the read/write path design.
+
 ---
 
 ## Out of scope (all versions)

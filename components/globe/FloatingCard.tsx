@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useId, useRef, useState } from 'react'
-import type { HoverInfo } from './types'
+import type { HoverInfo, HeroTransform } from './types'
 import { geoJsonToSvgPath } from '../../lib/geomath'
 
 const FRAME_VIEW_W = 200
@@ -15,6 +15,51 @@ interface Props {
   info: HoverInfo
   viewportWidth: number
   viewportHeight: number
+}
+
+function ShapedImage({
+  href,
+  clipId,
+  transform,
+}: {
+  href: string
+  clipId: string
+  transform?: HeroTransform
+}) {
+  const cx = FRAME_VIEW_W / 2
+  const cy = FRAME_VIEW_H / 2
+
+  if (transform) {
+    const tx = transform.x * FRAME_VIEW_W
+    const ty = transform.y * FRAME_VIEW_H
+    return (
+      <g
+        transform={`translate(${cx + tx}, ${cy + ty}) scale(${transform.scale})`}
+        clipPath={`url(#${clipId})`}
+      >
+        <image
+          href={href}
+          x={-cx}
+          y={-cy}
+          width={FRAME_VIEW_W}
+          height={FRAME_VIEW_H}
+          preserveAspectRatio="xMidYMid slice"
+        />
+      </g>
+    )
+  }
+
+  return (
+    <image
+      href={href}
+      x={0}
+      y={0}
+      width={FRAME_VIEW_W}
+      height={FRAME_VIEW_H}
+      preserveAspectRatio="xMidYMid slice"
+      clipPath={`url(#${clipId})`}
+    />
+  )
 }
 
 export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
@@ -101,15 +146,7 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
                   <stop offset="0.44" stopColor="rgba(255,255,255,0)" />
                 </linearGradient>
               </defs>
-              <image
-                href={info.heroPicUrl}
-                x={0}
-                y={0}
-                width={FRAME_VIEW_W}
-                height={FRAME_VIEW_H}
-                preserveAspectRatio="xMidYMid slice"
-                clipPath={`url(#${clipId})`}
-              />
+              <ShapedImage href={info.heroPicUrl} clipId={clipId} transform={info.heroTransform} />
               <path d={shapePath} fill={`url(#${clipId}Shine)`} />
               <path
                 d={shapePath}

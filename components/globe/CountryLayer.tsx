@@ -4,11 +4,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import { feature } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
+import type { Geometry } from 'geojson'
 import { CountryFeature } from './CountryFeature'
-import type { HoverInfo, GlobePalette } from './types'
+import type { HoverInfo, GlobePalette, HeroTransform } from './types'
 import { travelerProfile } from '../../data/seed'
 import { getVisitedCountries, getCountryMemoryByNumericId } from '../../lib/geodata'
 import { prepareCountryRecords } from '../../lib/geo-cache'
+import { registerCountryGeometry } from '../../lib/geo-registry'
 import { latLngToVec3 } from '../../lib/geo'
 
 interface Props {
@@ -17,9 +19,11 @@ interface Props {
   onHoverChange: (info: HoverInfo | null) => void
   onCountryTap: (countryCode: string, centroid: [number, number]) => void
   palette: GlobePalette
+  countryHeroOverrides?: Record<string, string>
+  countryHeroTransforms?: Record<string, HeroTransform>
 }
 
-export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, onCountryTap, palette }: Props) {
+export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, onCountryTap, palette, countryHeroOverrides = {}, countryHeroTransforms = {} }: Props) {
   const { camera, size } = useThree()
   const [topology, setTopology] = useState<Topology<{ countries: GeometryCollection }> | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -42,8 +46,18 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     return prepareCountryRecords(feature(topology, topology.objects.countries).features)
   }, [topology])
 
-  const visitedCountries = useMemo(() => getVisitedCountries(travelerProfile), [])
+  const visitedCountries = useMemo(
+    () => getVisitedCountries(travelerProfile, countryHeroOverrides),
+    [countryHeroOverrides],
+  )
   const countryMemories = useMemo(() => getCountryMemoryByNumericId(travelerProfile), [])
+
+  useEffect(() => {
+    for (const { id, geometry } of features) {
+      const memory = countryMemories[id]
+      if (memory?.countryCode) registerCountryGeometry(memory.countryCode, geometry)
+    }
+  }, [features, countryMemories])
 
   function projectToScreen(lonLat: [number, number]): { screenX: number; screenY: number } {
     const [lon, lat] = lonLat
@@ -59,7 +73,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     name: string,
     heroPicUrl: string | undefined,
     centroid: [number, number],
-    geometry: import('geojson').Geometry | null,
+    geometry: Geometry | null,
   ) {
     if (hoveredIdRef.current === id) return
     hoveredIdRef.current = id
@@ -76,7 +90,8 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
       ? memory.subdivisions.reduce((acc, s) => acc + s.photos.length, 0)
       : 0
     const { screenX, screenY } = projectToScreen(centroid)
-    onHoverChange({ name, heroPicUrl, otherPicUrls, placeCount, screenX, screenY, geometry })
+    const heroTransform = memory ? countryHeroTransforms[memory.countryCode] : undefined
+    onHoverChange({ name, heroPicUrl, heroTransform, otherPicUrls, placeCount, screenX, screenY, geometry })
   }
 
   function handleUnhover() {

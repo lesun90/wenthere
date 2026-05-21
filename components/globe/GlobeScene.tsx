@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -11,8 +11,10 @@ import { FloatingCard } from './FloatingCard'
 import { GalleryPanel } from './GalleryPanel'
 import { usePerformancePreload } from './usePerformancePreload'
 import { useTheme } from '../../lib/theme-context'
-import type { HoverInfo, GlobeState, GlobePalette } from './types'
+import type { HoverInfo, GlobeState, GlobePalette, HeroTransform } from './types'
 import { latLngToVec3 } from '../../lib/geo'
+import { travelerProfile } from '../../data/seed'
+import { getCountryHeroByCode } from '../../lib/geodata'
 
 const MODE_TRANSITION_MS = 300
 const MIN_CAMERA_DISTANCE = 1.2
@@ -194,13 +196,19 @@ export function GlobeScene() {
   const orbitRef = useRef<React.ElementRef<typeof OrbitControls>>(null)
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
   const [clickOrigin, setClickOrigin] = useState<{ x: number; y: number } | null>(null)
+
+  // Hero override state — all flushed from GalleryPanel on gallery close
   const [subdivisionHeroOverrides, setSubdivisionHeroOverrides] = useState<Record<string, string>>({})
+  const [countryHeroOverrides, setCountryHeroOverrides] = useState<Record<string, string>>({})
+  const [subdivisionHeroTransforms, setSubdivisionHeroTransforms] = useState<Record<string, HeroTransform>>({})
+  const [countryHeroTransforms, setCountryHeroTransforms] = useState<Record<string, HeroTransform>>({})
+
+  const seedCountryHeroes = useMemo(() => getCountryHeroByCode(travelerProfile), [])
 
   const current = navStack[navStack.length - 1]
   const showSubdivisions = current.level === 'detail' || current.level === 'subdivision' || current.level === 'gallery'
   const detailLevel: DetailLevel = showSubdivisions ? 'detail' : 'world'
   const galleryOpen = current.level === 'gallery'
-  const gallerySubdivisionId = current.level === 'gallery' ? current.subdivisionId : null
 
   const countryPhotoOpacity = showSubdivisions ? 0 : 1
   const subdivisionOpacity = showSubdivisions ? 1 : 0
@@ -255,29 +263,42 @@ export function GlobeScene() {
     push({ level: 'subdivision', countryCode: job.countryCode, countryCenter: job.center })
   }
 
-  function handleSubdivisionTap(subdivisionId: string, _countryCode: string) {
+  function handleSubdivisionTap(subdivisionId: string, countryCode: string) {
+    const galleryState: GlobeState = {
+      level: 'gallery',
+      subdivisionId,
+      countryCode,
+    }
+
     if (current.level === 'gallery') {
-      setNavStack(s => [
-        ...s.slice(0, -1),
-        { ...(s[s.length - 1] as Extract<GlobeState, { level: 'gallery' }>), subdivisionId },
-      ])
+      setNavStack(s => [...s.slice(0, -1), galleryState])
       return
     }
-    if (current.level === 'detail') {
-      push({ level: 'gallery', subdivisionId })
-      return
-    }
-    if (current.level === 'subdivision') {
-      push({ level: 'gallery', subdivisionId })
+    if (current.level === 'detail' || current.level === 'subdivision') {
+      push(galleryState)
     }
   }
 
+  // All four callbacks are fired by GalleryPanel on gallery close
   function handleSubdivisionHeroChange(subdivisionId: string, heroUrl: string) {
-    setSubdivisionHeroOverrides(currentOverrides => ({
-      ...currentOverrides,
-      [subdivisionId]: heroUrl,
-    }))
+    setSubdivisionHeroOverrides(prev => ({ ...prev, [subdivisionId]: heroUrl }))
   }
+
+  function handleCountryHeroChange(countryCode: string, heroUrl: string) {
+    setCountryHeroOverrides(prev => ({ ...prev, [countryCode]: heroUrl }))
+  }
+
+  function handleSubdivisionTransformChange(subdivisionId: string, transform: HeroTransform) {
+    setSubdivisionHeroTransforms(prev => ({ ...prev, [subdivisionId]: transform }))
+  }
+
+  function handleCountryTransformChange(countryCode: string, transform: HeroTransform) {
+    setCountryHeroTransforms(prev => ({ ...prev, [countryCode]: transform }))
+  }
+
+  const galleryState = current.level === 'gallery'
+    ? (current as Extract<GlobeState, { level: 'gallery' }>)
+    : null
 
   return (
     <div
@@ -310,6 +331,8 @@ export function GlobeScene() {
             onHoverChange={setHoverInfo}
             onCountryTap={handleCountryTap}
             palette={palette}
+            countryHeroOverrides={countryHeroOverrides}
+            countryHeroTransforms={countryHeroTransforms}
           />
           {shouldRenderSubdivisions && (
             <SubdivisionLayer
@@ -318,6 +341,7 @@ export function GlobeScene() {
               onSubdivisionTap={handleSubdivisionTap}
               palette={palette}
               heroOverrides={subdivisionHeroOverrides}
+              heroTransforms={subdivisionHeroTransforms}
             />
           )}
           <OrbitControls
@@ -347,13 +371,20 @@ export function GlobeScene() {
         />
       )}
 
-      {gallerySubdivisionId && (
+      {galleryState && (
         <GalleryPanel
-          key={gallerySubdivisionId}
-          subdivisionId={gallerySubdivisionId}
+          key={galleryState.subdivisionId}
+          subdivisionId={galleryState.subdivisionId}
+          countryCode={galleryState.countryCode}
           onBack={back}
-          initialHeroUrl={subdivisionHeroOverrides[gallerySubdivisionId]}
+          initialHeroUrl={subdivisionHeroOverrides[galleryState.subdivisionId]}
+          initialCountryHeroUrl={countryHeroOverrides[galleryState.countryCode] ?? seedCountryHeroes[galleryState.countryCode]}
+          initialSubdivisionTransform={subdivisionHeroTransforms[galleryState.subdivisionId]}
+          initialCountryTransform={countryHeroTransforms[galleryState.countryCode]}
           onHeroChange={handleSubdivisionHeroChange}
+          onCountryHeroChange={handleCountryHeroChange}
+          onSubdivisionTransformChange={handleSubdivisionTransformChange}
+          onCountryTransformChange={handleCountryTransformChange}
           clickOrigin={clickOrigin ?? undefined}
         />
       )}

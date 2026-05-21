@@ -1,8 +1,8 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { FALLBACK_COLOR, useSharedTexture } from './useSharedTexture'
-import type { GlobePalette } from './types'
+import type { GlobePalette, HeroTransform } from './types'
 
 interface Props {
   fillGeometry: THREE.BufferGeometry
@@ -10,10 +10,15 @@ interface Props {
   isHovered: boolean
   opacityTarget: number
   heroPicUrl: string
+  heroTransform?: HeroTransform
   palette: GlobePalette
   onHover: () => void
   onUnhover: () => void
   onClick: () => void
+}
+
+function isIdentityTransform(t: HeroTransform): boolean {
+  return t.x === 0 && t.y === 0 && t.scale === 1
 }
 
 export function SubdivisionFeature({
@@ -22,6 +27,7 @@ export function SubdivisionFeature({
   isHovered,
   opacityTarget,
   heroPicUrl,
+  heroTransform,
   palette,
   onHover,
   onUnhover,
@@ -30,10 +36,51 @@ export function SubdivisionFeature({
   const materialRef = useRef<THREE.MeshLambertMaterial>(null)
   const lineMaterialRef = useRef<THREE.LineBasicMaterial>(null)
   const animatedOpacityRef = useRef(opacityTarget)
+  const cloneRef = useRef<THREE.Texture | null>(null)
+  const prevSharedTextureRef = useRef<THREE.Texture | null>(null)
 
   const textureState = useSharedTexture(heroPicUrl)
-  const texture = textureState.status === 'ready' ? textureState.texture : null
+  const sharedTexture = textureState.status === 'ready' ? textureState.texture : null
   const textureFailed = textureState.status === 'failed'
+
+  // Manage texture clone lifecycle and UV transforms.
+  // Clone is created lazily when a non-identity transform is needed, and shares
+  // the same GPU WebGLTexture as the source (only UV uniforms differ).
+  useEffect(() => {
+    if (!sharedTexture) return
+
+    // Dispose stale clone when the base texture changes (URL change)
+    if (sharedTexture !== prevSharedTextureRef.current) {
+      cloneRef.current?.dispose()
+      cloneRef.current = null
+      prevSharedTextureRef.current = sharedTexture
+    }
+
+    if (!heroTransform || isIdentityTransform(heroTransform)) {
+      cloneRef.current?.dispose()
+      cloneRef.current = null
+      return
+    }
+
+    if (!cloneRef.current) {
+      cloneRef.current = sharedTexture.clone()
+    }
+
+    const t = cloneRef.current
+    const s = heroTransform.scale
+    t.repeat.set(1 / s, 1 / s)
+    // UV offset formula derived from: u_center = 0.5*repeat + offset → solve for offset
+    t.offset.x = 0.5 - (0.5 + heroTransform.x) / s
+    t.offset.y = 0.5 - (0.5 - heroTransform.y) / s
+  }, [sharedTexture, heroTransform])
+
+  // Dispose clone on unmount
+  useEffect(() => {
+    return () => { cloneRef.current?.dispose() }
+  }, [])
+
+  const needsTransform = !!(heroTransform && !isIdentityTransform(heroTransform))
+  const effectiveTexture = needsTransform && cloneRef.current ? cloneRef.current : sharedTexture
 
   const borderColor = isHovered ? palette.subdivisionBorderHover : palette.subdivisionBorder
   const borderOpacity = (isHovered ? 0.95 : 0.4) * opacityTarget
@@ -44,11 +91,10 @@ export function SubdivisionFeature({
   if (textureFailed) {
     fillColor = FALLBACK_COLOR
     fillOpacity = (isHovered ? 0.95 : 0.85) * opacityTarget
-  } else if (texture) {
+  } else if (effectiveTexture) {
     fillColor = '#ffffff'
     fillOpacity = (isHovered ? 0.95 : 0.85) * opacityTarget
   } else {
-    // loading
     fillColor = '#ffffff'
     fillOpacity = 0
   }
@@ -62,7 +108,7 @@ export function SubdivisionFeature({
     )
 
     if (materialRef.current) {
-      materialRef.current.opacity = texture || textureFailed
+      materialRef.current.opacity = effectiveTexture || textureFailed
         ? (isHovered ? 0.95 : 0.85) * animatedOpacityRef.current
         : 0
     }
@@ -82,7 +128,7 @@ export function SubdivisionFeature({
       >
         <meshLambertMaterial
           ref={materialRef}
-          map={!textureFailed ? (texture ?? null) : null}
+          map={!textureFailed ? (effectiveTexture ?? null) : null}
           color={fillColor}
           transparent
           opacity={fillOpacity}

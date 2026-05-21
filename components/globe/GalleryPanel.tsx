@@ -1,13 +1,24 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { Geometry } from 'geojson'
 import { travelerProfile } from '../../data/seed'
+import { geoJsonToSvgPath } from '../../lib/geomath'
+import { getSubdivisionGeometry, getCountryGeometry } from '../../lib/geo-registry'
+import type { HeroTransform } from './types'
 
 interface Props {
   subdivisionId: string
+  countryCode: string
   onBack: () => void
   initialHeroUrl?: string
+  initialCountryHeroUrl?: string
+  initialSubdivisionTransform?: HeroTransform
+  initialCountryTransform?: HeroTransform
   onHeroChange?: (subdivisionId: string, heroUrl: string) => void
+  onCountryHeroChange?: (countryCode: string, heroUrl: string) => void
+  onSubdivisionTransformChange?: (subdivisionId: string, transform: HeroTransform) => void
+  onCountryTransformChange?: (countryCode: string, transform: HeroTransform) => void
   clickOrigin?: { x: number; y: number }
 }
 
@@ -18,6 +29,9 @@ interface Photo {
 
 const ENTER_DURATION = 340
 const EXIT_DURATION = 200
+const DEFAULT_TRANSFORM: HeroTransform = { x: 0, y: 0, scale: 1 }
+const MIN_SHAPE_SCALE = 0.2
+const MAX_SHAPE_SCALE = 3.0
 
 const GLASS_BTN: React.CSSProperties = {
   backdropFilter: 'blur(10px)',
@@ -28,6 +42,8 @@ const GLASS_BTN: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
 }
+
+// ─── Lightbox ────────────────────────────────────────────────────────────────
 
 function Lightbox({
   photos,
@@ -99,7 +115,6 @@ function Lightbox({
           transition: `transform ${visible ? 300 : 180}ms cubic-bezier(0.16,1,0.3,1), opacity ${visible ? 300 : 180}ms ease`,
         }}
       >
-        {/* Top bar */}
         <div style={{
           position: 'absolute',
           top: 12,
@@ -146,37 +161,26 @@ function Lightbox({
           </button>
         </div>
 
-        {/* Prev */}
         {canPrev && (
           <button
             onClick={e => { e.stopPropagation(); setIndex(i => i - 1) }}
             aria-label="Previous photo"
             style={{ ...navBtn, left: 14 }}
-          >
-            ‹
-          </button>
+          >‹</button>
         )}
-        {/* Next */}
         {canNext && (
           <button
             onClick={e => { e.stopPropagation(); setIndex(i => i + 1) }}
             aria-label="Next photo"
             style={{ ...navBtn, right: 14 }}
-          >
-            ›
-          </button>
+          >›</button>
         )}
 
         <img
           key={index}
           src={photo.url}
           alt={photo.caption}
-          style={{
-            display: 'block',
-            width: '100%',
-            objectFit: 'cover',
-            maxHeight: 'min(82vh, 660px)',
-          }}
+          style={{ display: 'block', width: '100%', objectFit: 'cover', maxHeight: 'min(82vh, 660px)' }}
         />
 
         {photo.caption && (
@@ -199,19 +203,464 @@ function Lightbox({
   )
 }
 
-export function GalleryPanel({ subdivisionId, onBack, initialHeroUrl, onHeroChange, clickOrigin }: Props) {
-  // Derive data before hooks — pure computation, always runs, stable reference
+// ─── ShapePreviewButton ───────────────────────────────────────────────────────
+
+function ShapePreviewButton({
+  label,
+  imageUrl,
+  geometry,
+  transform,
+  onClick,
+}: {
+  label: string
+  imageUrl: string
+  geometry: Geometry
+  transform: HeroTransform
+  onClick: () => void
+}) {
+  const size = 54
+  const cx = size / 2
+  const cy = size / 2
+  const shapePath = useMemo(() => geoJsonToSvgPath(geometry, size, size, 5), [geometry])
+  const clipId = useId().replace(/:/g, '')
+
+  const tx = transform.x * size
+  const ty = transform.y * size
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      style={{
+        width: size,
+        height: size,
+        padding: 0,
+        border: '1.5px solid rgba(255,255,255,0.28)',
+        borderRadius: 10,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        background: 'rgba(0,0,0,0.32)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.32)',
+        position: 'relative',
+        flexShrink: 0,
+      }}
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        style={{ display: 'block' }}
+        aria-hidden="true"
+      >
+        <defs>
+          <clipPath id={`sp-${clipId}`}>
+            <path d={shapePath} />
+          </clipPath>
+        </defs>
+        <g
+          transform={`translate(${cx + tx}, ${cy + ty}) scale(${transform.scale})`}
+          clipPath={`url(#sp-${clipId})`}
+        >
+          <image
+            href={imageUrl}
+            x={-cx}
+            y={-cy}
+            width={size}
+            height={size}
+            preserveAspectRatio="xMidYMid slice"
+          />
+        </g>
+        <path
+          d={shapePath}
+          fill="none"
+          stroke="rgba(255,255,255,0.55)"
+          strokeWidth="1"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <div style={{
+        position: 'absolute',
+        bottom: 3,
+        right: 3,
+        width: 14,
+        height: 14,
+        borderRadius: 4,
+        background: 'rgba(0,0,0,0.60)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <svg width="8" height="8" viewBox="0 0 16 16" fill="none">
+          <path d="M2 5.5V2h3.5M14 5.5V2h-3.5M2 10.5V14h3.5M14 10.5V14h-3.5" stroke="#F8FAFC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+    </button>
+  )
+}
+
+// ─── HeroFramingOverlay ───────────────────────────────────────────────────────
+// Image is static; the shape border frame moves and scales over it.
+// Controls invert to HeroTransform: shapeX = -transform.x·W, shapeScale = 1/transform.scale
+
+function HeroFramingOverlay({
+  imageUrl,
+  geometry,
+  initialTransform,
+  onCommit,
+  onCancel,
+}: {
+  imageUrl: string
+  geometry: Geometry | null
+  initialTransform: HeroTransform
+  onCommit: (t: HeroTransform) => void
+  onCancel: () => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const maskGroupRef = useRef<SVGGElement>(null)
+  const borderGroupRef = useRef<SVGGElement>(null)
+  const liveRef = useRef<HeroTransform>({ ...initialTransform })
+  // Shape position in pixel space (relative to container)
+  const shapeStateRef = useRef({ shapeX: 0, shapeY: 0, shapeScale: 1 })
+  const dragRef = useRef<{
+    startX: number; startY: number
+    startShapeX: number; startShapeY: number
+    isDrag: boolean
+  } | null>(null)
+  const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null)
+  // Tracks whether a two-finger gesture was in progress to avoid tap-dismiss on finger lift
+  const wasMultitouchRef = useRef(false)
+
+  const [visible, setVisible] = useState(false)
+  const [shapePath, setShapePath] = useState('')
+  const maskId = useId().replace(/:/g, '')
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setVisible(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
+
+  // Pass 1: measure container → compute and store shape path
+  useLayoutEffect(() => {
+    if (!geometry || !containerRef.current) return
+    const { clientWidth: cw, clientHeight: ch } = containerRef.current
+    if (cw === 0 || ch === 0) return
+    // Pre-compute initial shape pixel state from stored transform (inverted)
+    shapeStateRef.current = {
+      shapeX: -initialTransform.x * cw,
+      shapeY: -initialTransform.y * ch,
+      shapeScale: 1 / initialTransform.scale,
+    }
+    setShapePath(geoJsonToSvgPath(geometry, cw, ch, 24))
+  }, [geometry])
+
+  // Pass 2: once SVG is in the DOM, apply the initial shape transform to both groups
+  useLayoutEffect(() => {
+    if (!shapePath || !containerRef.current) return
+    const { clientWidth: cw, clientHeight: ch } = containerRef.current
+    const { shapeX, shapeY, shapeScale } = shapeStateRef.current
+    const svgTransform = buildSvgTransform(cw / 2, ch / 2, shapeX, shapeY, shapeScale)
+    maskGroupRef.current?.setAttribute('transform', svgTransform)
+    borderGroupRef.current?.setAttribute('transform', svgTransform)
+  }, [shapePath])
+
+  function buildSvgTransform(cx: number, cy: number, sx: number, sy: number, ss: number) {
+    return `translate(${cx + sx},${cy + sy}) scale(${ss}) translate(${-cx},${-cy})`
+  }
+
+  // Called every frame during drag/pinch — updates DOM refs directly, zero React renders
+  function applyShapeTransform(shapeX: number, shapeY: number, shapeScale: number) {
+    if (!containerRef.current) return
+    const { clientWidth: cw, clientHeight: ch } = containerRef.current
+    const t = buildSvgTransform(cw / 2, ch / 2, shapeX, shapeY, shapeScale)
+    maskGroupRef.current?.setAttribute('transform', t)
+    borderGroupRef.current?.setAttribute('transform', t)
+    shapeStateRef.current = { shapeX, shapeY, shapeScale }
+    // Convert back to HeroTransform (image-offset semantics)
+    liveRef.current = { x: -shapeX / cw, y: -shapeY / ch, scale: 1 / shapeScale }
+  }
+
+  function dismiss(commit: boolean) {
+    setVisible(false)
+    setTimeout(() => {
+      if (commit) onCommit(liveRef.current)
+      else onCancel()
+    }, 100)
+  }
+
+  // ── Pointer (mouse) ──
+  function handlePointerDown(e: React.PointerEvent) {
+    if (e.pointerType === 'touch') return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startShapeX: shapeStateRef.current.shapeX,
+      startShapeY: shapeStateRef.current.shapeY,
+      isDrag: false,
+    }
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    if (e.pointerType === 'touch' || !dragRef.current) return
+    const dx = e.clientX - dragRef.current.startX
+    const dy = e.clientY - dragRef.current.startY
+    if (!dragRef.current.isDrag && Math.sqrt(dx * dx + dy * dy) >= 5) {
+      dragRef.current.isDrag = true
+    }
+    if (!dragRef.current.isDrag) return
+    applyShapeTransform(
+      dragRef.current.startShapeX + dx,
+      dragRef.current.startShapeY + dy,
+      shapeStateRef.current.shapeScale,
+    )
+  }
+
+  function handlePointerUp(e: React.PointerEvent) {
+    if (e.pointerType === 'touch') return
+    const wasDrag = dragRef.current?.isDrag ?? false
+    dragRef.current = null
+    if (!wasDrag) dismiss(true)
+  }
+
+  function handleWheel(e: React.WheelEvent) {
+    e.preventDefault()
+    const { shapeX, shapeY, shapeScale } = shapeStateRef.current
+    // Scroll up = grow frame (more image visible); scroll down = shrink frame
+    const newScale = Math.max(MIN_SHAPE_SCALE, Math.min(MAX_SHAPE_SCALE, shapeScale * (1 - e.deltaY * 0.001)))
+    applyShapeTransform(shapeX, shapeY, newScale)
+  }
+
+  // ── Touch ──
+  function handleTouchStart(e: React.TouchEvent) {
+    if (e.touches.length === 1) {
+      if (!dragRef.current) wasMultitouchRef.current = false
+      dragRef.current = {
+        startX: e.touches[0].clientX,
+        startY: e.touches[0].clientY,
+        startShapeX: shapeStateRef.current.shapeX,
+        startShapeY: shapeStateRef.current.shapeY,
+        isDrag: false,
+      }
+    } else if (e.touches.length === 2) {
+      wasMultitouchRef.current = true
+      dragRef.current = null
+      const dx = e.touches[1].clientX - e.touches[0].clientX
+      const dy = e.touches[1].clientY - e.touches[0].clientY
+      pinchRef.current = {
+        startDist: Math.sqrt(dx * dx + dy * dy),
+        startScale: shapeStateRef.current.shapeScale,
+      }
+    }
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    e.preventDefault()
+    const { shapeX, shapeY, shapeScale } = shapeStateRef.current
+    if (e.touches.length === 1 && dragRef.current) {
+      const dx = e.touches[0].clientX - dragRef.current.startX
+      const dy = e.touches[0].clientY - dragRef.current.startY
+      if (!dragRef.current.isDrag && Math.sqrt(dx * dx + dy * dy) >= 5) {
+        dragRef.current.isDrag = true
+      }
+      if (!dragRef.current.isDrag) return
+      applyShapeTransform(dragRef.current.startShapeX + dx, dragRef.current.startShapeY + dy, shapeScale)
+    } else if (e.touches.length === 2 && pinchRef.current) {
+      const dx = e.touches[1].clientX - e.touches[0].clientX
+      const dy = e.touches[1].clientY - e.touches[0].clientY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const newScale = Math.max(MIN_SHAPE_SCALE, Math.min(MAX_SHAPE_SCALE, pinchRef.current.startScale * dist / pinchRef.current.startDist))
+      applyShapeTransform(shapeX, shapeY, newScale)
+    }
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (e.touches.length === 0) {
+      const wasDrag = dragRef.current?.isDrag ?? true
+      const wasMultitouch = wasMultitouchRef.current
+      dragRef.current = null
+      pinchRef.current = null
+      wasMultitouchRef.current = false
+      if (!wasDrag && !wasMultitouch) dismiss(true)
+    } else if (e.touches.length === 1 && pinchRef.current) {
+      // One finger lifted during pinch — transition to single-finger drag without dismissing
+      pinchRef.current = null
+      dragRef.current = {
+        startX: e.touches[0].clientX,
+        startY: e.touches[0].clientY,
+        startShapeX: shapeStateRef.current.shapeX,
+        startShapeY: shapeStateRef.current.shapeY,
+        isDrag: false,
+      }
+    } else {
+      dragRef.current = null
+    }
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 20,
+        borderRadius: 18,
+        cursor: 'crosshair',
+        userSelect: 'none',
+        touchAction: 'none',
+        overflow: 'hidden',
+        opacity: visible ? 1 : 0,
+        transition: `opacity ${visible ? 150 : 100}ms ease`,
+      }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Static background image */}
+      <img
+        src={imageUrl}
+        alt=""
+        draggable={false}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      />
+
+      {/* Shape mask + border — <g> refs updated via DOM during drag, zero React renders */}
+      {shapePath && (
+        <svg
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}
+          aria-hidden="true"
+        >
+          <defs>
+            <mask id={`fm-${maskId}`}>
+              <rect width="100%" height="100%" fill="white" />
+              <g ref={maskGroupRef}>
+                <path d={shapePath} fill="black" />
+              </g>
+            </mask>
+          </defs>
+          <rect width="100%" height="100%" fill="rgba(0,0,0,0.52)" mask={`url(#fm-${maskId})`} />
+          <g ref={borderGroupRef}>
+            <path
+              d={shapePath}
+              fill="none"
+              stroke="rgba(255,255,255,0.75)"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
+        </svg>
+      )}
+
+      {/* Top bar — Cancel button stops pointer propagation so overlay tap-dismiss is not triggered */}
+      <div style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0,
+        display: 'flex',
+        alignItems: 'center',
+        padding: '10px 12px 32px',
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.60) 0%, transparent 100%)',
+        pointerEvents: 'none',
+      }}>
+        <button
+          onPointerDown={e => e.stopPropagation()}
+          onClick={() => dismiss(false)}
+          style={{
+            ...GLASS_BTN,
+            fontSize: 13,
+            fontFamily: 'var(--font-dm-sans), sans-serif',
+            color: '#F8FAFC',
+            padding: '5px 12px',
+            border: '1px solid rgba(255,255,255,0.22)',
+            background: 'rgba(0,0,0,0.40)',
+            pointerEvents: 'auto',
+          }}
+        >
+          Cancel
+        </button>
+        <span style={{
+          flex: 1,
+          textAlign: 'center',
+          color: '#F8FAFC',
+          fontSize: 13,
+          fontFamily: 'var(--font-dm-sans), sans-serif',
+          fontWeight: 600,
+          letterSpacing: '0.02em',
+          textShadow: '0 1px 4px rgba(0,0,0,0.5)',
+        }}>
+          Adjust framing
+        </span>
+        <div style={{ width: 60 }} />
+      </div>
+
+      {/* Bottom hint */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0, left: 0, right: 0,
+        padding: '28px 12px 14px',
+        background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%)',
+        textAlign: 'center',
+        color: 'rgba(255,255,255,0.72)',
+        fontSize: 11,
+        fontFamily: 'var(--font-dm-sans), sans-serif',
+        letterSpacing: '0.04em',
+        pointerEvents: 'none',
+      }}>
+        Drag frame · Scroll or pinch to resize · Tap to apply
+      </div>
+    </div>
+  )
+}
+
+// ─── GalleryPanel ─────────────────────────────────────────────────────────────
+
+export function GalleryPanel({
+  subdivisionId,
+  countryCode,
+  onBack,
+  initialHeroUrl,
+  initialCountryHeroUrl,
+  initialSubdivisionTransform,
+  initialCountryTransform,
+  onHeroChange,
+  onCountryHeroChange,
+  onSubdivisionTransformChange,
+  onCountryTransformChange,
+  clickOrigin,
+}: Props) {
+  // Geometry is derived from stable identifiers, not from interaction events
+  const subdivisionGeometry = getSubdivisionGeometry(subdivisionId)
+  const countryGeometry = getCountryGeometry(countryCode)
+
   const memory = travelerProfile.countries
     .flatMap(c => c.subdivisions)
     .find(s => s.subdivisionCode === subdivisionId)
   const photos = memory?.photos ?? []
   const name = memory?.name ?? ''
 
-  // All state — heroUrl initialized correctly on first render, no seeding effect needed
   const [visible, setVisible] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [heroUrl, setHeroUrl] = useState<string>(initialHeroUrl ?? memory?.heroPic ?? photos[0]?.url ?? '')
+  const [countryHeroUrl, setCountryHeroUrl] = useState<string>(initialCountryHeroUrl ?? '')
+  const [stagedSubTransform, setStagedSubTransform] = useState<HeroTransform>(initialSubdivisionTransform ?? DEFAULT_TRANSFORM)
+  const [stagedCountryTransform, setStagedCountryTransform] = useState<HeroTransform>(initialCountryTransform ?? DEFAULT_TRANSFORM)
+  const [editingShape, setEditingShape] = useState<'subdivision' | 'country' | null>(null)
   const closingRef = useRef(false)
   const thumbsRef = useRef<HTMLDivElement>(null)
 
@@ -251,17 +700,35 @@ export function GalleryPanel({ subdivisionId, onBack, initialHeroUrl, onHeroChan
     if (closingRef.current) return
     closingRef.current = true
     setVisible(false)
+    onHeroChange?.(subdivisionId, heroUrl)
+    onCountryHeroChange?.(countryCode, countryHeroUrl)
+    onSubdivisionTransformChange?.(subdivisionId, stagedSubTransform)
+    onCountryTransformChange?.(countryCode, stagedCountryTransform)
     setTimeout(onBack, EXIT_DURATION)
   }
 
   function handleSetHero(index: number, url: string) {
     setHeroUrl(url)
     setSelectedIndex(index)
-    onHeroChange?.(subdivisionId, url)
+  }
+
+  function handleSetCountryHero(url: string) {
+    setCountryHeroUrl(url)
+  }
+
+  function handleEditorCommit(transform: HeroTransform) {
+    if (editingShape === 'subdivision') setStagedSubTransform(transform)
+    else if (editingShape === 'country') setStagedCountryTransform(transform)
+    setEditingShape(null)
+  }
+
+  function handleEditorCancel() {
+    setEditingShape(null)
   }
 
   const heroPhoto = photos[selectedIndex]
-  const isViewingHero = heroPhoto?.url === heroUrl
+  const isSubdivisionHero = heroPhoto?.url === heroUrl
+  const isCountryHero = heroPhoto?.url === countryHeroUrl
 
   const enterTr = reducedMotion
     ? `opacity ${ENTER_DURATION}ms ease-out`
@@ -373,11 +840,11 @@ export function GalleryPanel({ subdivisionId, onBack, initialHeroUrl, onHeroChan
               overflow: 'hidden',
               margin: '0 14px',
               borderRadius: 18,
-              cursor: 'pointer',
+              cursor: editingShape ? 'crosshair' : 'pointer',
               minHeight: 0,
               background: 'rgba(0,0,0,0.30)',
             }}
-            onClick={() => setLightboxIndex(selectedIndex)}
+            onClick={editingShape ? undefined : () => setLightboxIndex(selectedIndex)}
           >
             <img
               key={selectedIndex}
@@ -409,58 +876,63 @@ export function GalleryPanel({ subdivisionId, onBack, initialHeroUrl, onHeroChan
               </p>
             </div>
 
-            {/* Top-right: counter + hero badge row */}
-            <div style={{
-              position: 'absolute',
-              top: 12,
-              right: 12,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}>
-              {isViewingHero && (
-                <div style={{
-                  background: 'rgba(0,0,0,0.50)',
-                  backdropFilter: 'blur(10px)',
-                  WebkitBackdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(250,204,21,0.45)',
-                  borderRadius: 999,
-                  padding: '3px 9px',
-                  color: '#FBBF24',
-                  fontSize: 11,
-                  fontFamily: 'var(--font-dm-sans), sans-serif',
-                  fontWeight: 600,
-                  letterSpacing: '0.04em',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
-                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-                  </svg>
-                  Hero
-                </div>
-              )}
-              {photos.length > 1 && (
-                <div style={{
-                  background: 'rgba(0,0,0,0.50)',
-                  backdropFilter: 'blur(10px)',
-                  WebkitBackdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255,255,255,0.16)',
-                  borderRadius: 999,
-                  padding: '3px 10px',
-                  color: '#F8FAFC',
-                  fontSize: 11,
-                  fontFamily: 'var(--font-dm-sans), sans-serif',
-                  fontWeight: 500,
-                  letterSpacing: '0.04em',
-                }}>
-                  {selectedIndex + 1} / {photos.length}
-                </div>
-              )}
-            </div>
+            {/* Top-right: counter badge */}
+            {photos.length > 1 && (
+              <div style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                background: 'rgba(0,0,0,0.50)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255,255,255,0.16)',
+                borderRadius: 999,
+                padding: '3px 10px',
+                color: '#F8FAFC',
+                fontSize: 11,
+                fontFamily: 'var(--font-dm-sans), sans-serif',
+                fontWeight: 500,
+                letterSpacing: '0.04em',
+              }}>
+                {selectedIndex + 1} / {photos.length}
+              </div>
+            )}
 
-            {/* Expand icon */}
+            {/* Bottom-right: shape preview buttons — hidden while framing overlay is open */}
+            {!editingShape && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 54,
+                  right: 12,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                {isSubdivisionHero && subdivisionGeometry && (
+                  <ShapePreviewButton
+                    label="Adjust region framing"
+                    imageUrl={heroUrl}
+                    geometry={subdivisionGeometry}
+                    transform={stagedSubTransform}
+                    onClick={() => setEditingShape('subdivision')}
+                  />
+                )}
+                {isCountryHero && countryGeometry && (
+                  <ShapePreviewButton
+                    label="Adjust country framing"
+                    imageUrl={countryHeroUrl}
+                    geometry={countryGeometry}
+                    transform={stagedCountryTransform}
+                    onClick={() => setEditingShape('country')}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Top-left: expand icon */}
             <div style={{
               position: 'absolute',
               top: 12,
@@ -489,6 +961,18 @@ export function GalleryPanel({ subdivisionId, onBack, initialHeroUrl, onHeroChan
               pointerEvents: 'none',
               borderRadius: 18,
             }} />
+
+            {/* Framing overlay — renders in-place over the hero image */}
+            {editingShape && (
+              <HeroFramingOverlay
+                key={editingShape}
+                imageUrl={editingShape === 'subdivision' ? heroUrl : countryHeroUrl}
+                geometry={editingShape === 'subdivision' ? subdivisionGeometry : countryGeometry}
+                initialTransform={editingShape === 'subdivision' ? stagedSubTransform : stagedCountryTransform}
+                onCommit={handleEditorCommit}
+                onCancel={handleEditorCancel}
+              />
+            )}
           </div>
         ) : (
           <div style={{
@@ -504,26 +988,21 @@ export function GalleryPanel({ subdivisionId, onBack, initialHeroUrl, onHeroChan
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
               <circle cx="12" cy="13" r="4" />
             </svg>
-            <span style={{
-              color: 'var(--text-secondary)',
-              fontSize: 14,
-              fontFamily: 'var(--font-dm-sans), sans-serif',
-            }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 14, fontFamily: 'var(--font-dm-sans), sans-serif' }}>
               No memories yet
             </span>
           </div>
         )}
 
-        {/* Thumbnail strip — only shown when multiple photos */}
+        {/* Thumbnail strip — always visible, unaffected by overlay */}
         {photos.length > 1 && (
           <div
             ref={thumbsRef}
             className="gallery-thumbs"
             style={{
-              height: 108,
               flexShrink: 0,
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               gap: 10,
               overflowX: 'auto',
               overflowY: 'hidden',
@@ -533,9 +1012,9 @@ export function GalleryPanel({ subdivisionId, onBack, initialHeroUrl, onHeroChan
           >
             {photos.map((photo, i) => {
               const isSel = i === selectedIndex
-              const isHero = photo.url === heroUrl
+              const isSubHero = photo.url === heroUrl
+              const isCtryHero = photo.url === countryHeroUrl
               return (
-                // Flex-column: image on top, star button below — no overlap, no z-index, no nesting
                 <div
                   key={i}
                   style={{
@@ -548,7 +1027,7 @@ export function GalleryPanel({ subdivisionId, onBack, initialHeroUrl, onHeroChan
                     transition: 'transform 200ms cubic-bezier(0.16,1,0.3,1)',
                   }}
                 >
-                  {/* Thumbnail image — click to select */}
+                  {/* Thumbnail */}
                   <div
                     role="button"
                     tabIndex={0}
@@ -580,38 +1059,67 @@ export function GalleryPanel({ subdivisionId, onBack, initialHeroUrl, onHeroChan
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.11) 0%, transparent 50%)', pointerEvents: 'none' }} />
                   </div>
 
-                  {/* Star button — separate row, zero overlap with thumbnail */}
-                  <button
-                    type="button"
-                    onClick={() => handleSetHero(i, photo.url)}
-                    aria-label={isHero ? 'Hero photo' : 'Set as hero'}
-                    title={isHero ? 'Hero photo' : 'Set as hero'}
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: 999,
-                      background: isHero ? 'rgba(251,191,36,0.88)' : 'rgba(0,0,0,0.46)',
-                      backdropFilter: 'blur(6px)',
-                      WebkitBackdropFilter: 'blur(6px)',
-                      border: isHero ? '1px solid rgba(250,204,21,0.70)' : '1px solid rgba(255,255,255,0.22)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: isHero ? 'default' : 'pointer',
-                      transition: 'background 180ms ease, border-color 180ms ease',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {isHero ? (
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="#fff">
-                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                  {/* Region hero ★ + Country hero 🌐 */}
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button
+                      type="button"
+                      onClick={() => handleSetHero(i, photo.url)}
+                      aria-label={isSubHero ? 'Region hero photo' : 'Set as region hero'}
+                      title={isSubHero ? 'Region hero' : 'Set as region hero'}
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 999,
+                        background: isSubHero ? 'rgba(251,191,36,0.88)' : 'rgba(0,0,0,0.46)',
+                        backdropFilter: 'blur(6px)',
+                        WebkitBackdropFilter: 'blur(6px)',
+                        border: isSubHero ? '1px solid rgba(250,204,21,0.70)' : '1px solid rgba(255,255,255,0.22)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: isSubHero ? 'default' : 'pointer',
+                        transition: 'background 180ms ease, border-color 180ms ease',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {isSubHero ? (
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="#fff">
+                          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                        </svg>
+                      ) : (
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#F8FAFC" strokeWidth="2" strokeLinejoin="round">
+                          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                        </svg>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSetCountryHero(photo.url)}
+                      aria-label={isCtryHero ? 'Country hero photo' : 'Set as country hero'}
+                      title={isCtryHero ? 'Country hero' : 'Set as country hero'}
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 999,
+                        background: isCtryHero ? 'rgba(96,165,250,0.88)' : 'rgba(0,0,0,0.46)',
+                        backdropFilter: 'blur(6px)',
+                        WebkitBackdropFilter: 'blur(6px)',
+                        border: isCtryHero ? '1px solid rgba(147,197,253,0.70)' : '1px solid rgba(255,255,255,0.22)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: isCtryHero ? 'default' : 'pointer',
+                        transition: 'background 180ms ease, border-color 180ms ease',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={isCtryHero ? '#fff' : '#F8FAFC'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                       </svg>
-                    ) : (
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#F8FAFC" strokeWidth="2" strokeLinejoin="round">
-                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-                      </svg>
-                    )}
-                  </button>
+                    </button>
+                  </div>
                 </div>
               )
             })}
