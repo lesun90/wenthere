@@ -43,8 +43,6 @@ const GLASS_BTN: React.CSSProperties = {
   justifyContent: 'center',
 }
 
-// ─── Lightbox ────────────────────────────────────────────────────────────────
-
 function Lightbox({
   photos,
   startIndex,
@@ -203,8 +201,6 @@ function Lightbox({
   )
 }
 
-// ─── ShapePreviewButton ───────────────────────────────────────────────────────
-
 function ShapePreviewButton({
   label,
   imageUrl,
@@ -301,10 +297,6 @@ function ShapePreviewButton({
   )
 }
 
-// ─── HeroFramingOverlay ───────────────────────────────────────────────────────
-// Image is static; the shape border frame moves and scales over it.
-// Controls invert to HeroTransform: shapeX = -transform.x·W, shapeScale = 1/transform.scale
-
 function HeroFramingOverlay({
   imageUrl,
   geometry,
@@ -322,7 +314,6 @@ function HeroFramingOverlay({
   const maskGroupRef = useRef<SVGGElement>(null)
   const borderGroupRef = useRef<SVGGElement>(null)
   const liveRef = useRef<HeroTransform>({ ...initialTransform })
-  // Shape position in pixel space (relative to container)
   const shapeStateRef = useRef({ shapeX: 0, shapeY: 0, shapeScale: 1 })
   const dragRef = useRef<{
     startX: number; startY: number
@@ -330,7 +321,7 @@ function HeroFramingOverlay({
     isDrag: boolean
   } | null>(null)
   const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null)
-  // Tracks whether a two-finger gesture was in progress to avoid tap-dismiss on finger lift
+  // Avoid tap-dismiss after a two-finger gesture ends.
   const wasMultitouchRef = useRef(false)
 
   const [visible, setVisible] = useState(false)
@@ -342,12 +333,11 @@ function HeroFramingOverlay({
     return () => cancelAnimationFrame(frame)
   }, [])
 
-  // Pass 1: measure container → compute and store shape path
   useLayoutEffect(() => {
     if (!geometry || !containerRef.current) return
     const { clientWidth: cw, clientHeight: ch } = containerRef.current
     if (cw === 0 || ch === 0) return
-    // Pre-compute initial shape pixel state from stored transform (inverted)
+    // Stored image offsets are inverted because this editor moves the frame.
     shapeStateRef.current = {
       shapeX: -initialTransform.x * cw,
       shapeY: -initialTransform.y * ch,
@@ -356,7 +346,6 @@ function HeroFramingOverlay({
     setShapePath(geoJsonToSvgPath(geometry, cw, ch, 24))
   }, [geometry])
 
-  // Pass 2: once SVG is in the DOM, apply the initial shape transform to both groups
   useLayoutEffect(() => {
     if (!shapePath || !containerRef.current) return
     const { clientWidth: cw, clientHeight: ch } = containerRef.current
@@ -370,7 +359,7 @@ function HeroFramingOverlay({
     return `translate(${cx + sx},${cy + sy}) scale(${ss}) translate(${-cx},${-cy})`
   }
 
-  // Called every frame during drag/pinch — updates DOM refs directly, zero React renders
+  // Update DOM refs directly during drag/pinch to avoid React renders.
   function applyShapeTransform(shapeX: number, shapeY: number, shapeScale: number) {
     if (!containerRef.current) return
     const { clientWidth: cw, clientHeight: ch } = containerRef.current
@@ -378,7 +367,6 @@ function HeroFramingOverlay({
     maskGroupRef.current?.setAttribute('transform', t)
     borderGroupRef.current?.setAttribute('transform', t)
     shapeStateRef.current = { shapeX, shapeY, shapeScale }
-    // Convert back to HeroTransform (image-offset semantics)
     liveRef.current = { x: -shapeX / cw, y: -shapeY / ch, scale: 1 / shapeScale }
   }
 
@@ -390,7 +378,6 @@ function HeroFramingOverlay({
     }, 100)
   }
 
-  // ── Pointer (mouse) ──
   function handlePointerDown(e: React.PointerEvent) {
     if (e.pointerType === 'touch') return
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -428,12 +415,10 @@ function HeroFramingOverlay({
   function handleWheel(e: React.WheelEvent) {
     e.preventDefault()
     const { shapeX, shapeY, shapeScale } = shapeStateRef.current
-    // Scroll up = grow frame (more image visible); scroll down = shrink frame
     const newScale = Math.max(MIN_SHAPE_SCALE, Math.min(MAX_SHAPE_SCALE, shapeScale * (1 - e.deltaY * 0.001)))
     applyShapeTransform(shapeX, shapeY, newScale)
   }
 
-  // ── Touch ──
   function handleTouchStart(e: React.TouchEvent) {
     if (e.touches.length === 1) {
       if (!dragRef.current) wasMultitouchRef.current = false
@@ -485,7 +470,6 @@ function HeroFramingOverlay({
       wasMultitouchRef.current = false
       if (!wasDrag && !wasMultitouch) dismiss(true)
     } else if (e.touches.length === 1 && pinchRef.current) {
-      // One finger lifted during pinch — transition to single-finger drag without dismissing
       pinchRef.current = null
       dragRef.current = {
         startX: e.touches[0].clientX,
@@ -523,7 +507,6 @@ function HeroFramingOverlay({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Static background image */}
       <img
         src={imageUrl}
         alt=""
@@ -539,7 +522,6 @@ function HeroFramingOverlay({
         }}
       />
 
-      {/* Shape mask + border — <g> refs updated via DOM during drag, zero React renders */}
       {shapePath && (
         <svg
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}
@@ -567,7 +549,6 @@ function HeroFramingOverlay({
         </svg>
       )}
 
-      {/* Top bar — Cancel button stops pointer propagation so overlay tap-dismiss is not triggered */}
       <div style={{
         position: 'absolute',
         top: 0, left: 0, right: 0,
@@ -608,7 +589,6 @@ function HeroFramingOverlay({
         <div style={{ width: 60 }} />
       </div>
 
-      {/* Bottom hint */}
       <div style={{
         position: 'absolute',
         bottom: 0, left: 0, right: 0,
@@ -627,8 +607,6 @@ function HeroFramingOverlay({
   )
 }
 
-// ─── GalleryPanel ─────────────────────────────────────────────────────────────
-
 export function GalleryPanel({
   subdivisionId,
   countryCode,
@@ -643,7 +621,6 @@ export function GalleryPanel({
   onCountryTransformChange,
   clickOrigin,
 }: Props) {
-  // Geometry is derived from stable identifiers, not from interaction events
   const subdivisionGeometry = getSubdivisionGeometry(subdivisionId)
   const countryGeometry = getCountryGeometry(countryCode)
 
@@ -759,12 +736,10 @@ export function GalleryPanel({
           transition: visible ? enterTr : exitTr,
         }}
       >
-        {/* Drag handle */}
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, paddingBottom: 2, flexShrink: 0 }}>
           <div className="gallery-drag-handle" style={{ width: 36, height: 4, borderRadius: 2 }} />
         </div>
 
-        {/* Header */}
         <div
           className="gallery-panel-header"
           style={{ display: 'flex', alignItems: 'center', padding: '8px 16px 10px', flexShrink: 0, gap: 8 }}
@@ -831,7 +806,6 @@ export function GalleryPanel({
           </div>
         </div>
 
-        {/* Hero image */}
         {heroPhoto ? (
           <div
             style={{
@@ -854,7 +828,6 @@ export function GalleryPanel({
               style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
             />
 
-            {/* Bottom gradient + caption */}
             <div style={{
               position: 'absolute',
               bottom: 0,
@@ -876,7 +849,6 @@ export function GalleryPanel({
               </p>
             </div>
 
-            {/* Top-right: counter badge */}
             {photos.length > 1 && (
               <div style={{
                 position: 'absolute',
@@ -898,7 +870,6 @@ export function GalleryPanel({
               </div>
             )}
 
-            {/* Bottom-right: shape preview buttons — hidden while framing overlay is open */}
             {!editingShape && (
               <div
                 style={{
@@ -932,7 +903,6 @@ export function GalleryPanel({
               </div>
             )}
 
-            {/* Top-left: expand icon */}
             <div style={{
               position: 'absolute',
               top: 12,
@@ -953,7 +923,6 @@ export function GalleryPanel({
               </svg>
             </div>
 
-            {/* Top shimmer */}
             <div style={{
               position: 'absolute',
               inset: 0,
@@ -962,7 +931,6 @@ export function GalleryPanel({
               borderRadius: 18,
             }} />
 
-            {/* Framing overlay — renders in-place over the hero image */}
             {editingShape && (
               <HeroFramingOverlay
                 key={editingShape}
@@ -994,7 +962,6 @@ export function GalleryPanel({
           </div>
         )}
 
-        {/* Thumbnail strip — always visible, unaffected by overlay */}
         {photos.length > 1 && (
           <div
             ref={thumbsRef}
@@ -1027,7 +994,6 @@ export function GalleryPanel({
                     transition: 'transform 200ms cubic-bezier(0.16,1,0.3,1)',
                   }}
                 >
-                  {/* Thumbnail */}
                   <div
                     role="button"
                     tabIndex={0}
@@ -1059,7 +1025,6 @@ export function GalleryPanel({
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.11) 0%, transparent 50%)', pointerEvents: 'none' }} />
                   </div>
 
-                  {/* Region hero ★ + Country hero 🌐 */}
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button
                       type="button"

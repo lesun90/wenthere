@@ -1,9 +1,9 @@
-import type { Geometry } from 'geojson'  // still needed for HoverInfo
+import type { Geometry } from 'geojson'
 
 export interface HeroTransform {
-  x: number     // horizontal offset as fraction of display width (0 = centered)
-  y: number     // vertical offset as fraction of display height (0 = centered)
-  scale: number // zoom multiplier (1.0 = default fill)
+  x: number
+  y: number
+  scale: number
 }
 
 export interface HoverInfo {

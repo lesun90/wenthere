@@ -43,13 +43,10 @@ export function SubdivisionFeature({
   const sharedTexture = textureState.status === 'ready' ? textureState.texture : null
   const textureFailed = textureState.status === 'failed'
 
-  // Manage texture clone lifecycle and UV transforms.
-  // Clone is created lazily when a non-identity transform is needed, and shares
-  // the same GPU WebGLTexture as the source (only UV uniforms differ).
+  // Clones share the source GPU texture while keeping independent UV transforms.
   useEffect(() => {
     if (!sharedTexture) return
 
-    // Dispose stale clone when the base texture changes (URL change)
     if (sharedTexture !== prevSharedTextureRef.current) {
       cloneRef.current?.dispose()
       cloneRef.current = null
@@ -69,12 +66,11 @@ export function SubdivisionFeature({
     const t = cloneRef.current
     const s = heroTransform.scale
     t.repeat.set(1 / s, 1 / s)
-    // UV offset formula derived from: u_center = 0.5*repeat + offset → solve for offset
+    // Solve for offset from u_center = 0.5 * repeat + offset.
     t.offset.x = 0.5 - (0.5 + heroTransform.x) / s
     t.offset.y = 0.5 - (0.5 - heroTransform.y) / s
   }, [sharedTexture, heroTransform])
 
-  // Dispose clone on unmount
   useEffect(() => {
     return () => { cloneRef.current?.dispose() }
   }, [])

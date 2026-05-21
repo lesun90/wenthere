@@ -39,7 +39,7 @@ const GLOBE_PALETTES: Record<'dark' | 'light', GlobePalette> = {
   },
   light: {
     background: '#FFFFFF',
-    earth: '#EDECEA',        // barely-there warm off-white, just enough to define the sphere
+    earth: '#EDECEA',
     atmosphereColor: '#94A3B8',
     atmosphereOpacity: 0.12,
     countryFill: '#B8B0A4',
@@ -197,7 +197,6 @@ export function GlobeScene() {
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
   const [clickOrigin, setClickOrigin] = useState<{ x: number; y: number } | null>(null)
 
-  // Hero override state — all flushed from GalleryPanel on gallery close
   const [subdivisionHeroOverrides, setSubdivisionHeroOverrides] = useState<Record<string, string>>({})
   const [countryHeroOverrides, setCountryHeroOverrides] = useState<Record<string, string>>({})
   const [subdivisionHeroTransforms, setSubdivisionHeroTransforms] = useState<Record<string, HeroTransform>>({})
@@ -279,7 +278,6 @@ export function GlobeScene() {
     }
   }
 
-  // All four callbacks are fired by GalleryPanel on gallery close
   function handleSubdivisionHeroChange(subdivisionId: string, heroUrl: string) {
     setSubdivisionHeroOverrides(prev => ({ ...prev, [subdivisionId]: heroUrl }))
   }

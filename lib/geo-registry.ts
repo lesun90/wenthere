@@ -1,10 +1,7 @@
 import type { Geometry } from 'geojson'
 
-// Module-level registry keyed by stable identifiers.
-// Populated by CountryLayer and SubdivisionLayer as GeoJSON is processed;
-// queried by GalleryPanel using the IDs already present in photo metadata.
 const subdivisionGeoms = new Map<string, Geometry | null>()
-const countryGeoms = new Map<string, Geometry | null>() // keyed by alpha-3
+const countryGeoms = new Map<string, Geometry | null>()
 
 export function registerSubdivisionGeometry(code: string, geometry: Geometry | null) {
   subdivisionGeoms.set(code, geometry)
