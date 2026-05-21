@@ -335,6 +335,17 @@ function HeroFramingOverlay({
     return () => cancelAnimationFrame(frame)
   }, [])
 
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    el.addEventListener('wheel', handleWheel, { passive: false })
+    el.addEventListener('touchmove', handleTouchMove, { passive: false })
+    return () => {
+      el.removeEventListener('wheel', handleWheel)
+      el.removeEventListener('touchmove', handleTouchMove)
+    }
+  }, [])
+
   useLayoutEffect(() => {
     if (!geometry || !containerRef.current) return
     const { clientWidth: cw, clientHeight: ch } = containerRef.current
@@ -414,7 +425,7 @@ function HeroFramingOverlay({
     if (!wasDrag) dismiss(true)
   }
 
-  function handleWheel(e: React.WheelEvent) {
+  function handleWheel(e: WheelEvent) {
     e.preventDefault()
     const { shapeX, shapeY, shapeScale } = shapeStateRef.current
     const newScale = Math.max(MIN_SHAPE_SCALE, Math.min(MAX_SHAPE_SCALE, shapeScale * (1 - e.deltaY * 0.001)))
@@ -443,7 +454,7 @@ function HeroFramingOverlay({
     }
   }
 
-  function handleTouchMove(e: React.TouchEvent) {
+  function handleTouchMove(e: TouchEvent) {
     e.preventDefault()
     const { shapeX, shapeY, shapeScale } = shapeStateRef.current
     if (e.touches.length === 1 && dragRef.current) {
@@ -504,9 +515,7 @@ function HeroFramingOverlay({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      onWheel={handleWheel}
       onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       <img
