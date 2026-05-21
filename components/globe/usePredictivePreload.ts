@@ -5,25 +5,44 @@ import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { hasCachedEntry, setCachedFeature, getCachedFeature } from '../../lib/subdivision-feature-cache'
 import { preloadSharedTexture } from './useSharedTexture'
 
+const subdivisionFetches = new Map<string, Promise<Feature | null>>()
+
+function fetchSubdivisionFeature(subdivisionCode: string): Promise<Feature | null> {
+  const cached = getCachedFeature(subdivisionCode)
+  if (cached) return Promise.resolve(cached)
+  if (hasCachedEntry(subdivisionCode)) return Promise.resolve(null)
+
+  const inFlight = subdivisionFetches.get(subdivisionCode)
+  if (inFlight) return inFlight
+
+  const request = fetch(`/geo/subdivisions/${subdivisionCode}.geojson`)
+    .then(r => r.json() as Promise<Feature>)
+    .then(feature => {
+      setCachedFeature(subdivisionCode, feature)
+      return feature
+    })
+    .catch(() => {
+      setCachedFeature(subdivisionCode, null)
+      return null
+    })
+    .finally(() => {
+      subdivisionFetches.delete(subdivisionCode)
+    })
+
+  subdivisionFetches.set(subdivisionCode, request)
+  return request
+}
+
 export function preloadSubdivisionFile(subdivisionCode: string): void {
   if (hasCachedEntry(subdivisionCode)) return
-  fetch(`/geo/subdivisions/${subdivisionCode}.geojson`)
-    .then(r => r.json())
-    .then((feature: Feature) => setCachedFeature(subdivisionCode, feature))
-    .catch(() => setCachedFeature(subdivisionCode, null))
+  if (subdivisionFetches.has(subdivisionCode)) return
+
+  void fetchSubdivisionFeature(subdivisionCode)
 }
 
 async function preloadSubdivisionGeometry(subdivisionCodes: string[]) {
   const results = await Promise.all(
-    subdivisionCodes.map(code => {
-      const cached = getCachedFeature(code)
-      if (cached) return cached
-      if (hasCachedEntry(code)) return null  // known 404
-      return fetch(`/geo/subdivisions/${code}.geojson`)
-        .then(r => r.json() as Promise<Feature>)
-        .then(f => { setCachedFeature(code, f); return f })
-        .catch(() => { setCachedFeature(code, null); return null })
-    })
+    subdivisionCodes.map(code => fetchSubdivisionFeature(code))
   )
   prepareSubdivisionRecords(results.filter((f): f is Feature => f !== null))
 }
@@ -42,7 +61,6 @@ export function usePredictivePreload({
     const country = profile.countries.find(c => c.countryCode === hoveredCountryCode)
     if (!country) return
     preloadSharedTexture(country.heroPic)
-    for (const sub of country.subdivisions) preloadSubdivisionFile(sub.subdivisionCode)
   }, [hoveredCountryCode, profile])
 
   useEffect(() => {
