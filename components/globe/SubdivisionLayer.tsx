@@ -65,9 +65,12 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
       fetch(`/geo/subdivisions/${code}.geojson`)
         .then(r => r.json() as Promise<Feature>)
         .then(f => {
+          const firstToCache = !hasCachedEntry(code)
           setCachedFeature(code, f)
-          pendingRef.current.push(f)
-          scheduleFlush()
+          if (firstToCache) {
+            pendingRef.current.push(f)
+            scheduleFlush()
+          }
         })
         .catch(() => setCachedFeature(code, null))
     }
