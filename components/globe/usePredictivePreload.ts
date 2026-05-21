@@ -3,14 +3,14 @@ import type { Feature } from 'geojson'
 import { travelerProfile, type TravelerProfile } from '../../data/seed'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { preloadSharedTexture } from './useSharedTexture'
-import { hasCachedFeature, setCachedFeature, getCachedFeature } from '../../lib/subdivision-feature-cache'
+import { hasCachedEntry, setCachedFeature, getCachedFeature } from '../../lib/subdivision-feature-cache'
 
 export function preloadSubdivisionFile(subdivisionCode: string): void {
-  if (hasCachedFeature(subdivisionCode)) return
+  if (hasCachedEntry(subdivisionCode)) return
   fetch(`/geo/subdivisions/${subdivisionCode}.geojson`)
     .then(r => r.json())
     .then((feature: Feature) => setCachedFeature(subdivisionCode, feature))
-    .catch(() => {})
+    .catch(() => setCachedFeature(subdivisionCode, null))
 }
 
 async function preloadSubdivisionGeometry(subdivisionCodes: string[]) {
@@ -18,10 +18,11 @@ async function preloadSubdivisionGeometry(subdivisionCodes: string[]) {
     subdivisionCodes.map(code => {
       const cached = getCachedFeature(code)
       if (cached) return cached
+      if (hasCachedEntry(code)) return null  // known 404
       return fetch(`/geo/subdivisions/${code}.geojson`)
         .then(r => r.json() as Promise<Feature>)
         .then(f => { setCachedFeature(code, f); return f })
-        .catch(() => null)
+        .catch(() => { setCachedFeature(code, null); return null })
     })
   )
   prepareSubdivisionRecords(results.filter((f): f is Feature => f !== null))

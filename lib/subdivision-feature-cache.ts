@@ -1,15 +1,16 @@
 import type { Feature } from 'geojson'
 
-const featureCache = new Map<string, Feature>()
+// null = fetch was attempted but returned no usable feature (e.g. 404)
+const featureCache = new Map<string, Feature | null>()
 
-export function getCachedFeature(code: string): Feature | undefined {
+export function getCachedFeature(code: string): Feature | null | undefined {
   return featureCache.get(code)
 }
 
-export function setCachedFeature(code: string, feature: Feature): void {
+export function setCachedFeature(code: string, feature: Feature | null): void {
   featureCache.set(code, feature)
 }
 
-export function hasCachedFeature(code: string): boolean {
+export function hasCachedEntry(code: string): boolean {
   return featureCache.has(code)
 }

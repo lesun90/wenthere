@@ -10,7 +10,7 @@ import { getVisitedSubdivisions, getSubdivisionMemoryByCode } from '../../lib/ge
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { registerSubdivisionGeometry } from '../../lib/geo-registry'
 import { latLngToVec3 } from '../../lib/geo'
-import { getCachedFeature, setCachedFeature, hasCachedFeature } from '../../lib/subdivision-feature-cache'
+import { getCachedFeature, setCachedFeature, hasCachedEntry } from '../../lib/subdivision-feature-cache'
 
 interface Props {
   opacity: number
@@ -39,9 +39,13 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
     const cached: Feature[] = []
     const missing: string[] = []
     for (const code of subdivisionCodes) {
-      const f = getCachedFeature(code)
-      if (f) cached.push(f)
-      else missing.push(code)
+      if (hasCachedEntry(code)) {
+        const f = getCachedFeature(code)
+        if (f) cached.push(f)
+        // null entry = known 404, skip silently
+      } else {
+        missing.push(code)
+      }
     }
 
     if (missing.length === 0) {
@@ -54,7 +58,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
         fetch(`/geo/subdivisions/${code}.geojson`)
           .then(r => r.json() as Promise<Feature>)
           .then(f => { setCachedFeature(code, f); return f })
-          .catch(() => null),
+          .catch(() => { setCachedFeature(code, null); return null }),
       ),
     ).then(results => {
       const fetched = results.filter((f): f is Feature => f !== null)
