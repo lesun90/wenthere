@@ -37,6 +37,16 @@ export interface TravelPhoto {
     country?: boolean
     subdivision?: boolean
   }
+  framing?: {
+    country?: PhotoFrameTransform
+    subdivision?: PhotoFrameTransform
+  }
+}
+
+export interface PhotoFrameTransform {
+  x: number
+  y: number
+  scale: number
 }
 
 export interface PhotoLocation {
@@ -52,6 +62,8 @@ export interface PhotoLocation {
 A country is visited when at least one photo has `location.countryCode`. A subdivision is visited when at least one photo has `location.subdivisionCode`. Region visits therefore imply country visits, and countries cannot become photo-backed independently of photos.
 
 `renderable: false` is allowed for stress-only or missing-geometry locations. Those photos still count as memories, but their subdivision codes are excluded from geometry fetch/render lists.
+
+`heroFor` selects which photo should be used as the hero for a country or subdivision. `framing` stores how that hero photo should be positioned inside the country or subdivision shape. The same photo may be a hero for both a country and a subdivision, so country framing and subdivision framing are separate.
 
 ## Derived Profile Index
 
@@ -85,6 +97,7 @@ export interface CountrySummary {
   countryNumericId: string
   name: string
   heroPic: string
+  heroTransform?: PhotoFrameTransform
   photos: TravelPhoto[]
   subdivisionCodes: string[]
   photoCount: number
@@ -95,6 +108,7 @@ export interface SubdivisionSummary {
   countryCode: string
   name: string
   heroPic: string
+  heroTransform?: PhotoFrameTransform
   photos: TravelPhoto[]
   renderable: boolean
 }
@@ -106,7 +120,7 @@ Hero selection is deterministic:
 2. Otherwise use the first valid photo for that place in profile order.
 3. If no photos remain, the place is not visited and has no hero.
 
-Runtime hero and framing overrides can remain in `GlobeScene` for this refactor, but the data model should be compatible with moving those fields into persistent profile data later.
+Runtime editing state can remain in `GlobeScene` for this refactor, but the saved hero selection and saved framing belong to `TravelPhoto.heroFor` and `TravelPhoto.framing`. When a selected hero photo has no stored framing for the requested shape, the UI should use the existing default transform of `{ x: 0, y: 0, scale: 1 }`.
 
 ## Component Data Flow
 
