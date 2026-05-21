@@ -25,6 +25,7 @@ export interface TravelerProfile {
   id: string
   name: string
   photos: TravelPhoto[]
+  presentation?: ProfilePresentation
 }
 
 export interface TravelPhoto {
@@ -33,14 +34,16 @@ export interface TravelPhoto {
   caption: string
   takenAt?: string
   location: PhotoLocation
-  heroFor?: {
-    country?: boolean
-    subdivision?: boolean
-  }
-  framing?: {
-    country?: PhotoFrameTransform
-    subdivision?: PhotoFrameTransform
-  }
+}
+
+export interface ProfilePresentation {
+  countryHeroes?: Record<string, PlaceHero>
+  subdivisionHeroes?: Record<string, PlaceHero>
+}
+
+export interface PlaceHero {
+  photoId: string
+  framing?: PhotoFrameTransform
 }
 
 export interface PhotoFrameTransform {
@@ -63,7 +66,7 @@ A country is visited when at least one photo has `location.countryCode`. A subdi
 
 `renderable: false` is allowed for stress-only or missing-geometry locations. Those photos still count as memories, but their subdivision codes are excluded from geometry fetch/render lists.
 
-`heroFor` selects which photo should be used as the hero for a country or subdivision. `framing` stores how that hero photo should be positioned inside the country or subdivision shape. The same photo may be a hero for both a country and a subdivision, so country framing and subdivision framing are separate.
+`presentation.countryHeroes` selects one hero photo per country code. `presentation.subdivisionHeroes` selects one hero photo per subdivision code. Because these are keyed maps, the profile cannot mark two photos as the saved hero for the same country or subdivision. `PlaceHero.framing` stores how that hero photo should be positioned inside the country or subdivision shape. The same photo may still be used as the hero for both a country and a subdivision by referencing the same `photoId` from both maps, with separate framing values.
 
 ## Derived Profile Index
 
@@ -116,11 +119,11 @@ export interface SubdivisionSummary {
 
 Hero selection is deterministic:
 
-1. Prefer a photo marked `heroFor.country` or `heroFor.subdivision` for the requested place.
+1. Prefer `profile.presentation.countryHeroes[countryCode].photoId` or `profile.presentation.subdivisionHeroes[subdivisionCode].photoId` when it references a valid photo for the requested place.
 2. Otherwise use the first valid photo for that place in profile order.
 3. If no photos remain, the place is not visited and has no hero.
 
-Runtime editing state can remain in `GlobeScene` for this refactor, but the saved hero selection and saved framing belong to `TravelPhoto.heroFor` and `TravelPhoto.framing`. When a selected hero photo has no stored framing for the requested shape, the UI should use the existing default transform of `{ x: 0, y: 0, scale: 1 }`.
+Runtime editing state can remain in `GlobeScene` for this refactor, but saved hero selection and saved framing belong to `TravelerProfile.presentation`. When a selected hero has no stored framing for the requested shape, the UI should use the existing default transform of `{ x: 0, y: 0, scale: 1 }`.
 
 ## Component Data Flow
 
@@ -150,11 +153,11 @@ updatePhoto(profile, photoId, patch) => nextProfile
 
 This refactor does not need to build the UI for these operations, but the model must support them cleanly.
 
-Adding a photo appends one `TravelPhoto`. The next profile index automatically derives country summary, subdivision summary, heroes, stats, preload targets, and gallery contents.
+Adding a photo appends one `TravelPhoto`. The next profile index automatically derives country summary, subdivision summary, hero fallbacks, stats, preload targets, and gallery contents. If the add-photo flow wants to make the new photo the saved hero, it updates the relevant `presentation.countryHeroes[countryCode]` or `presentation.subdivisionHeroes[subdivisionCode]` entry to that photo ID.
 
-Removing a photo removes one `TravelPhoto`. If it was the only photo for a subdivision, that subdivision disappears from the visited subdivision index. If it was the only photo for a country, that country disappears from the visited country index. If it was a hero, the deterministic fallback selects the next valid photo.
+Removing a photo removes one `TravelPhoto`. If it was the only photo for a subdivision, that subdivision disappears from the visited subdivision index. If it was the only photo for a country, that country disappears from the visited country index. If `presentation` still references the removed photo, validation reports the stale reference and the index uses the deterministic fallback. A save operation should clean stale hero references before persisting.
 
-Updating a photo changes one record. Moving a photo from one location to another automatically updates both affected places when the index rebuilds.
+Updating a photo changes one record. Moving a photo from one location to another automatically updates both affected places when the index rebuilds. If `presentation` references a photo that no longer belongs to the requested country or subdivision after a location change, validation reports the invalid reference and the index uses the deterministic fallback for that place.
 
 ## No Repeat Computation
 
@@ -184,7 +187,7 @@ Both demo and stress users must be reauthored in the new photo-centric format.
 
 `data/seed.ts` should export the demo traveler as `TravelerProfile` with one `photos` array. Existing demo photos, captions, country metadata, and subdivision metadata should be preserved.
 
-`data/stressProfile.ts` should generate a photo-centric stress traveler. It should still target 100 countries and 500 region memories, use deterministic Picsum URLs, prefer real renderable subdivisions first, and mark synthetic or missing-geometry subdivisions as non-renderable. `stressProfileStats` should be derived from `buildProfileIndex`, not from old nested arrays.
+`data/stressProfile.ts` complete remove old stresstest profile, and re-generate a new stresstest photo-centric stress traveler. It should still target 100 countries and 500 region memories, use deterministic Picsum URLs, use real renderable subdivisions.
 
 `/demo` and `/stresstest` must exercise the same new profile model and the same profile index path.
 
@@ -215,7 +218,9 @@ Invalid or partial profile data should not crash the globe.
 - Photo with country but no subdivision: country appears visited; no subdivision appears.
 - Photo with subdivision but missing subdivision file: country appears; subdivision is treated as non-renderable once the fetch miss is cached.
 - Duplicate photo IDs: reported by validation in development.
-- Missing hero flag: fallback to first valid photo.
+- Missing presentation hero: fallback to first valid photo.
+- Presentation hero references a missing photo ID: reported by validation; fallback to first valid photo.
+- Presentation hero references a photo outside the requested country or subdivision: reported by validation; fallback to first valid photo.
 - Empty profile: renders the globe with zero counts and no visited textures.
 
 Add a lightweight validation helper if it keeps the index builder clear, but do not add a heavy schema library for this refactor.
@@ -228,7 +233,7 @@ Model-layer tests or sanity checks should cover:
 - Region visits imply country visits.
 - Countries cannot appear as photo-backed without photos.
 - Add/remove/update semantics produce the expected derived summaries.
-- Hero fallback works when the marked hero is removed.
+- Hero fallback works when the saved presentation hero is removed, missing, or moved out of the place.
 - Non-renderable subdivisions count as memories but are excluded from renderable subdivision codes.
 - Demo profile produces expected country/place/photo counts.
 - Stress profile produces expected country/place/photo counts through `buildProfileIndex`.
@@ -243,7 +248,7 @@ If a focused count-check script or test is added, run that before the build.
 
 ## Acceptance Criteria
 
-- Current UI/UX is preserved for `/demo`.
+- Current UI/UX is preserved.
 - `/stresstest` still renders 100 countries and 500 region memories through the new model.
 - Components consume `TravelerProfile` plus `ProfileIndex`, not the old nested data shape.
 - Profile-derived lookups and stats come from one memoized index build.
