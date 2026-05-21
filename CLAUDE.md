@@ -61,6 +61,7 @@ Navigation is zoom-driven: `ZoomDetailController` watches camera distance each f
 - **`lib/geomath.ts`** — `featureCentroid` and `geoJsonToSvgPath` for the hover card minimap.
 - **`lib/geo-registry.ts`** — module-level Maps holding `Geometry | null` keyed by alpha-3 country code or subdivision `adm1_code`. Used so geometry is accessible outside React component trees (e.g., the hover card SVG minimap).
 - **`lib/geodata.ts`** — helpers that index `TravelerProfile` data by numeric country ID or subdivision code, for O(1) lookups during render.
+- **`lib/subdivision-feature-cache.ts`** — module-level `Map<code, Feature | null>` caching parsed GeoJSON features by `adm1_code`. `null` entries mark known-404 codes so they are never re-fetched. Consumed by `SubdivisionLayer` (cache-first loading) and `usePredictivePreload` (stores parsed features on preload).
 
 ### Texture sharing (`components/globe/useSharedTexture.ts`)
 

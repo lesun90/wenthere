@@ -2,8 +2,8 @@ import { useEffect } from 'react'
 import type { Feature } from 'geojson'
 import { travelerProfile, type TravelerProfile } from '../../data/seed'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
-import { preloadSharedTexture } from './useSharedTexture'
 import { hasCachedEntry, setCachedFeature, getCachedFeature } from '../../lib/subdivision-feature-cache'
+import { preloadSharedTexture } from './useSharedTexture'
 
 export function preloadSubdivisionFile(subdivisionCode: string): void {
   if (hasCachedEntry(subdivisionCode)) return
