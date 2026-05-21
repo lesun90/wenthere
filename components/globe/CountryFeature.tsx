@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { FALLBACK_COLOR, useSharedTexture } from './useSharedTexture'
+import { isFrontHemisphereHit } from './pointerHit'
 import type { GlobePalette } from './types'
 
 interface Props {
@@ -65,12 +66,14 @@ export function CountryFeature({
 
   function handleHover(e: ThreeEvent<PointerEvent>) {
     if (!interactive) return
+    if (!isFrontHemisphereHit(e.point, e.ray.origin)) return
     e.stopPropagation()
     onHover()
   }
 
   function handleClick(e: ThreeEvent<MouseEvent>) {
     if (!interactive) return
+    if (!isFrontHemisphereHit(e.point, e.ray.origin)) return
     e.stopPropagation()
     onClick()
   }

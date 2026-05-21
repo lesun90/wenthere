@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
+import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { FALLBACK_COLOR, useSharedTexture } from './useSharedTexture'
+import { isFrontHemisphereHit } from './pointerHit'
 import type { GlobePalette, HeroTransform } from './types'
 
 interface Props {
@@ -113,14 +115,26 @@ export function SubdivisionFeature({
     }
   })
 
+  function handleHover(e: ThreeEvent<PointerEvent>) {
+    if (!isFrontHemisphereHit(e.point, e.ray.origin)) return
+    e.stopPropagation()
+    onHover()
+  }
+
+  function handleClick(e: ThreeEvent<MouseEvent>) {
+    if (!isFrontHemisphereHit(e.point, e.ray.origin)) return
+    e.stopPropagation()
+    onClick()
+  }
+
   return (
     <group>
       <mesh
         geometry={fillGeometry}
         renderOrder={3}
-        onPointerOver={(e) => { e.stopPropagation(); onHover() }}
+        onPointerOver={handleHover}
         onPointerOut={onUnhover}
-        onClick={(e) => { e.stopPropagation(); onClick() }}
+        onClick={handleClick}
       >
         <meshLambertMaterial
           ref={materialRef}
