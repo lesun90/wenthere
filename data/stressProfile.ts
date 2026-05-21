@@ -1,5 +1,5 @@
 import countriesTopology from '../public/geo/countries-10m.json'
-import subdivisionsFeatureCollection from '../public/geo/states-provinces-50m.json'
+import subdivisionsFeatureCollection from '../public/geo/states-provinces-stress.json'
 import type { CountryMemory, Photo, SubdivisionMemory, TravelerProfile } from './seed'
 
 type CountryGeometry = {
@@ -147,22 +147,6 @@ for (const [regionIndex, region] of realRegions.entries()) {
   if (country.subdivisions.length === 1) country.heroPic = memory.heroPic
 }
 
-let syntheticRegionIndex = realRegions.length
-while (syntheticRegionIndex < REGION_COUNT) {
-  const country = stressCountries[syntheticRegionIndex % stressCountries.length]
-  const regionNumber = syntheticRegionIndex + 1
-  const syntheticName = `Stress Region ${regionNumber}`
-  const memory = makeSubdivisionMemory(
-    `STRESS-${regionNumber}`,
-    syntheticName,
-    country.name,
-    syntheticRegionIndex,
-  )
-
-  country.subdivisions.push(memory)
-  if (country.subdivisions.length === 1) country.heroPic = memory.heroPic
-  syntheticRegionIndex += 1
-}
 
 export const stressTravelerProfile: TravelerProfile = {
   name: 'Stress Test Traveler',
