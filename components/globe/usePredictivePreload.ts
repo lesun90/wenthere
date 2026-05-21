@@ -1,25 +1,30 @@
 import { useEffect } from 'react'
+import type { Feature } from 'geojson'
 import { travelerProfile, type TravelerProfile } from '../../data/seed'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { preloadSharedTexture } from './useSharedTexture'
-
-const preloadedSubdivisionFiles = new Set<string>()
+import { hasCachedFeature, setCachedFeature, getCachedFeature } from '../../lib/subdivision-feature-cache'
 
 export function preloadSubdivisionFile(subdivisionCode: string): void {
-  if (preloadedSubdivisionFiles.has(subdivisionCode)) return
-  preloadedSubdivisionFiles.add(subdivisionCode)
-  fetch(`/geo/subdivisions/${subdivisionCode}.geojson`).catch(() => {})
+  if (hasCachedFeature(subdivisionCode)) return
+  fetch(`/geo/subdivisions/${subdivisionCode}.geojson`)
+    .then(r => r.json())
+    .then((feature: Feature) => setCachedFeature(subdivisionCode, feature))
+    .catch(() => {})
 }
 
 async function preloadSubdivisionGeometry(subdivisionCodes: string[]) {
   const results = await Promise.all(
-    subdivisionCodes.map(code =>
-      preloadedSubdivisionFiles.has(code)
-        ? fetch(`/geo/subdivisions/${code}.geojson`).then(r => r.json())
-        : (preloadSubdivisionFile(code), fetch(`/geo/subdivisions/${code}.geojson`).then(r => r.json()))
-    )
+    subdivisionCodes.map(code => {
+      const cached = getCachedFeature(code)
+      if (cached) return cached
+      return fetch(`/geo/subdivisions/${code}.geojson`)
+        .then(r => r.json() as Promise<Feature>)
+        .then(f => { setCachedFeature(code, f); return f })
+        .catch(() => null)
+    })
   )
-  prepareSubdivisionRecords(results.filter(Boolean))
+  prepareSubdivisionRecords(results.filter((f): f is Feature => f !== null))
 }
 
 export function usePredictivePreload({
