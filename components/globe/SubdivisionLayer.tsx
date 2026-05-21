@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
-import type { Feature, FeatureCollection, Geometry } from 'geojson'
+import type { Feature, Geometry } from 'geojson'
 import { SubdivisionFeature } from './SubdivisionFeature'
 import type { HoverInfo, GlobePalette, HeroTransform } from './types'
 import { travelerProfile, type TravelerProfile } from '../../data/seed'
@@ -24,7 +24,9 @@ interface Props {
 
 export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette, heroOverrides = {}, heroTransforms = {}, profile = travelerProfile }: Props) {
   const { camera, size } = useThree()
-  const [data, setData] = useState<FeatureCollection | null>(null)
+  const [features, setFeatures] = useState<Feature[]>([])
+  const pendingRef = useRef<Feature[]>([])
+  const rafRef = useRef<number | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const hoveredIdRef = useRef<string | null>(null)
 
@@ -48,22 +50,35 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
       }
     }
 
-    if (missing.length === 0) {
-      setData({ type: 'FeatureCollection', features: cached })
-      return
+    setFeatures(cached)
+
+    function scheduleFlush() {
+      if (rafRef.current !== null) return
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null
+        const batch = pendingRef.current.splice(0)
+        if (batch.length > 0) setFeatures(prev => [...prev, ...batch])
+      })
     }
 
-    Promise.all(
-      missing.map(code =>
-        fetch(`/geo/subdivisions/${code}.geojson`)
-          .then(r => r.json() as Promise<Feature>)
-          .then(f => { setCachedFeature(code, f); return f })
-          .catch(() => { setCachedFeature(code, null); return null }),
-      ),
-    ).then(results => {
-      const fetched = results.filter((f): f is Feature => f !== null)
-      setData({ type: 'FeatureCollection', features: [...cached, ...fetched] })
-    })
+    for (const code of missing) {
+      fetch(`/geo/subdivisions/${code}.geojson`)
+        .then(r => r.json() as Promise<Feature>)
+        .then(f => {
+          setCachedFeature(code, f)
+          pendingRef.current.push(f)
+          scheduleFlush()
+        })
+        .catch(() => setCachedFeature(code, null))
+    }
+
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+      pendingRef.current = []
+    }
   }, [subdivisionCodes])
 
   const visitedSubdivisions = useMemo(
@@ -73,8 +88,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
   const subdivisionMemories = useMemo(() => getSubdivisionMemoryByCode(profile), [profile])
 
   const visitedFeatures = useMemo(() => {
-    if (!data) return []
-    const rawVisitedFeatures = data.features.filter(feature => {
+    const rawVisitedFeatures = features.filter(feature => {
       const id = String(feature.properties?.adm1_code ?? '')
       return !!visitedSubdivisions[id]
     })
@@ -84,7 +98,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
         heroPicUrl: visitedSubdivisions[record.id] as string | undefined,
       }))
       .filter((item): item is typeof item & { heroPicUrl: string } => !!item.heroPicUrl)
-  }, [data, visitedSubdivisions])
+  }, [features, visitedSubdivisions])
 
   useEffect(() => {
     for (const { id, geometry } of visitedFeatures) {
