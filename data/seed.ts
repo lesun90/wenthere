@@ -8,6 +8,7 @@ export interface SubdivisionMemory {
   name: string
   heroPic: string // URL — references one photo in photos[]
   photos: Photo[] // all photos for this subdivision (includes hero)
+  renderable?: boolean // false for stress-only memories without matching GeoJSON
 }
 
 export interface CountryMemory {

@@ -31,7 +31,10 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
   const hoveredIdRef = useRef<string | null>(null)
 
   const subdivisionCodes = useMemo(
-    () => profile.countries.flatMap(c => c.subdivisions.map(s => s.subdivisionCode)),
+    () => profile.countries.flatMap(c => c.subdivisions
+      .filter(s => s.renderable !== false)
+      .map(s => s.subdivisionCode),
+    ),
     [profile],
   )
 
