@@ -9,11 +9,11 @@ import { CountryLayer } from './CountryLayer'
 import { SubdivisionLayer } from './SubdivisionLayer'
 import { FloatingCard } from './FloatingCard'
 import { GalleryPanel } from './GalleryPanel'
-import { usePerformancePreload } from './usePerformancePreload'
+import { usePredictivePreload } from './usePredictivePreload'
 import { useTheme } from '../../lib/theme-context'
 import type { HoverInfo, GlobeState, GlobePalette, HeroTransform } from './types'
 import { latLngToVec3 } from '../../lib/geo'
-import { travelerProfile } from '../../data/seed'
+import { travelerProfile, type TravelerProfile } from '../../data/seed'
 import { getCountryHeroByCode } from '../../lib/geodata'
 
 const MODE_TRANSITION_MS = 300
@@ -185,7 +185,7 @@ function useLayerPresence(show: boolean) {
   return present
 }
 
-export function GlobeScene() {
+export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerProfile }) {
   const { theme } = useTheme()
   const palette = GLOBE_PALETTES[theme]
 
@@ -197,12 +197,15 @@ export function GlobeScene() {
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
   const [clickOrigin, setClickOrigin] = useState<{ x: number; y: number } | null>(null)
 
+  const [hoveredCountryCode, setHoveredCountryCode] = useState<string | null>(null)
+  const [focusedCountryCode, setFocusedCountryCode] = useState<string | null>(null)
+
   const [subdivisionHeroOverrides, setSubdivisionHeroOverrides] = useState<Record<string, string>>({})
   const [countryHeroOverrides, setCountryHeroOverrides] = useState<Record<string, string>>({})
   const [subdivisionHeroTransforms, setSubdivisionHeroTransforms] = useState<Record<string, HeroTransform>>({})
   const [countryHeroTransforms, setCountryHeroTransforms] = useState<Record<string, HeroTransform>>({})
 
-  const seedCountryHeroes = useMemo(() => getCountryHeroByCode(travelerProfile), [])
+  const seedCountryHeroes = useMemo(() => getCountryHeroByCode(profile), [profile])
 
   const current = navStack[navStack.length - 1]
   const showSubdivisions = current.level === 'detail' || current.level === 'subdivision' || current.level === 'gallery'
@@ -213,7 +216,7 @@ export function GlobeScene() {
   const subdivisionOpacity = showSubdivisions ? 1 : 0
   const shouldRenderSubdivisions = useLayerPresence(showSubdivisions)
 
-  usePerformancePreload(showSubdivisions || flyTarget !== null)
+  usePredictivePreload({ hoveredCountryCode, focusedCountryCode, profile })
 
   function push(state: GlobeState) {
     setNavStack(s => [...s, state])
@@ -248,8 +251,13 @@ export function GlobeScene() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
+  function handleCountryHover(countryCode: string) {
+    setHoveredCountryCode(countryCode)
+  }
+
   function handleCountryTap(countryCode: string, centroid: [number, number]) {
     if (current.level !== 'world') return
+    setFocusedCountryCode(countryCode)
     pendingFlyRef.current = { countryCode, center: centroid }
     setFlyTarget(centroid)
   }
@@ -328,9 +336,11 @@ export function GlobeScene() {
             photoOpacity={countryPhotoOpacity}
             onHoverChange={setHoverInfo}
             onCountryTap={handleCountryTap}
+            onCountryHover={handleCountryHover}
             palette={palette}
             countryHeroOverrides={countryHeroOverrides}
             countryHeroTransforms={countryHeroTransforms}
+            profile={profile}
           />
           {shouldRenderSubdivisions && (
             <SubdivisionLayer
@@ -340,6 +350,7 @@ export function GlobeScene() {
               palette={palette}
               heroOverrides={subdivisionHeroOverrides}
               heroTransforms={subdivisionHeroTransforms}
+              profile={profile}
             />
           )}
           <OrbitControls
@@ -384,6 +395,7 @@ export function GlobeScene() {
           onSubdivisionTransformChange={handleSubdivisionTransformChange}
           onCountryTransformChange={handleCountryTransformChange}
           clickOrigin={clickOrigin ?? undefined}
+          profile={profile}
         />
       )}
     </div>

@@ -12,6 +12,7 @@ export interface SubdivisionMemory {
 
 export interface CountryMemory {
   countryCode: string // ISO 3166-1 alpha-3 (e.g. "USA", "CHN", "VNM")
+  countryNumericId?: string // TopoJSON country feature id when countryCode is not enough
   name: string
   heroPic: string // URL — references one photo in photos[] (reuses first subdivision hero)
   photos: Photo[] // country-level photos; empty in demo, populated from subdivision gallery in M3

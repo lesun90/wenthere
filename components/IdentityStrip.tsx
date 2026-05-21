@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { travelerProfile } from '../data/seed'
+import { travelerProfile, type TravelerProfile } from '../data/seed'
 import { useTheme } from '../lib/theme-context'
 
 function SunIcon() {
@@ -21,12 +21,12 @@ function MoonIcon() {
   )
 }
 
-export function IdentityStrip() {
+export function IdentityStrip({ profile = travelerProfile }: { profile?: TravelerProfile }) {
   const [copied, setCopied] = useState(false)
   const { theme, toggle } = useTheme()
 
-  const countryCount = travelerProfile.countries.length
-  const placeCount = travelerProfile.countries.reduce(
+  const countryCount = profile.countries.length
+  const placeCount = profile.countries.reduce(
     (acc, c) => acc + c.subdivisions.reduce((a, s) => a + s.photos.length, 0),
     0,
   )
@@ -72,7 +72,7 @@ export function IdentityStrip() {
         fontSize: 13,
         fontFamily: 'var(--font-dm-sans), sans-serif',
       }}>
-        {travelerProfile.name}
+        {profile.name}
       </span>
       <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>·</span>
       <span style={{

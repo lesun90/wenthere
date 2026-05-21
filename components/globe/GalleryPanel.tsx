@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Geometry } from 'geojson'
-import { travelerProfile } from '../../data/seed'
+import { travelerProfile, type TravelerProfile } from '../../data/seed'
 import { geoJsonToSvgPath } from '../../lib/geomath'
 import { getSubdivisionGeometry, getCountryGeometry } from '../../lib/geo-registry'
 import type { HeroTransform } from './types'
@@ -20,6 +20,7 @@ interface Props {
   onSubdivisionTransformChange?: (subdivisionId: string, transform: HeroTransform) => void
   onCountryTransformChange?: (countryCode: string, transform: HeroTransform) => void
   clickOrigin?: { x: number; y: number }
+  profile?: TravelerProfile
 }
 
 interface Photo {
@@ -621,11 +622,12 @@ export function GalleryPanel({
   onSubdivisionTransformChange,
   onCountryTransformChange,
   clickOrigin,
+  profile = travelerProfile,
 }: Props) {
   const subdivisionGeometry = getSubdivisionGeometry(subdivisionId)
   const countryGeometry = getCountryGeometry(countryCode)
 
-  const memory = travelerProfile.countries
+  const memory = profile.countries
     .flatMap(c => c.subdivisions)
     .find(s => s.subdivisionCode === subdivisionId)
   const photos = memory?.photos ?? []

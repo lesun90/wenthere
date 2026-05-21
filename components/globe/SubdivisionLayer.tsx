@@ -5,7 +5,7 @@ import { useThree } from '@react-three/fiber'
 import type { FeatureCollection, Geometry } from 'geojson'
 import { SubdivisionFeature } from './SubdivisionFeature'
 import type { HoverInfo, GlobePalette, HeroTransform } from './types'
-import { travelerProfile } from '../../data/seed'
+import { travelerProfile, type TravelerProfile } from '../../data/seed'
 import { getVisitedSubdivisions, getSubdivisionMemoryByCode } from '../../lib/geodata'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { registerSubdivisionGeometry } from '../../lib/geo-registry'
@@ -18,9 +18,10 @@ interface Props {
   palette: GlobePalette
   heroOverrides?: Record<string, string>
   heroTransforms?: Record<string, HeroTransform>
+  profile?: TravelerProfile
 }
 
-export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette, heroOverrides = {}, heroTransforms = {} }: Props) {
+export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette, heroOverrides = {}, heroTransforms = {}, profile = travelerProfile }: Props) {
   const { camera, size } = useThree()
   const [data, setData] = useState<FeatureCollection | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -34,10 +35,10 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
   }, [])
 
   const visitedSubdivisions = useMemo(
-    () => getVisitedSubdivisions(travelerProfile, heroOverrides),
-    [heroOverrides],
+    () => getVisitedSubdivisions(profile, heroOverrides),
+    [heroOverrides, profile],
   )
-  const subdivisionMemories = useMemo(() => getSubdivisionMemoryByCode(travelerProfile), [])
+  const subdivisionMemories = useMemo(() => getSubdivisionMemoryByCode(profile), [profile])
 
   const visitedFeatures = useMemo(() => {
     if (!data) return []

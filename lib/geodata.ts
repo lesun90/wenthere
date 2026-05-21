@@ -12,7 +12,7 @@ export function getVisitedCountries(
 ): Record<string, string> {
   const result: Record<string, string> = {}
   for (const country of profile.countries) {
-    const numericId = alpha3ToNumeric[country.countryCode] ?? country.countryCode
+    const numericId = country.countryNumericId ?? alpha3ToNumeric[country.countryCode] ?? country.countryCode
     result[numericId] = heroOverrides[country.countryCode] ?? country.heroPic
   }
   return result
@@ -34,7 +34,7 @@ export function getVisitedSubdivisions(
 export function getCountryMemoryByNumericId(profile: TravelerProfile): Record<string, CountryMemory> {
   const result: Record<string, CountryMemory> = {}
   for (const country of profile.countries) {
-    const numericId = alpha3ToNumeric[country.countryCode] ?? country.countryCode
+    const numericId = country.countryNumericId ?? alpha3ToNumeric[country.countryCode] ?? country.countryCode
     result[numericId] = country
   }
   return result
