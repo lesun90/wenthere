@@ -1,4 +1,4 @@
-import countriesTopology from '../public/geo/countries-50m.json'
+import countriesTopology from '../public/geo/countries-10m.json'
 import subdivisionsFeatureCollection from '../public/geo/states-provinces-50m.json'
 import type { CountryMemory, Photo, SubdivisionMemory, TravelerProfile } from './seed'
 

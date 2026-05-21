@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
-import type { FeatureCollection, Geometry } from 'geojson'
+import type { Feature, FeatureCollection, Geometry } from 'geojson'
 import { SubdivisionFeature } from './SubdivisionFeature'
 import type { HoverInfo, GlobePalette, HeroTransform } from './types'
 import { travelerProfile, type TravelerProfile } from '../../data/seed'
@@ -27,12 +27,24 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const hoveredIdRef = useRef<string | null>(null)
 
+  const subdivisionCodes = useMemo(
+    () => profile.countries.flatMap(c => c.subdivisions.map(s => s.subdivisionCode)),
+    [profile],
+  )
+
   useEffect(() => {
-    fetch('/geo/states-provinces-50m.json')
-      .then(r => r.json())
-      .then(setData)
-      .catch(() => {})
-  }, [])
+    if (subdivisionCodes.length === 0) return
+    Promise.all(
+      subdivisionCodes.map(code =>
+        fetch(`/geo/subdivisions/${code}.geojson`)
+          .then(r => r.json() as Promise<Feature>)
+          .catch(() => null),
+      ),
+    ).then(results => {
+      const features = results.filter((f): f is Feature => f !== null)
+      setData({ type: 'FeatureCollection', features })
+    })
+  }, [subdivisionCodes])
 
   const visitedSubdivisions = useMemo(
     () => getVisitedSubdivisions(profile, heroOverrides),

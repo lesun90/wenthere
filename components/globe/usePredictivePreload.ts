@@ -1,16 +1,25 @@
 import { useEffect } from 'react'
-import type { FeatureCollection } from 'geojson'
 import { travelerProfile, type TravelerProfile } from '../../data/seed'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { preloadSharedTexture } from './useSharedTexture'
 
-async function preloadSubdivisionGeometry(subdivisionCodes: Set<string>) {
-  const response = await fetch('/geo/states-provinces-50m.json')
-  const data = await response.json() as FeatureCollection
-  prepareSubdivisionRecords(data.features.filter(feature => {
-    const id = String(feature.properties?.adm1_code ?? '')
-    return subdivisionCodes.has(id)
-  }))
+const preloadedSubdivisionFiles = new Set<string>()
+
+export function preloadSubdivisionFile(subdivisionCode: string): void {
+  if (preloadedSubdivisionFiles.has(subdivisionCode)) return
+  preloadedSubdivisionFiles.add(subdivisionCode)
+  fetch(`/geo/subdivisions/${subdivisionCode}.geojson`).catch(() => {})
+}
+
+async function preloadSubdivisionGeometry(subdivisionCodes: string[]) {
+  const results = await Promise.all(
+    subdivisionCodes.map(code =>
+      preloadedSubdivisionFiles.has(code)
+        ? fetch(`/geo/subdivisions/${code}.geojson`).then(r => r.json())
+        : (preloadSubdivisionFile(code), fetch(`/geo/subdivisions/${code}.geojson`).then(r => r.json()))
+    )
+  )
+  prepareSubdivisionRecords(results.filter(Boolean))
 }
 
 export function usePredictivePreload({
@@ -25,7 +34,9 @@ export function usePredictivePreload({
   useEffect(() => {
     if (!hoveredCountryCode) return
     const country = profile.countries.find(c => c.countryCode === hoveredCountryCode)
-    if (country) preloadSharedTexture(country.heroPic)
+    if (!country) return
+    preloadSharedTexture(country.heroPic)
+    for (const sub of country.subdivisions) preloadSubdivisionFile(sub.subdivisionCode)
   }, [hoveredCountryCode, profile])
 
   useEffect(() => {
@@ -37,7 +48,6 @@ export function usePredictivePreload({
       preloadSharedTexture(sub.heroPic)
     }
 
-    const codes = new Set(country.subdivisions.map(s => s.subdivisionCode))
-    void preloadSubdivisionGeometry(codes).catch(() => {})
+    void preloadSubdivisionGeometry(country.subdivisions.map(s => s.subdivisionCode)).catch(() => {})
   }, [focusedCountryCode, profile])
 }

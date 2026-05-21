@@ -32,7 +32,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
   const hoveredIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    fetch('/geo/countries-50m.json')
+    fetch('/geo/countries-10m.json')
       .then(r => r.json())
       .then(setTopology)
       .catch(() => {})
