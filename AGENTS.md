@@ -47,19 +47,19 @@ Note: `pnpm lint` exists in `package.json`, but this Next version may not provid
 - `components/globe/GalleryPanel.tsx`, `FloatingCard.tsx`: photo/profile UI overlays.
 - `components/globe/usePredictivePreload.ts`, `useSharedTexture.ts`: preload and texture hooks.
 - `components/globe/types.ts`: shared globe component types.
-- `data/seed.ts`: default demo traveler profile and photo data.
-- `data/roamerProfile.ts`: large generated Roamer traveler profile.
-- `lib/geo.ts`, `geodata.ts`, `geo-cache.ts`, `geo-registry.ts`, `geomath.ts`: geographic loading, caching, projection, registry, and math utilities.
-- `lib/theme-context.tsx`: app theme context.
-- `public/geo/countries-10m.json`: large country TopoJSON. Do not open unless debugging data shape or feature IDs.
-- `public/geo/subdivisions/*.geojson`: generated per-subdivision files loaded on demand by `adm1_code`.
+- `apps/web/data/demoProfile.json`: hardcoded demo traveler profile used by `/demo`.
+- `apps/web/data/roamerProfile.json`: large pre-generated Roamer profile used by `/stresstest`. Regenerate with `pnpm --filter @beenthere/web build:roamer-profile`.
+- `packages/ui/lib/geo.ts`, `geodata.ts`, `geo-cache.ts`, `geo-registry.ts`, `geomath.ts`: geographic loading, caching, projection, registry, and math utilities.
+- `packages/ui/lib/theme-context.tsx`: app theme context.
+- `packages/ui/data/geo/countries-10m.json`: large country TopoJSON — bundled by webpack. Do not open unless debugging data shape or feature IDs.
+- `packages/ui/data/geo/subdivisions/*.geojson`: generated per-subdivision files loaded on demand by `adm1_code` via `/api/geo/subdivisions/[code].geojson`.
 - `docs/`: planning and design notes. Read a specific doc only when the request mentions specs, milestones, design intent, or historical rationale.
 
 ## Targeted Reading Guide
 
 - Visual/UI request: read the relevant `app/*/page.tsx`, the affected component under `components/`, and `app/globals.css`.
 - Globe rendering request: read `components/globe/GlobeScene.tsx`, the relevant layer/feature component, `components/globe/types.ts`, and only the needed `lib/geo*` file.
-- Data/profile request: read `data/seed.ts` or `data/roamerProfile.ts` plus the components that consume the changed fields.
+- Data/profile request: read `apps/web/data/demoProfile.json` or `apps/web/data/roamerProfile.json` plus the components that consume the changed fields.
 - Performance/preload request: read `components/globe/usePredictivePreload.ts`, `useSharedTexture.ts`, `GlobeScene.tsx`, and any referenced design doc if the user asks for rationale.
 - Geo boundary/feature ID request: inspect `lib/geo-registry.ts`, `lib/geodata.ts`, and use targeted queries against `public/geo/*.json` instead of opening the full files.
 - Docker/deployment request: read `README.md`, `Dockerfile`, and the relevant `docker-compose*.yml`.

@@ -38,9 +38,9 @@ pnpm exec tsc --noEmit
 
 ### Data model
 
-Core domain types (`TravelPhoto`, `TravelerProfile`, `ProfileIndex`, etc.) are defined in `lib/types.ts`. The demo dataset is in `data/demoProfile.ts`, which exports `travelerProfile` — a hardcoded `TravelerProfile` used by the `/demo` route. A profile contains one `photos: TravelPhoto[]` array plus optional `presentation` hero/framing maps keyed by country or subdivision code. Countries and subdivisions are derived from photo locations; there is no backend, database, or API.
+Core domain types (`TravelPhoto`, `TravelerProfile`, `ProfileIndex`, etc.) are defined in `lib/types.ts`. The demo dataset is in `apps/web/data/demoProfile.json` — a hardcoded `TravelerProfile` used by the `/demo` route. A profile contains one `photos: TravelPhoto[]` array plus optional `presentation` hero/framing maps keyed by country or subdivision code. Countries and subdivisions are derived from photo locations; there is no backend, database, or API.
 
-`TravelerProfile` is injectable: `GlobeScene` accepts `profile` as a prop (defaults to the seeded demo profile), enabling the performance page to pass in a different profile.
+`TravelerProfile` is injectable: `GlobeScene` accepts `profile` as a required prop, enabling the performance page to pass in a different profile.
 
 `lib/geodata.ts` builds the pure `ProfileIndex` once per profile identity in `GlobeScene`. Components should consume indexed summaries/lookups instead of scanning `profile.photos` directly. A country summary is emitted only when at least one subdivision in that country is renderable; country-only photos may enrich an already visited country, but must not create empty visited countries by themselves.
 
@@ -49,7 +49,7 @@ Core domain types (`TravelPhoto`, `TravelerProfile`, `ProfileIndex`, etc.) are d
 The globe is a React Three Fiber (`@react-three/fiber`) scene inside a `<Canvas>`. Key components:
 
 - **`GlobeScene`** — top-level orchestrator. Owns all navigation state as a `navStack: GlobeState[]` stack (`world → detail → subdivision → gallery`). Manages fly-to animations, hover info, hero overrides, and hero transforms.
-- **`CountryLayer`** — fetches `public/geo/countries-10m.json` (TopoJSON), converts to GeoJSON features via `topojson-client`, and renders one `CountryFeature` per country.
+- **`CountryLayer`** — loads `packages/ui/data/geo/countries-10m.json` (TopoJSON) via webpack dynamic import, converts to GeoJSON features via `topojson-client`, and renders one `CountryFeature` per country.
 - **`SubdivisionLayer`** — fetches generated `public/geo/subdivisions/<adm1_code>.geojson` files for subdivisions present in the active profile. Only mounted when `shouldRenderSubdivisions` is true (with a short CSS transition delay for unmounting).
 - **`EarthMesh`** — the solid globe sphere with an atmosphere overlay.
 - **`FloatingCard`** — screen-space hover tooltip (rendered in HTML overlay, not in the Three.js scene).
@@ -76,9 +76,10 @@ On country hover, the country's hero texture and subdivision GeoJSON files are p
 
 ### Geographic data files
 
-- `public/geo/countries-10m.json` — Natural Earth 10m TopoJSON, `objects.countries` collection. Feature IDs are numeric ISO 3166-1.
-- `public/geo/subdivisions/*.geojson` — generated Natural Earth admin-1 GeoJSON, one feature per file keyed by `properties.adm1_code`.
-- `data/roamerProfile.ts` — generated Roamer traveler profile. It reads the per-subdivision GeoJSON files, includes all USA and Vietnam subdivisions, and adds selected China, Africa, and Europe regions.
+- `packages/ui/data/geo/countries-10m.json` — Natural Earth 10m TopoJSON, `objects.countries` collection. Feature IDs are numeric ISO 3166-1. Bundled by webpack (not served via HTTP).
+- `packages/ui/data/geo/subdivisions/*.geojson` — generated Natural Earth admin-1 GeoJSON, one feature per file keyed by `properties.adm1_code`. Served on demand via `GET /api/geo/subdivisions/[code].geojson`.
+- `apps/web/data/roamerProfile.json` — pre-generated Roamer traveler profile. Regenerate with `pnpm --filter @beenthere/web build:roamer-profile`. Includes all USA and Vietnam subdivisions plus selected China, Africa, and Europe regions.
+- `apps/web/data/demoProfile.json` — hardcoded demo traveler profile used by the `/demo` route.
 
 Renderable subdivision codes in photo locations must match generated subdivision filenames and `adm1_code` values exactly (e.g. `"USA-3521"` for California).
 
