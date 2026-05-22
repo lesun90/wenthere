@@ -306,6 +306,7 @@ const PhotoRow = memo(function PhotoRow({
         alt={photo.caption}
         loading="lazy"
         decoding="async"
+        fetchPriority="low"
         style={{
           width: 72,
           height: 52,
@@ -417,6 +418,7 @@ export function PhotoManagementDrawer({
 }: Props) {
   const [mounted, setMounted] = useState(isOpen)
   const [visible, setVisible] = useState(false)
+  const [listReady, setListReady] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [query, setQuery] = useState('')
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
@@ -433,9 +435,12 @@ export function PhotoManagementDrawer({
     if (isOpen) {
       setMounted(true)
       const frame = requestAnimationFrame(() => setVisible(true))
-      return () => cancelAnimationFrame(frame)
+      // Defer heavy photo list rendering until after the slide-in animation
+      const listTimer = setTimeout(() => setListReady(true), ENTER_DURATION + 60)
+      return () => { cancelAnimationFrame(frame); clearTimeout(listTimer) }
     } else {
       setVisible(false)
+      setListReady(false)
       const timer = setTimeout(() => setMounted(false), EXIT_DURATION + 50)
       return () => clearTimeout(timer)
     }
@@ -757,7 +762,7 @@ export function PhotoManagementDrawer({
 
           {/* Photo list */}
           <div className="photo-drawer-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '4px 16px 32px' }}>
-            {isEmpty ? (
+            {!listReady ? null : isEmpty ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, paddingTop: 32, textAlign: 'center' }}>
                 <div style={{ opacity: 0.28 }}>
                   <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="0.9">
@@ -789,7 +794,7 @@ export function PhotoManagementDrawer({
             ) : (
               <div>
                 {!isFiltered && unplacedPhotos.length > 0 && (
-                  <div className="photo-list-country-block" style={{ marginBottom: 22 }}>
+                  <div className="photo-list-country-block" style={{ marginBottom: 22, contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 7, marginBottom: 10, borderBottom: '1px solid var(--border)' }}>
                       <span style={{ color: 'var(--text-primary)', fontSize: 13, fontFamily: 'var(--font-dm-sans), sans-serif', fontWeight: 700, letterSpacing: '0.01em' }}>Unplaced</span>
                       <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-dm-sans), sans-serif' }}>{unplacedPhotos.length} {unplacedPhotos.length === 1 ? 'photo' : 'photos'}</span>
@@ -807,7 +812,7 @@ export function PhotoManagementDrawer({
                   </div>
                 )}
                 {filteredEntries.map(({ country, subdivisionCodes }) => (
-                  <div key={country.countryCode} className="photo-list-country-block" style={{ marginBottom: 22 }}>
+                  <div key={country.countryCode} className="photo-list-country-block" style={{ marginBottom: 22, contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 7, marginBottom: 10, borderBottom: '1px solid var(--border)' }}>
                       <span style={{ color: 'var(--text-primary)', fontSize: 13, fontFamily: 'var(--font-dm-sans), sans-serif', fontWeight: 700, letterSpacing: '0.01em' }}>{country.name}</span>
                       <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-dm-sans), sans-serif' }}>{country.photoCount} {country.photoCount === 1 ? 'photo' : 'photos'}</span>
