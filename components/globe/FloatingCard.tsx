@@ -33,18 +33,17 @@ function ShapedImage({
     const tx = transform.x * FRAME_VIEW_W
     const ty = transform.y * FRAME_VIEW_H
     return (
-      <g
-        transform={`translate(${cx + tx}, ${cy + ty}) scale(${transform.scale})`}
-        clipPath={`url(#${clipId})`}
-      >
-        <image
-          href={href}
-          x={-cx}
-          y={-cy}
-          width={FRAME_VIEW_W}
-          height={FRAME_VIEW_H}
-          preserveAspectRatio="xMidYMid slice"
-        />
+      <g clipPath={`url(#${clipId})`}>
+        <g transform={`translate(${cx + tx}, ${cy + ty}) scale(${transform.scale})`}>
+          <image
+            href={href}
+            x={-cx}
+            y={-cy}
+            width={FRAME_VIEW_W}
+            height={FRAME_VIEW_H}
+            preserveAspectRatio="xMidYMid slice"
+          />
+        </g>
       </g>
     )
   }

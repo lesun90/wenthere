@@ -259,18 +259,17 @@ function ShapePreviewButton({
             <path d={shapePath} />
           </clipPath>
         </defs>
-        <g
-          transform={`translate(${cx + tx}, ${cy + ty}) scale(${transform.scale})`}
-          clipPath={`url(#sp-${clipId})`}
-        >
-          <image
-            href={imageUrl}
-            x={-cx}
-            y={-cy}
-            width={size}
-            height={size}
-            preserveAspectRatio="xMidYMid slice"
-          />
+        <g clipPath={`url(#sp-${clipId})`}>
+          <g transform={`translate(${cx + tx}, ${cy + ty}) scale(${transform.scale})`}>
+            <image
+              href={imageUrl}
+              x={-cx}
+              y={-cy}
+              width={size}
+              height={size}
+              preserveAspectRatio="xMidYMid slice"
+            />
+          </g>
         </g>
         <path
           d={shapePath}
@@ -314,6 +313,7 @@ function HeroFramingOverlay({
   onCancel: () => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
   const maskGroupRef = useRef<SVGGElement>(null)
   const borderGroupRef = useRef<SVGGElement>(null)
   const liveRef = useRef<HeroTransform>({ ...initialTransform })
@@ -330,6 +330,18 @@ function HeroFramingOverlay({
   const [visible, setVisible] = useState(false)
   const [shapePath, setShapePath] = useState('')
   const maskId = useId().replace(/:/g, '')
+
+  // Returns the rendered image dimensions for objectFit:contain.
+  // The image is centered, so transform offsets must be in image space, not container space.
+  function getRenderedSize(cw: number, ch: number): { w: number; h: number } {
+    const img = imgRef.current
+    const nw = img?.naturalWidth ?? 0
+    const nh = img?.naturalHeight ?? 0
+    if (!nw || !nh) return { w: cw, h: ch }
+    return nw / nh > cw / ch
+      ? { w: cw, h: cw * nh / nw }
+      : { w: ch * nw / nh, h: ch }
+  }
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true))
@@ -351,11 +363,13 @@ function HeroFramingOverlay({
     if (!geometry || !containerRef.current) return
     const { clientWidth: cw, clientHeight: ch } = containerRef.current
     if (cw === 0 || ch === 0) return
-    // Stored image offsets are inverted because this editor moves the frame.
+    const { w: rw, h: rh } = getRenderedSize(cw, ch)
+    const shapeScale = 1 / initialTransform.scale
+    // Invert the coupled formula: x = -shapeX/(rw*shapeScale) → shapeX = -x*rw*shapeScale = -x*rw/scale
     shapeStateRef.current = {
-      shapeX: -initialTransform.x * cw,
-      shapeY: -initialTransform.y * ch,
-      shapeScale: 1 / initialTransform.scale,
+      shapeX: -initialTransform.x * rw * shapeScale,
+      shapeY: -initialTransform.y * rh * shapeScale,
+      shapeScale,
     }
     setShapePath(geoJsonToSvgPath(geometry, cw, ch, 24))
   }, [geometry])
@@ -381,7 +395,12 @@ function HeroFramingOverlay({
     maskGroupRef.current?.setAttribute('transform', t)
     borderGroupRef.current?.setAttribute('transform', t)
     shapeStateRef.current = { shapeX, shapeY, shapeScale }
-    liveRef.current = { x: -shapeX / cw, y: -shapeY / ch, scale: 1 / shapeScale }
+    // Normalize to image-space fractions so FloatingCard, ShapePreviewButton, and
+    // Three.js texture offsets all receive coordinates relative to the image, not the container.
+    // Scale is included in the denominator because the Three.js formula couples position and zoom:
+    // UV center = 0.5 - x/s, so x must equal -shapeX/(rw*shapeScale) to place the center correctly.
+    const { w: rw, h: rh } = getRenderedSize(cw, ch)
+    liveRef.current = { x: -shapeX / (rw * shapeScale), y: -shapeY / (rh * shapeScale), scale: 1 / shapeScale }
   }
 
   function dismiss(commit: boolean) {
@@ -520,6 +539,7 @@ function HeroFramingOverlay({
       onTouchEnd={handleTouchEnd}
     >
       <img
+        ref={imgRef}
         src={imageUrl}
         alt=""
         decoding="async"

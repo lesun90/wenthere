@@ -57,6 +57,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
   const rafRef = useRef<number | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const hoveredIdRef = useRef<string | null>(null)
+  const lastHoverPayloadRef = useRef<(Omit<HoverInfo, 'heroTransform'> & { id: string }) | null>(null)
 
   const subdivisionCodes = profileIndex.renderableSubdivisionCodes
 
@@ -156,6 +157,18 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
     }
   }
 
+  // Re-fire hover info when heroTransforms updates for the currently hovered subdivision
+  // so FloatingCard reflects framing changes without requiring mouse movement.
+  useEffect(() => {
+    const payload = lastHoverPayloadRef.current
+    if (!payload || hoveredIdRef.current !== payload.id) return
+    const summary = profileIndex.subdivisionSummariesByCode[payload.id]
+    onHoverChange({
+      ...payload,
+      heroTransform: heroTransforms[payload.id] ?? summary?.heroTransform,
+    })
+  }, [heroTransforms])
+
   function handleHover(
     id: string,
     name: string,
@@ -170,21 +183,18 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
     const otherPicUrls = summary ? firstOtherPhotoUrls(summary.photos, heroPicUrl, 4) : []
     const placeCount = summary ? summary.photos.length : 0
     const { screenX, screenY } = projectToScreen(centroid)
+    const payload = { id, name, heroPicUrl, otherPicUrls, placeCount, screenX, screenY, geometry }
+    lastHoverPayloadRef.current = payload
     onHoverChange({
-      name,
-      heroPicUrl,
+      ...payload,
       heroTransform: heroTransforms[id] ?? summary?.heroTransform,
-      otherPicUrls,
-      placeCount,
-      screenX,
-      screenY,
-      geometry,
     })
   }
 
   function handleUnhover() {
     if (hoveredIdRef.current === null) return
     hoveredIdRef.current = null
+    lastHoverPayloadRef.current = null
     setHoveredId(null)
     onHoverChange(null)
   }

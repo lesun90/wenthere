@@ -259,7 +259,14 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
     })
   }
 
+  const prevLevelRef = useRef(current.level)
   useEffect(() => {
+    const prev = prevLevelRef.current
+    prevLevelRef.current = current.level
+    // When closing the gallery the SubdivisionLayer's heroTransforms effect has already
+    // re-fired onHoverChange with the updated framing — preserve that so the FloatingCard
+    // shows the new transform as soon as galleryOpen flips to false.
+    if (prev === 'gallery') return
     setHoverInfo(null)
   }, [current.level])
 

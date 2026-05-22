@@ -28,6 +28,10 @@ function sameHeroTransform(a?: HeroTransform, b?: HeroTransform) {
   return a.x === b.x && a.y === b.y && a.scale === b.scale
 }
 
+function isIdentityTransform(t: HeroTransform): boolean {
+  return t.x === 0 && t.y === 0 && t.scale === 1
+}
+
 function CountryFeatureComponent({
   fillGeometry,
   photoGeometry,
@@ -37,6 +41,7 @@ function CountryFeatureComponent({
   interactive,
   photoOpacityTarget,
   heroPicUrl,
+  hoverHeroTransform,
   palette,
   onHover,
   onUnhover,
@@ -48,10 +53,55 @@ function CountryFeatureComponent({
   const animatedPhotoOpacityRef = useRef(photoOpacityTarget)
   const photoOpacityTargetRef = useRef(photoOpacityTarget)
   const photoHoveredOpacityRef = useRef(isHovered ? 0.95 : 0.85)
+  const cloneRef = useRef<THREE.Texture | null>(null)
+  const prevSharedTextureRef = useRef<THREE.Texture | null>(null)
 
   const textureState = useSharedTexture(heroPicUrl)
-  const texture = textureState.status === 'ready' ? textureState.texture : null
+  const sharedTexture = textureState.status === 'ready' ? textureState.texture : null
   const textureFailed = textureState.status === 'failed'
+
+  // Clones share the source GPU texture while keeping per-country framing.
+  useEffect(() => {
+    if (!sharedTexture) return
+
+    if (sharedTexture !== prevSharedTextureRef.current) {
+      cloneRef.current?.dispose()
+      cloneRef.current = null
+      prevSharedTextureRef.current = sharedTexture
+    }
+
+    if (!hoverHeroTransform || isIdentityTransform(hoverHeroTransform)) {
+      cloneRef.current?.dispose()
+      cloneRef.current = null
+      if (photoMaterialRef.current) {
+        photoMaterialRef.current.map = sharedTexture
+        photoMaterialRef.current.needsUpdate = true
+      }
+      return
+    }
+
+    if (!cloneRef.current) {
+      cloneRef.current = sharedTexture.clone()
+    }
+
+    const t = cloneRef.current
+    const s = hoverHeroTransform.scale
+    t.repeat.set(1 / s, 1 / s)
+    // Solve for offset from u_center = 0.5 * repeat + offset.
+    t.offset.x = 0.5 - (0.5 + hoverHeroTransform.x) / s
+    t.offset.y = 0.5 - (0.5 - hoverHeroTransform.y) / s
+    if (photoMaterialRef.current) {
+      photoMaterialRef.current.map = t
+      photoMaterialRef.current.needsUpdate = true
+    }
+  }, [sharedTexture, hoverHeroTransform])
+
+  useEffect(() => {
+    return () => { cloneRef.current?.dispose() }
+  }, [])
+
+  const needsTransform = !!(hoverHeroTransform && !isIdentityTransform(hoverHeroTransform))
+  const effectiveTexture = needsTransform && cloneRef.current ? cloneRef.current : sharedTexture
 
   const hasPhoto = !!heroPicUrl
   const borderColor = palette.countryBorder
@@ -66,12 +116,12 @@ function CountryFeatureComponent({
   if (hasPhoto && textureFailed) {
     photoFillColor = FALLBACK_COLOR
     photoFillOpacity = (isHovered ? 0.95 : 0.85) * photoOpacityTarget
-  } else if (hasPhoto && texture) {
+  } else if (hasPhoto && effectiveTexture) {
     photoFillColor = '#ffffff'
     photoFillOpacity = (isHovered ? 0.95 : 0.85) * photoOpacityTarget
   }
 
-  const showPhotoOverlay = hasPhoto && (textureFailed || texture)
+  const showPhotoOverlay = hasPhoto && (textureFailed || effectiveTexture)
 
   useEffect(() => {
     photoOpacityTargetRef.current = photoOpacityTarget
@@ -153,7 +203,7 @@ function CountryFeatureComponent({
         >
           <meshLambertMaterial
             ref={photoMaterialRef}
-            map={!textureFailed ? (texture ?? null) : null}
+            map={!textureFailed ? (effectiveTexture ?? null) : null}
             color={photoFillColor}
             transparent
             opacity={photoFillOpacity}

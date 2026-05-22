@@ -68,6 +68,10 @@ function SubdivisionFeatureComponent({
     if (!heroTransform || isIdentityTransform(heroTransform)) {
       cloneRef.current?.dispose()
       cloneRef.current = null
+      if (materialRef.current) {
+        materialRef.current.map = sharedTexture
+        materialRef.current.needsUpdate = true
+      }
       return
     }
 
@@ -81,6 +85,10 @@ function SubdivisionFeatureComponent({
     // Solve for offset from u_center = 0.5 * repeat + offset.
     t.offset.x = 0.5 - (0.5 + heroTransform.x) / s
     t.offset.y = 0.5 - (0.5 - heroTransform.y) / s
+    if (materialRef.current) {
+      materialRef.current.map = t
+      materialRef.current.needsUpdate = true
+    }
   }, [sharedTexture, heroTransform])
 
   useEffect(() => {

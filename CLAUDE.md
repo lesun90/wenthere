@@ -34,13 +34,13 @@ pnpm exec tsc --noEmit
 
 ## Architecture
 
-**Beenthere** is a Next.js 15 (App Router) single-page travel-photo globe. The root `/` redirects to `/demo`, which is the only live route. `app/stresstest` is a performance harness.
+**Beenthere** is a Next.js 15 (App Router) single-page travel-photo globe. The root `/` redirects to `/demo`, which is the only live route. `app/stresstest` is a performance harness using the generated Roamer profile.
 
 ### Data model (`data/seed.ts`)
 
 All traveler data flows from a single photo-centric `TravelerProfile` object defined in `data/seed.ts`. A profile contains one `photos: TravelPhoto[]` array plus optional `presentation` hero/framing maps keyed by country or subdivision code. Countries and subdivisions are derived from photo locations; there is no backend, database, or API.
 
-`TravelerProfile` is injectable: `GlobeScene` accepts `profile` as a prop (defaults to the seeded demo profile), enabling the stress-test page to pass in a different profile.
+`TravelerProfile` is injectable: `GlobeScene` accepts `profile` as a prop (defaults to the seeded demo profile), enabling the performance page to pass in a different profile.
 
 `lib/geodata.ts` builds the pure `ProfileIndex` once per profile identity in `GlobeScene`. Components should consume indexed summaries/lookups instead of scanning `profile.photos` directly. A country summary is emitted only when at least one subdivision in that country is renderable; country-only photos may enrich an already visited country, but must not create empty visited countries by themselves.
 
@@ -78,7 +78,7 @@ On country hover, the country's hero texture and subdivision GeoJSON files are p
 
 - `public/geo/countries-10m.json` — Natural Earth 10m TopoJSON, `objects.countries` collection. Feature IDs are numeric ISO 3166-1.
 - `public/geo/subdivisions/*.geojson` — generated Natural Earth admin-1 GeoJSON, one feature per file keyed by `properties.adm1_code`.
-- `public/geo/states-provinces-stress.json` — trimmed Natural Earth admin-1 GeoJSON imported by `data/stressProfile.ts` for deterministic stress data generation. The stress profile uses only region-backed photos from this file.
+- `data/roamerProfile.ts` — generated Roamer traveler profile. It reads the per-subdivision GeoJSON files, includes all USA and Vietnam subdivisions, and adds selected China, Africa, and Europe regions.
 
 Renderable subdivision codes in photo locations must match generated subdivision filenames and `adm1_code` values exactly (e.g. `"USA-3521"` for California).
 

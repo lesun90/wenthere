@@ -25,7 +25,7 @@ require.extensions['.ts'] = function loadTypeScript(module, filename) {
 
 try {
   const { travelerProfile } = require(path.join(repoRoot, 'data/seed.ts'))
-  const { stressTravelerProfile } = require(path.join(repoRoot, 'data/stressProfile.ts'))
+  const { roamerProfile } = require(path.join(repoRoot, 'data/roamerProfile.ts'))
   const {
     addPhoto,
     buildProfileIndex,
@@ -111,16 +111,37 @@ try {
   assert.equal(countryOnlyIndex.stats.countryCount, 0, 'country-only photos should not create visited countries')
   assert.equal(countryOnlyIndex.countrySummariesByNumericId['156'], undefined)
 
-  const stressIndex = buildProfileIndex(stressTravelerProfile)
-  assert.equal(stressIndex.stats.countryCount, 34, 'stress country count')
-  assert.equal(stressIndex.stats.placeCount, 500, 'stress place count')
-  assert.equal(stressIndex.stats.photoCount, 500, 'stress photo count')
-  assert.equal(stressIndex.renderableSubdivisionCodes.length, 500, 'stress renderable region count')
-  assert.equal(stressIndex.countrySummariesByNumericId['156'], undefined, 'stress China should not be a country-only visit')
+  const roamerIndex = buildProfileIndex(roamerProfile)
+  assert.equal(roamerProfile.name, 'Roamer', 'roamer name')
+  assert.ok(roamerIndex.stats.placeCount > 200, 'roamer should visit more than 200 regions')
+  assert.ok(roamerIndex.stats.photoCount > roamerIndex.stats.placeCount * 3, 'roamer should have more than 3 photos per region')
+  assert.equal(roamerIndex.renderableSubdivisionCodes.length, roamerIndex.stats.placeCount, 'roamer renderable region count')
+  assert.equal(roamerIndex.countrySummariesByNumericId['156']?.countryCode, 'CHN', 'roamer should include China')
+
+  const assertCountryRegions = (countryCode, expectedCount, label) => {
+    const summary = roamerIndex.countrySummariesByCode[countryCode]
+    assert.ok(summary, `${label} should be visited`)
+    assert.equal(summary.subdivisionCodes.length, expectedCount, `${label} region count`)
+    for (const subdivisionCode of summary.subdivisionCodes) {
+      const photos = roamerIndex.photosBySubdivisionCode[subdivisionCode] ?? []
+      assert.ok(photos.length > 3, `${label} ${subdivisionCode} should have more than 3 photos`)
+    }
+  }
+
+  assertCountryRegions('USA', 51, 'United States')
+  assertCountryRegions('VNM', 63, 'Vietnam')
+  assert.ok(
+    ['ZAF', 'EGY', 'MAR', 'KEN', 'NGA', 'ETH'].some(countryCode => roamerIndex.countrySummariesByCode[countryCode]),
+    'roamer should include African regions',
+  )
+  assert.ok(
+    ['FRA', 'DEU', 'ITA', 'ESP', 'GBR', 'NLD'].some(countryCode => roamerIndex.countrySummariesByCode[countryCode]),
+    'roamer should include European regions',
+  )
   assert.equal(
-    Object.values(stressIndex.countrySummariesByCode).some(country => country.renderablePlaceCount === 0),
+    Object.values(roamerIndex.countrySummariesByCode).some(country => country.renderablePlaceCount === 0),
     false,
-    'stress profile should not include countries with zero renderable places',
+    'roamer profile should not include countries with zero renderable places',
   )
 } finally {
   if (originalTs) {
