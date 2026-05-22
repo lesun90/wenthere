@@ -1,4 +1,4 @@
-import { memo, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -46,6 +46,8 @@ function CountryFeatureComponent({
   const photoMaterialRef = useRef<THREE.MeshLambertMaterial>(null)
   const lineMaterialRef = useRef<THREE.LineBasicMaterial>(null)
   const animatedPhotoOpacityRef = useRef(photoOpacityTarget)
+  const photoOpacityTargetRef = useRef(photoOpacityTarget)
+  const photoHoveredOpacityRef = useRef(isHovered ? 0.95 : 0.85)
 
   const textureState = useSharedTexture(heroPicUrl)
   const texture = textureState.status === 'ready' ? textureState.texture : null
@@ -71,6 +73,25 @@ function CountryFeatureComponent({
 
   const showPhotoOverlay = hasPhoto && (textureFailed || texture)
 
+  useEffect(() => {
+    photoOpacityTargetRef.current = photoOpacityTarget
+  }, [photoOpacityTarget])
+
+  useEffect(() => {
+    photoHoveredOpacityRef.current = isHovered ? 0.95 : 0.85
+  }, [isHovered])
+
+  useEffect(() => {
+    if (!baseMaterialRef.current) return
+    baseMaterialRef.current.color.set(baseFillColor)
+    baseMaterialRef.current.opacity = baseFillOpacity
+  }, [baseFillColor, baseFillOpacity])
+
+  useEffect(() => {
+    if (!lineMaterialRef.current) return
+    lineMaterialRef.current.opacity = borderOpacity
+  }, [borderOpacity])
+
   function handleHover(e: ThreeEvent<PointerEvent>) {
     if (!interactive) return
     if (!isFrontHemisphereHit(e.point, e.ray.origin)) return
@@ -86,23 +107,22 @@ function CountryFeatureComponent({
   }
 
   useFrame((_, delta) => {
-    animatedPhotoOpacityRef.current = THREE.MathUtils.damp(
-      animatedPhotoOpacityRef.current,
-      photoOpacityTarget,
-      12,
-      delta,
-    )
+    const material = photoMaterialRef.current
+    if (!material) return
 
-    if (baseMaterialRef.current) {
-      baseMaterialRef.current.color.set(baseFillColor)
-      baseMaterialRef.current.opacity = baseFillOpacity
+    const target = photoOpacityTargetRef.current
+    const current = animatedPhotoOpacityRef.current
+    if (Math.abs(current - target) < 0.001) {
+      if (current !== target) {
+        animatedPhotoOpacityRef.current = target
+        material.opacity = photoHoveredOpacityRef.current * target
+      }
+      return
     }
-    if (lineMaterialRef.current) {
-      lineMaterialRef.current.opacity = borderOpacity
-    }
-    if (photoMaterialRef.current) {
-      photoMaterialRef.current.opacity = (isHovered ? 0.95 : 0.85) * animatedPhotoOpacityRef.current
-    }
+
+    const nextOpacity = THREE.MathUtils.damp(current, target, 12, delta)
+    animatedPhotoOpacityRef.current = nextOpacity
+    material.opacity = photoHoveredOpacityRef.current * nextOpacity
   })
 
   return (

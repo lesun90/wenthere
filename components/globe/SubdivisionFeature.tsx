@@ -44,6 +44,10 @@ function SubdivisionFeatureComponent({
   const materialRef = useRef<THREE.MeshLambertMaterial>(null)
   const lineMaterialRef = useRef<THREE.LineBasicMaterial>(null)
   const animatedOpacityRef = useRef(opacityTarget)
+  const opacityTargetRef = useRef(opacityTarget)
+  const hoveredFillOpacityRef = useRef(isHovered ? 0.95 : 0.85)
+  const hoveredLineOpacityRef = useRef(isHovered ? 0.95 : 0.4)
+  const hasVisibleFillRef = useRef(false)
   const cloneRef = useRef<THREE.Texture | null>(null)
   const prevSharedTextureRef = useRef<THREE.Texture | null>(null)
 
@@ -103,22 +107,45 @@ function SubdivisionFeatureComponent({
     fillOpacity = 0
   }
 
-  useFrame((_, delta) => {
-    animatedOpacityRef.current = THREE.MathUtils.damp(
-      animatedOpacityRef.current,
-      opacityTarget,
-      12,
-      delta,
-    )
+  useEffect(() => {
+    opacityTargetRef.current = opacityTarget
+  }, [opacityTarget])
 
-    if (materialRef.current) {
-      materialRef.current.opacity = effectiveTexture || textureFailed
-        ? (isHovered ? 0.95 : 0.85) * animatedOpacityRef.current
-        : 0
+  useEffect(() => {
+    hoveredFillOpacityRef.current = isHovered ? 0.95 : 0.85
+    hoveredLineOpacityRef.current = isHovered ? 0.95 : 0.4
+  }, [isHovered])
+
+  useEffect(() => {
+    hasVisibleFillRef.current = !!(effectiveTexture || textureFailed)
+  }, [effectiveTexture, textureFailed])
+
+  useEffect(() => {
+    if (!lineMaterialRef.current) return
+    lineMaterialRef.current.color.set(borderColor)
+  }, [borderColor])
+
+  useFrame((_, delta) => {
+    const target = opacityTargetRef.current
+    const current = animatedOpacityRef.current
+    const material = materialRef.current
+    const lineMaterial = lineMaterialRef.current
+
+    if (!material && !lineMaterial) return
+
+    if (Math.abs(current - target) < 0.001) {
+      if (current !== target) {
+        animatedOpacityRef.current = target
+        if (material) material.opacity = hasVisibleFillRef.current ? hoveredFillOpacityRef.current * target : 0
+        if (lineMaterial) lineMaterial.opacity = hoveredLineOpacityRef.current * target
+      }
+      return
     }
-    if (lineMaterialRef.current) {
-      lineMaterialRef.current.opacity = (isHovered ? 0.95 : 0.4) * animatedOpacityRef.current
-    }
+
+    const nextOpacity = THREE.MathUtils.damp(current, target, 12, delta)
+    animatedOpacityRef.current = nextOpacity
+    if (material) material.opacity = hasVisibleFillRef.current ? hoveredFillOpacityRef.current * nextOpacity : 0
+    if (lineMaterial) lineMaterial.opacity = hoveredLineOpacityRef.current * nextOpacity
   })
 
   function handleHover(e: ThreeEvent<PointerEvent>) {

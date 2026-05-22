@@ -6,6 +6,7 @@ import { feature } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import type { Geometry } from 'geojson'
 import { CountryFeature } from './CountryFeature'
+import { firstOtherPhotoUrls } from './photoUtils'
 import type { HoverInfo, GlobePalette, HeroTransform } from './types'
 import type { ProfileIndex } from '../../data/seed'
 import { prepareCountryRecords } from '../../lib/geo-cache'
@@ -107,12 +108,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     setHoveredId(id)
     if (!heroPicUrl) return
     const summary = profileIndex.countrySummariesByNumericId[id]
-    const otherPicUrls = summary
-      ? summary.photos
-          .map(photo => photo.url)
-          .filter(url => url !== heroPicUrl)
-          .slice(0, 4)
-      : []
+    const otherPicUrls = summary ? firstOtherPhotoUrls(summary.photos, heroPicUrl, 4) : []
     const placeCount = summary?.renderablePlaceCount ?? 0
     const { screenX, screenY } = projectToScreen(centroid)
     const heroTransform = summary ? countryHeroTransforms[summary.countryCode] ?? summary.heroTransform : undefined

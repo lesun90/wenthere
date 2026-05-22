@@ -20,6 +20,7 @@ const loader = new THREE.TextureLoader()
 const MAX_ACTIVE_TEXTURE_LOADS = 4
 let activeTextureLoads = 0
 const textureLoadQueue: string[] = []
+let textureLoadQueueIndex = 0
 
 function getEntry(url: string): SharedTextureEntry {
   let entry = textureCache.get(url)
@@ -40,8 +41,15 @@ function notify(entry: SharedTextureEntry) {
 }
 
 function pumpTextureQueue() {
-  while (activeTextureLoads < MAX_ACTIVE_TEXTURE_LOADS && textureLoadQueue.length > 0) {
-    const url = textureLoadQueue.shift()!
+  while (activeTextureLoads < MAX_ACTIVE_TEXTURE_LOADS && textureLoadQueueIndex < textureLoadQueue.length) {
+    const url = textureLoadQueue[textureLoadQueueIndex]
+    textureLoadQueueIndex += 1
+
+    if (textureLoadQueueIndex > 256 && textureLoadQueueIndex > textureLoadQueue.length / 2) {
+      textureLoadQueue.splice(0, textureLoadQueueIndex)
+      textureLoadQueueIndex = 0
+    }
+
     const entry = textureCache.get(url)
     if (!entry || entry.status !== 'loading') continue
     if (!entry.promise) continue

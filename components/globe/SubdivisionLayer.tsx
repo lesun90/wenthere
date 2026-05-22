@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import type { Feature, Geometry } from 'geojson'
 import { SubdivisionFeature } from './SubdivisionFeature'
+import { firstOtherPhotoUrls } from './photoUtils'
 import type { HoverInfo, GlobePalette, HeroTransform } from './types'
 import type { ProfileIndex } from '../../data/seed'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
@@ -22,7 +23,14 @@ function mergeUniqueSubdivisionFeatures(existing: Feature[], incoming: Feature[]
   const seen = new Set<string>()
   const merged: Feature[] = []
 
-  for (const feature of [...existing, ...incoming]) {
+  for (const feature of existing) {
+    const id = subdivisionFeatureId(feature)
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    merged.push(feature)
+  }
+
+  for (const feature of incoming) {
     const id = subdivisionFeatureId(feature)
     if (!id || seen.has(id)) continue
     seen.add(id)
@@ -159,9 +167,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
     hoveredIdRef.current = id
     setHoveredId(id)
     const summary = profileIndex.subdivisionSummariesByCode[id]
-    const otherPicUrls = summary
-      ? summary.photos.filter(photo => photo.url !== heroPicUrl).map(photo => photo.url).slice(0, 4)
-      : []
+    const otherPicUrls = summary ? firstOtherPhotoUrls(summary.photos, heroPicUrl, 4) : []
     const placeCount = summary ? summary.photos.length : 0
     const { screenX, screenY } = projectToScreen(centroid)
     onHoverChange({

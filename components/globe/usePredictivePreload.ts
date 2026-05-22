@@ -72,9 +72,8 @@ export function usePredictivePreload({
       if (sub) preloadSharedTexture(sub.heroPic)
     }
 
-    const renderableCodes = country.subdivisionCodes.filter(code =>
-      profileIndex.renderableSubdivisionCodes.includes(code),
-    )
+    const renderableCodeSet = new Set(profileIndex.renderableSubdivisionCodes)
+    const renderableCodes = country.subdivisionCodes.filter(code => renderableCodeSet.has(code))
     void preloadSubdivisionGeometry(renderableCodes).catch(() => {})
   }, [focusedCountryCode, profileIndex])
 }
