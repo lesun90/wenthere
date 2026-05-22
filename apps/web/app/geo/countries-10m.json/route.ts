@@ -4,7 +4,7 @@ import { join } from 'node:path'
 export const runtime = 'nodejs'
 
 export async function GET() {
-  const file = await readFile(join(process.cwd(), 'data', 'geo', 'countries-10m.json'), 'utf8')
+  const file = await readFile(join(process.cwd(), 'public', 'geo', 'countries-10m.json'), 'utf8')
   return new Response(file, {
     headers: {
       'content-type': 'application/json; charset=utf-8',

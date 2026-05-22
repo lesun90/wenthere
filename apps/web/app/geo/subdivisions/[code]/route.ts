@@ -19,7 +19,7 @@ export async function GET(
   if (!fileName) return new Response('Not found', { status: 404 })
 
   try {
-    const file = await readFile(join(process.cwd(), 'data', 'geo', 'subdivisions', fileName), 'utf8')
+    const file = await readFile(join(process.cwd(), 'public', 'geo', 'subdivisions', fileName), 'utf8')
     return new Response(file, {
       headers: {
         'content-type': 'application/geo+json; charset=utf-8',
