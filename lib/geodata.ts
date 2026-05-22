@@ -5,7 +5,7 @@ import type {
   TravelPhoto,
   TravelerProfile,
   SubdivisionSummary,
-} from '../data/seed'
+} from './types'
 import {
   getCountryMetadata,
   getSubdivisionMetadata,

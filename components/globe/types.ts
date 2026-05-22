@@ -1,5 +1,5 @@
 import type { Geometry } from 'geojson'
-import type { PhotoFrameTransform } from '../../data/seed'
+import type { PhotoFrameTransform } from '../../lib/types'
 
 export type HeroTransform = PhotoFrameTransform
 

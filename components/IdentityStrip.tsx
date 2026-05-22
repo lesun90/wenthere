@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { travelerProfile, type ProfileIndex, type TravelerProfile } from '../data/seed'
+import type { ProfileIndex, TravelerProfile } from '../lib/types'
+import { travelerProfile } from '../data/demoProfile'
 import { buildProfileIndex } from '../lib/geodata'
 import { useTheme } from '../lib/theme-context'
 

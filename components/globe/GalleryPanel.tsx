@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Geometry } from 'geojson'
-import type { ProfileIndex } from '../../data/seed'
+import type { ProfileIndex } from '../../lib/types'
 import { geoJsonToSvgPath, geometryFrameBounds } from '../../lib/geomath'
 import { getSubdivisionGeometry, getCountryGeometry } from '../../lib/geo-registry'
 import { shapeFrameToTextureTransform } from './framingTransform'

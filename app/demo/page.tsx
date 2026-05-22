@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react'
 import { GlobeScene } from '@/components/globe/GlobeScene'
 import { ProfileUI } from '@/components/ProfileUI'
-import { travelerProfile } from '@/data/seed'
+import { travelerProfile } from '@/data/demoProfile'
 import { buildProfileIndex } from '@/lib/geodata'
 
 const profileIndex = buildProfileIndex(travelerProfile)

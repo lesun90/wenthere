@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { Feature } from 'geojson'
-import type { ProfileIndex } from '../../data/seed'
+import type { ProfileIndex } from '../../lib/types'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { hasCachedEntry, setCachedFeature, getCachedFeature } from '../../lib/subdivision-feature-cache'
 import { preloadSharedTexture } from './useSharedTexture'

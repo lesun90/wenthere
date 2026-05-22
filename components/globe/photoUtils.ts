@@ -1,4 +1,4 @@
-import type { TravelPhoto } from '../../data/seed'
+import type { TravelPhoto } from '../../lib/types'
 
 export function firstOtherPhotoUrls(photos: TravelPhoto[], heroPicUrl: string, limit: number) {
   const urls: string[] = []

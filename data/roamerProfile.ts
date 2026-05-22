@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { ProfilePresentation, TravelPhoto, TravelerProfile } from './seed'
+import type { ProfilePresentation, TravelPhoto, TravelerProfile } from '../lib/types'
 
 type SubdivisionFeature = {
   properties?: {

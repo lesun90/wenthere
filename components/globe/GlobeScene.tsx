@@ -13,7 +13,8 @@ import { usePredictivePreload } from './usePredictivePreload'
 import { useTheme } from '../../lib/theme-context'
 import type { HoverInfo, GlobeState, GlobePalette, HeroTransform } from './types'
 import { latLngToVec3 } from '../../lib/geo'
-import { travelerProfile, type TravelerProfile } from '../../data/seed'
+import type { TravelerProfile } from '../../lib/types'
+import { travelerProfile } from '../../data/demoProfile'
 import { buildProfileIndex } from '../../lib/geodata'
 
 const MODE_TRANSITION_MS = 300

@@ -36,9 +36,9 @@ pnpm exec tsc --noEmit
 
 **Beenthere** is a Next.js 15 (App Router) single-page travel-photo globe. The root `/` redirects to `/demo`, which is the only live route. `app/stresstest` is a performance harness using the generated Roamer profile.
 
-### Data model (`data/seed.ts`)
+### Data model
 
-All traveler data flows from a single photo-centric `TravelerProfile` object defined in `data/seed.ts`. A profile contains one `photos: TravelPhoto[]` array plus optional `presentation` hero/framing maps keyed by country or subdivision code. Countries and subdivisions are derived from photo locations; there is no backend, database, or API.
+Core domain types (`TravelPhoto`, `TravelerProfile`, `ProfileIndex`, etc.) are defined in `lib/types.ts`. The demo dataset is in `data/demoProfile.ts`, which exports `travelerProfile` — a hardcoded `TravelerProfile` used by the `/demo` route. A profile contains one `photos: TravelPhoto[]` array plus optional `presentation` hero/framing maps keyed by country or subdivision code. Countries and subdivisions are derived from photo locations; there is no backend, database, or API.
 
 `TravelerProfile` is injectable: `GlobeScene` accepts `profile` as a prop (defaults to the seeded demo profile), enabling the performance page to pass in a different profile.
 

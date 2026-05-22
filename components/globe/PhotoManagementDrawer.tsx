@@ -1,7 +1,7 @@
 'use client'
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import type { CountrySummary, ProfileIndex, TravelPhoto } from '../../data/seed'
+import type { CountrySummary, ProfileIndex, TravelPhoto } from '../../lib/types'
 
 const DRAWER_WIDTH = 380
 const ENTER_DURATION = 340
