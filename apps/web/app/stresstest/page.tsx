@@ -1,4 +1,6 @@
-import { Suspense } from 'react'
+'use client'
+
+import { Suspense, useMemo, useState } from 'react'
 import { GlobeScene } from '@beenthere/ui/components/globe/GlobeScene'
 import { ProfileUI } from '@beenthere/ui/components/ProfileUI'
 import roamerProfile from '../../data/roamerProfile.json'
@@ -34,14 +36,20 @@ function GlobeLoader() {
 }
 
 export default function StressTestPage() {
-  const profileIndex = buildProfileIndex(roamerProfile)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const profileIndex = useMemo(() => buildProfileIndex(roamerProfile), [])
 
   return (
     <main className="fixed inset-0 overflow-hidden">
       <Suspense fallback={<GlobeLoader />}>
-        <GlobeScene profile={roamerProfile} />
+        <GlobeScene profile={roamerProfile} photoDrawerOpen={drawerOpen} />
       </Suspense>
-      <ProfileUI profile={roamerProfile} profileIndex={profileIndex} />
+      <ProfileUI
+        profile={roamerProfile}
+        profileIndex={profileIndex}
+        drawerOpen={drawerOpen}
+        onDrawerOpenChange={setDrawerOpen}
+      />
     </main>
   )
 }

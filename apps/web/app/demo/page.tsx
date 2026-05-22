@@ -9,8 +9,6 @@ import { LocalProfileStore } from '@beenthere/storage-local/local-store'
 
 const store = new LocalProfileStore()
 
-const DRAWER_WIDTH = 380
-
 function GlobeLoader() {
   return (
     <div style={{
@@ -51,24 +49,14 @@ export default function DemoPage() {
             <GlobeLoader />
           ) : (
             <>
-              <div
-                className="globe-shift-wrapper"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  transform: drawerOpen ? `translateX(${-(DRAWER_WIDTH / 2)}px)` : 'translateX(0)',
-                  transition: 'transform 340ms cubic-bezier(0.16,1,0.3,1)',
-                  willChange: 'transform',
-                }}
-              >
-                <Suspense fallback={<GlobeLoader />}>
-                  <GlobeScene
-                    profile={profileState.profile}
-                    onSetCountryHero={profileState.setCountryHero}
-                    onSetSubdivisionHero={profileState.setSubdivisionHero}
-                  />
-                </Suspense>
-              </div>
+              <Suspense fallback={<GlobeLoader />}>
+                <GlobeScene
+                  profile={profileState.profile}
+                  photoDrawerOpen={drawerOpen}
+                  onSetCountryHero={profileState.setCountryHero}
+                  onSetSubdivisionHero={profileState.setSubdivisionHero}
+                />
+              </Suspense>
               <ProfileUI
                 profile={profileState.profile}
                 profileIndex={profileState.profileIndex}

@@ -24,6 +24,7 @@ const FLY_DURATION = 700
 const ENTER_DETAIL_DISTANCE = 1.85
 const EXIT_DETAIL_DISTANCE = 2.35
 const COUNTRY_FLY_DISTANCE = 1.65
+const PHOTO_DRAWER_WIDTH = 380
 
 const GLOBE_PALETTES: Record<'dark' | 'light', GlobePalette> = {
   dark: {
@@ -187,12 +188,14 @@ function useLayerPresence(show: boolean) {
 
 interface GlobeSceneProps {
   profile: TravelerProfile
+  photoDrawerOpen?: boolean
   onSetCountryHero?: (countryCode: string, photoId: string, framing: HeroTransform) => void
   onSetSubdivisionHero?: (subdivisionCode: string, photoId: string, framing: HeroTransform) => void
 }
 
 function GlobeSceneComponent({
   profile,
+  photoDrawerOpen = false,
   onSetCountryHero,
   onSetSubdivisionHero,
 }: GlobeSceneProps) {
@@ -362,13 +365,23 @@ function GlobeSceneComponent({
   const galleryState = current.level === 'gallery'
     ? (current as Extract<GlobeState, { level: 'gallery' }>)
     : null
+  const globeInteractionsEnabled = !controlsActive
 
   return (
     <div
       style={{ position: 'relative', width: '100%', height: '100%' }}
       onPointerDown={e => { if (!galleryOpen) clickOriginRef.current = { x: e.clientX, y: e.clientY } }}
     >
-      <div style={{ width: '100%', height: '100%', opacity: galleryOpen ? 0.4 : 1, transition: 'opacity 300ms' }}>
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          opacity: galleryOpen ? 0.4 : 1,
+          transform: photoDrawerOpen ? `translateX(calc(-1 * min(${PHOTO_DRAWER_WIDTH / 2}px, 22vw)))` : 'translateX(0)',
+          transition: 'opacity 300ms, transform 340ms cubic-bezier(0.16,1,0.3,1)',
+          willChange: photoDrawerOpen ? 'transform' : undefined,
+        }}
+      >
         <Canvas
           camera={{ position: [0, 0, 2.5], fov: 45 }}
           style={{ width: '100%', height: '100%' }}
@@ -394,7 +407,7 @@ function GlobeSceneComponent({
             onHoverChange={setHoverInfo}
             onCountryTap={handleCountryTap}
             onCountryHover={handleCountryHover}
-            interactionsEnabled={!controlsActive}
+            interactionsEnabled={globeInteractionsEnabled}
             palette={palette}
             countryHeroOverrides={countryHeroOverrides}
             countryHeroTransforms={countryHeroTransforms}
@@ -405,7 +418,7 @@ function GlobeSceneComponent({
               opacity={subdivisionOpacity}
               onHoverChange={setHoverInfo}
               onSubdivisionTap={handleSubdivisionTap}
-              interactionsEnabled={!controlsActive}
+              interactionsEnabled={globeInteractionsEnabled}
               palette={palette}
               heroOverrides={subdivisionHeroOverrides}
               heroTransforms={subdivisionHeroTransforms}
