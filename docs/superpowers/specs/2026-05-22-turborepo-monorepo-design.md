@@ -9,12 +9,14 @@ into independent packages. One repo, multiple deployable apps, no code duplicati
 ## Goals
 
 - Move existing UI/UX into `packages/ui` with zero rewrites.
-- Isolate storage implementations into `packages/storage-github` and
-  `packages/storage-supabase` so they can be swapped per app.
-- `apps/personal` composes ui + storage-github — the Phase 1 deployable.
+- Isolate storage implementations into `packages/storage-github`,
+  `packages/storage-local`, and `packages/storage-supabase` so they can be swapped
+  per app.
+- `apps/personal` composes ui + storage-github (production) or storage-local (dev).
 - `apps/service` is scaffolded for Phase 2 (Supabase, multi-user) but not implemented.
 - All imports inside `packages/ui` work unchanged (`@/` alias preserved).
 - Docker, scripts, and dev workflow continue to work.
+- Local dev works fully offline with no GitHub credentials required.
 
 ## Non-Goals
 
@@ -158,6 +160,26 @@ export { GET, PUT } from '@beenthere/storage-github/routes/profile'
 This satisfies Next.js route file discovery (must be under `app/api/`) while keeping
 all logic in the package.
 
+## `packages/storage-local` — `@beenthere/storage-local`
+
+Local filesystem storage for offline development. Activated by `STORAGE_BACKEND=local`
+in `.env.local`. No GitHub credentials required.
+
+```
+packages/storage-local/
+├── package.json           ← name: "@beenthere/storage-local", private: true
+├── tsconfig.json
+├── index.ts               ← exports LocalProfileStore
+├── local-store.ts         ← LocalProfileStore implements ProfileStore
+└── routes/
+    ├── profile.ts         ← GET reads / PUT writes dev-data/profile.json
+    ├── photo.ts           ← POST saves file to dev-data/photos/<key>
+    └── photo-key.ts       ← GET streams file, DELETE removes file
+```
+
+Data is written to `apps/personal/dev-data/` (gitignored). Route handlers resolve
+paths using `process.cwd()` — standard for Next.js server-side code.
+
 ## `packages/storage-supabase` — `@beenthere/storage-supabase`
 
 Phase 2 placeholder. Not implemented in this milestone.
@@ -202,7 +224,7 @@ apps/personal/
 
 **`next.config.ts`:**
 ```ts
-transpilePackages: ['@beenthere/ui', '@beenthere/storage-github']
+transpilePackages: ['@beenthere/ui', '@beenthere/storage-github', '@beenthere/storage-local']
 ```
 
 **`package.json` dependencies:**
@@ -212,10 +234,40 @@ transpilePackages: ['@beenthere/ui', '@beenthere/storage-github']
   "dependencies": {
     "@beenthere/ui": "workspace:*",
     "@beenthere/storage-github": "workspace:*",
+    "@beenthere/storage-local": "workspace:*",
     "next": "15.x"
   }
 }
 ```
+
+**Backend switching in API route wrappers** — `STORAGE_BACKEND` env var selects the
+active implementation at runtime:
+
+```ts
+// apps/personal/app/api/profile/route.ts
+import { GET as ghGet, PUT as ghPut } from '@beenthere/storage-github/routes/profile'
+import { GET as localGet, PUT as localPut } from '@beenthere/storage-local/routes/profile'
+
+const local = process.env.STORAGE_BACKEND === 'local'
+export const GET = local ? localGet : ghGet
+export const PUT = local ? localPut : ghPut
+```
+
+The same pattern applies to `photo/route.ts` and `photo/[key]/route.ts`.
+
+**`.env.example`** documents both modes:
+```
+# Local dev (no GitHub needed):
+STORAGE_BACKEND=local
+
+# Production (GitHub storage):
+STORAGE_BACKEND=github
+GITHUB_TOKEN=ghp_...
+GITHUB_STORAGE_REPO=owner/repo
+GITHUB_OWNER_SECRET=...
+```
+
+`apps/personal/dev-data/` is added to `.gitignore`.
 
 ## `apps/service` — Phase 2 scaffold
 
@@ -304,15 +356,17 @@ The restructure is a pure file reorganization — no logic changes. Safe order:
 
 1. Add root `turbo.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`.
 2. Create `packages/ui/` — move `components/`, `lib/`, `data/`, `app/globals.css`,
-   `scripts/`. Add `ProfileStore` interface.
-3. Create `packages/storage-github/` — scaffold only (no implementation yet).
-4. Create `packages/storage-supabase/` — empty placeholder.
-5. Create `apps/personal/` — move `app/`, `public/`, `next.config.ts`, Docker files.
-   Update imports in app-level files. Add `transpilePackages`.
-6. Create `apps/service/` — placeholder page only.
-7. Update root `package.json` to workspace root shape.
-8. Delete files that have moved (old root-level `components/`, `lib/`, etc.).
-9. Verify: `pnpm install`, `pnpm --filter @beenthere/personal build`, `pnpm --filter @beenthere/ui check:profile`.
+   `scripts/`, `test/`. Add `ProfileStore` interface.
+3. Create `packages/storage-local/` — full implementation (filesystem routes).
+4. Create `packages/storage-github/` — scaffold only (no implementation yet).
+5. Create `packages/storage-supabase/` — empty placeholder.
+6. Create `apps/personal/` — move `app/`, `public/`, `next.config.ts`, Docker files.
+   Update imports in app-level files. Add `transpilePackages`. Add `dev-data/` to
+   `.gitignore`. Wire `STORAGE_BACKEND` switching in API route wrappers.
+7. Create `apps/service/` — placeholder page only.
+8. Update root `package.json` to workspace root shape.
+9. Delete files that have moved (old root-level `components/`, `lib/`, etc.).
+10. Verify: `pnpm install`, `pnpm --filter @beenthere/personal build`, `pnpm --filter @beenthere/ui check:profile`.
 
 ## Verification
 
@@ -320,5 +374,8 @@ The restructure is a pure file reorganization — no logic changes. Safe order:
 - `pnpm --filter @beenthere/personal build` produces a working Next.js build.
 - `pnpm exec tsc --noEmit` (per package) passes with no errors.
 - `pnpm --filter @beenthere/ui check:profile` passes.
-- `pnpm dev` starts the dev server and the globe loads at `localhost:3000/demo`.
+- `pnpm dev` with `STORAGE_BACKEND=local` starts the dev server, the globe loads at
+  `localhost:3000/demo`, and profile writes persist to `apps/personal/dev-data/`.
+- `pnpm dev` with `STORAGE_BACKEND=github` (and valid credentials) reads/writes to
+  the GitHub storage repo.
 - No component or lib files are modified — only moved and re-referenced.
