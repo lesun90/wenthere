@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "check:profile": "node scripts/check-profile-index.cjs",
+    "build:geo-metadata": "node scripts/build-geo-metadata.cjs",
     "start": "next start",
     "lint": "next lint",
     "split-geo": "node scripts/split-geo.js"

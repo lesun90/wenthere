@@ -6,17 +6,22 @@ import type {
   TravelerProfile,
   SubdivisionSummary,
 } from '../data/seed'
+import {
+  getCountryMetadata,
+  getSubdivisionMetadata,
+  validateSubdivisionCountry,
+} from './geo-metadata'
 
-const alpha3ToNumeric: Record<string, string> = {
-  USA: '840',
-  CHN: '156',
-  VNM: '704',
+function numericIdFor(countryCode: string): string {
+  return getCountryMetadata(countryCode)?.numericId ?? countryCode
 }
 
-function numericIdFor(photo: TravelPhoto): string {
-  return photo.location.countryNumericId
-    ?? alpha3ToNumeric[photo.location.countryCode]
-    ?? photo.location.countryCode
+function countryNameFor(countryCode: string): string {
+  return getCountryMetadata(countryCode)?.name ?? countryCode
+}
+
+function subdivisionNameFor(subdivisionCode: string): string {
+  return getSubdivisionMetadata(subdivisionCode)?.name ?? subdivisionCode
 }
 
 function isPhotoInCountry(photo: TravelPhoto, countryCode: string): boolean {
@@ -113,8 +118,8 @@ export function buildProfileIndex(profile: TravelerProfile): ProfileIndex {
 
     const summary: CountrySummary = {
       countryCode,
-      countryNumericId: numericIdFor(first),
-      name: first.location.countryName,
+      countryNumericId: numericIdFor(countryCode),
+      name: countryNameFor(countryCode),
       heroPic: hero.url,
       heroTransform: heroTransform(hero, presentationHero?.photoId, presentationHero?.framing),
       photos,
@@ -142,7 +147,7 @@ export function buildProfileIndex(profile: TravelerProfile): ProfileIndex {
     const summary: SubdivisionSummary = {
       subdivisionCode,
       countryCode: first.location.countryCode,
-      name: first.location.subdivisionName ?? subdivisionCode,
+      name: subdivisionNameFor(subdivisionCode),
       heroPic: hero.url,
       heroTransform: heroTransform(hero, presentationHero?.photoId, presentationHero?.framing),
       photos,
@@ -208,6 +213,11 @@ export function validateProfile(profile: TravelerProfile): string[] {
 
     if (!photo.location.countryCode) {
       issues.push(`Photo "${photo.id}" is missing location.countryCode.`)
+    }
+
+    if (photo.location.subdivisionCode) {
+      const issue = validateSubdivisionCountry(photo.location.subdivisionCode, photo.location.countryCode)
+      if (issue) issues.push(`Photo "${photo.id}" has invalid location: ${issue}`)
     }
   }
 

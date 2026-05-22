@@ -1,8 +1,14 @@
-import { Suspense } from 'react'
+'use client'
+
+import { Suspense, useState } from 'react'
 import { GlobeScene } from '@/components/globe/GlobeScene'
-import { IdentityStrip } from '@/components/IdentityStrip'
+import { ProfileUI } from '@/components/ProfileUI'
 import { travelerProfile } from '@/data/seed'
 import { buildProfileIndex } from '@/lib/geodata'
+
+const profileIndex = buildProfileIndex(travelerProfile)
+
+const DRAWER_WIDTH = 380
 
 function GlobeLoader() {
   return (
@@ -34,14 +40,30 @@ function GlobeLoader() {
 }
 
 export default function DemoPage() {
-  const profileIndex = buildProfileIndex(travelerProfile)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   return (
     <main className="fixed inset-0 overflow-hidden">
-      <Suspense fallback={<GlobeLoader />}>
-        <GlobeScene profile={travelerProfile} />
-      </Suspense>
-      <IdentityStrip profile={travelerProfile} profileIndex={profileIndex} />
+      <div
+        className="globe-shift-wrapper"
+        style={{
+          width: '100%',
+          height: '100%',
+          transform: drawerOpen ? `translateX(${-(DRAWER_WIDTH / 2)}px)` : 'translateX(0)',
+          transition: 'transform 340ms cubic-bezier(0.16,1,0.3,1)',
+          willChange: 'transform',
+        }}
+      >
+        <Suspense fallback={<GlobeLoader />}>
+          <GlobeScene profile={travelerProfile} />
+        </Suspense>
+      </div>
+      <ProfileUI
+        profile={travelerProfile}
+        profileIndex={profileIndex}
+        drawerOpen={drawerOpen}
+        onDrawerOpenChange={setDrawerOpen}
+      />
     </main>
   )
 }

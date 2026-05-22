@@ -14,6 +14,8 @@ interface Props {
   opacityTarget: number
   heroPicUrl: string
   heroTransform?: HeroTransform
+  interactive?: boolean
+  hoverEnabled?: boolean
   palette: GlobePalette
   onHover: () => void
   onUnhover: () => void
@@ -27,6 +29,8 @@ function SubdivisionFeatureComponent({
   opacityTarget,
   heroPicUrl,
   heroTransform,
+  interactive = true,
+  hoverEnabled = interactive,
   palette,
   onHover,
   onUnhover,
@@ -146,6 +150,7 @@ function SubdivisionFeatureComponent({
   })
 
   function handleHover(e: ThreeEvent<PointerEvent>) {
+    if (!hoverEnabled) return
     if (!isFrontHemisphereHit(e.point, e.ray.origin)) return
     e.stopPropagation()
     onHover()
@@ -162,9 +167,9 @@ function SubdivisionFeatureComponent({
       <mesh
         geometry={fillGeometry}
         renderOrder={3}
-        onPointerOver={handleHover}
-        onPointerOut={onUnhover}
-        onClick={handleClick}
+        onPointerOver={hoverEnabled ? handleHover : undefined}
+        onPointerOut={hoverEnabled ? onUnhover : undefined}
+        onClick={interactive ? handleClick : undefined}
       >
         <meshLambertMaterial
           ref={materialRef}
@@ -190,5 +195,7 @@ export const SubdivisionFeature = memo(SubdivisionFeatureComponent, (prev, next)
   && prev.opacityTarget === next.opacityTarget
   && prev.heroPicUrl === next.heroPicUrl
   && sameHeroTransform(prev.heroTransform, next.heroTransform)
+  && prev.interactive === next.interactive
+  && prev.hoverEnabled === next.hoverEnabled
   && prev.palette === next.palette
 ))

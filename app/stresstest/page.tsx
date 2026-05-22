@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { GlobeScene } from '../../components/globe/GlobeScene'
-import { IdentityStrip } from '../../components/IdentityStrip'
+import { ProfileUI } from '../../components/ProfileUI'
 import { roamerProfile } from '../../data/roamerProfile'
 import { buildProfileIndex } from '../../lib/geodata'
 
@@ -41,7 +41,7 @@ export default function StressTestPage() {
       <Suspense fallback={<GlobeLoader />}>
         <GlobeScene profile={roamerProfile} />
       </Suspense>
-      <IdentityStrip profile={roamerProfile} profileIndex={profileIndex} />
+      <ProfileUI profile={roamerProfile} profileIndex={profileIndex} />
     </main>
   )
 }

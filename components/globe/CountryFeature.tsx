@@ -14,6 +14,7 @@ interface Props {
   isHovered: boolean
   dimmed: boolean
   interactive: boolean
+  hoverEnabled?: boolean
   photoOpacityTarget: number
   heroPicUrl?: string
   hoverHeroTransform?: HeroTransform
@@ -30,6 +31,7 @@ function CountryFeatureComponent({
   isHovered,
   dimmed,
   interactive,
+  hoverEnabled = interactive,
   photoOpacityTarget,
   heroPicUrl,
   hoverHeroTransform,
@@ -132,7 +134,7 @@ function CountryFeatureComponent({
   }, [borderOpacity])
 
   function handleHover(e: ThreeEvent<PointerEvent>) {
-    if (!interactive) return
+    if (!hoverEnabled) return
     if (!isFrontHemisphereHit(e.point, e.ray.origin)) return
     e.stopPropagation()
     onHover()
@@ -169,9 +171,9 @@ function CountryFeatureComponent({
       <mesh
         geometry={fillGeometry}
         renderOrder={1}
-        onPointerOver={handleHover}
-        onPointerOut={interactive ? onUnhover : undefined}
-        onClick={handleClick}
+        onPointerOver={hoverEnabled ? handleHover : undefined}
+        onPointerOut={hoverEnabled ? onUnhover : undefined}
+        onClick={interactive ? handleClick : undefined}
       >
         <meshLambertMaterial
           ref={baseMaterialRef}
@@ -186,9 +188,9 @@ function CountryFeatureComponent({
         <mesh
           geometry={photoGeometry}
           renderOrder={2}
-          onPointerOver={handleHover}
-          onPointerOut={interactive ? onUnhover : undefined}
-          onClick={handleClick}
+          onPointerOver={hoverEnabled ? handleHover : undefined}
+          onPointerOut={hoverEnabled ? onUnhover : undefined}
+          onClick={interactive ? handleClick : undefined}
         >
           <meshLambertMaterial
             ref={photoMaterialRef}
@@ -215,6 +217,7 @@ export const CountryFeature = memo(CountryFeatureComponent, (prev, next) => (
   && prev.isHovered === next.isHovered
   && prev.dimmed === next.dimmed
   && prev.interactive === next.interactive
+  && prev.hoverEnabled === next.hoverEnabled
   && prev.photoOpacityTarget === next.photoOpacityTarget
   && prev.heroPicUrl === next.heroPicUrl
   && sameHeroTransform(prev.hoverHeroTransform, next.hoverHeroTransform)

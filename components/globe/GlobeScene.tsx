@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -185,7 +185,7 @@ function useLayerPresence(show: boolean) {
   return present
 }
 
-export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerProfile }) {
+function GlobeSceneComponent({ profile = travelerProfile }: { profile?: TravelerProfile }) {
   const { theme } = useTheme()
   const palette = GLOBE_PALETTES[theme]
   const profileIndex = useMemo(() => buildProfileIndex(profile), [profile])
@@ -197,6 +197,8 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
   const orbitRef = useRef<React.ElementRef<typeof OrbitControls>>(null)
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
   const [clickOrigin, setClickOrigin] = useState<{ x: number; y: number } | null>(null)
+  const clickOriginRef = useRef<{ x: number; y: number } | null>(null)
+  const [controlsActive, setControlsActive] = useState(false)
 
   const [hoveredCountryCode, setHoveredCountryCode] = useState<string | null>(null)
   const [focusedCountryCode, setFocusedCountryCode] = useState<string | null>(null)
@@ -304,6 +306,7 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
       subdivisionId,
       countryCode,
     }
+    setClickOrigin(clickOriginRef.current)
 
     if (current.level === 'gallery') {
       setNavStack(s => [...s.slice(0, -1), galleryState])
@@ -330,6 +333,15 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
     setCountryHeroTransforms(prev => ({ ...prev, [countryCode]: transform }))
   }
 
+  function handleControlsStart() {
+    setControlsActive(true)
+    setHoverInfo(null)
+  }
+
+  function handleControlsEnd() {
+    setControlsActive(false)
+  }
+
   const galleryState = current.level === 'gallery'
     ? (current as Extract<GlobeState, { level: 'gallery' }>)
     : null
@@ -337,7 +349,7 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
   return (
     <div
       style={{ position: 'relative', width: '100%', height: '100%' }}
-      onPointerDown={e => { if (!galleryOpen) setClickOrigin({ x: e.clientX, y: e.clientY }) }}
+      onPointerDown={e => { if (!galleryOpen) clickOriginRef.current = { x: e.clientX, y: e.clientY } }}
     >
       <div style={{ width: '100%', height: '100%', opacity: galleryOpen ? 0.4 : 1, transition: 'opacity 300ms' }}>
         <Canvas
@@ -365,6 +377,7 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
             onHoverChange={setHoverInfo}
             onCountryTap={handleCountryTap}
             onCountryHover={handleCountryHover}
+            interactionsEnabled={!controlsActive}
             palette={palette}
             countryHeroOverrides={countryHeroOverrides}
             countryHeroTransforms={countryHeroTransforms}
@@ -375,6 +388,7 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
               opacity={subdivisionOpacity}
               onHoverChange={setHoverInfo}
               onSubdivisionTap={handleSubdivisionTap}
+              interactionsEnabled={!controlsActive}
               palette={palette}
               heroOverrides={subdivisionHeroOverrides}
               heroTransforms={subdivisionHeroTransforms}
@@ -388,6 +402,8 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
             minDistance={MIN_CAMERA_DISTANCE}
             maxDistance={MAX_CAMERA_DISTANCE}
             zoomSpeed={ZOOM_SPEED}
+            onStart={handleControlsStart}
+            onEnd={handleControlsEnd}
           />
         </Canvas>
       </div>
@@ -429,3 +445,5 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
     </div>
   )
 }
+
+export const GlobeScene = memo(GlobeSceneComponent)

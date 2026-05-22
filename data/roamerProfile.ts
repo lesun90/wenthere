@@ -13,39 +13,35 @@ type SubdivisionFeature = {
 
 type CountryRule = {
   code: string
-  name: string
-  numericId: string
   maxRegions?: number
 }
 
 type RegionReference = {
   countryCode: string
-  countryName: string
-  countryNumericId: string
   subdivisionCode: string
   name: string
 }
 
 const IMAGE_WIDTH = 1200
 const IMAGE_HEIGHT = 800
-const SUBDIVISION_DIR = join(process.cwd(), 'public', 'geo', 'subdivisions')
+const SUBDIVISION_DIR = join(process.cwd(), 'data', 'geo', 'subdivisions')
 
 const countryRules: CountryRule[] = [
-  { code: 'USA', name: 'United States', numericId: '840' },
-  { code: 'VNM', name: 'Vietnam', numericId: '704' },
-  { code: 'CHN', name: 'China', numericId: '156' },
-  { code: 'ZAF', name: 'South Africa', numericId: '710' },
-  { code: 'EGY', name: 'Egypt', numericId: '818' },
-  { code: 'MAR', name: 'Morocco', numericId: '504' },
-  { code: 'KEN', name: 'Kenya', numericId: '404' },
-  { code: 'NGA', name: 'Nigeria', numericId: '566' },
-  { code: 'ETH', name: 'Ethiopia', numericId: '231' },
-  { code: 'FRA', name: 'France', numericId: '250', maxRegions: 12 },
-  { code: 'DEU', name: 'Germany', numericId: '276', maxRegions: 12 },
-  { code: 'ITA', name: 'Italy', numericId: '380', maxRegions: 12 },
-  { code: 'ESP', name: 'Spain', numericId: '724', maxRegions: 12 },
-  { code: 'GBR', name: 'United Kingdom', numericId: '826', maxRegions: 12 },
-  { code: 'NLD', name: 'Netherlands', numericId: '528', maxRegions: 12 },
+  { code: 'USA' },
+  { code: 'VNM' },
+  { code: 'CHN' },
+  { code: 'ZAF' },
+  { code: 'EGY' },
+  { code: 'MAR' },
+  { code: 'KEN' },
+  { code: 'NGA' },
+  { code: 'ETH' },
+  { code: 'FRA', maxRegions: 12 },
+  { code: 'DEU', maxRegions: 12 },
+  { code: 'ITA', maxRegions: 12 },
+  { code: 'ESP', maxRegions: 12 },
+  { code: 'GBR', maxRegions: 12 },
+  { code: 'NLD', maxRegions: 12 },
 ]
 
 const rulesByCountry = new Map(countryRules.map(rule => [rule.code, rule]))
@@ -82,8 +78,6 @@ function readSubdivision(fileName: string): RegionReference | null {
 
   return {
     countryCode: rule.code,
-    countryName: rule.name,
-    countryNumericId: rule.numericId,
     subdivisionCode: properties.adm1_code,
     name: properties.name_en || properties.name || properties.adm1_code,
   }
@@ -105,13 +99,10 @@ function makeRegionPhotos(region: RegionReference): TravelPhoto[] {
   return Array.from({ length: photoCountFor(region) }, (_, index) => ({
     id: photoIdFor(region, index),
     url: picsumUrl(`roamer-${region.subdivisionCode}-${index + 1}`),
-    caption: `Roamer memory ${index + 1} from ${region.name}, ${region.countryName}`,
+    caption: `Roamer memory ${index + 1} from ${region.name}`,
     location: {
       countryCode: region.countryCode,
-      countryName: region.countryName,
-      countryNumericId: region.countryNumericId,
       subdivisionCode: region.subdivisionCode,
-      subdivisionName: region.name,
     },
   }))
 }

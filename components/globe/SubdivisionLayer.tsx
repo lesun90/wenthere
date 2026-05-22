@@ -44,13 +44,14 @@ interface Props {
   opacity: number
   onHoverChange: (info: HoverInfo | null) => void
   onSubdivisionTap: (subdivisionId: string, countryCode: string) => void
+  interactionsEnabled?: boolean
   palette: GlobePalette
   heroOverrides?: Record<string, string>
   heroTransforms?: Record<string, HeroTransform>
   profileIndex: ProfileIndex
 }
 
-export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette, heroOverrides = {}, heroTransforms = {}, profileIndex }: Props) {
+export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, interactionsEnabled = true, palette, heroOverrides = {}, heroTransforms = {}, profileIndex }: Props) {
   const { camera, size } = useThree()
   const [features, setFeatures] = useState<Feature[]>([])
   const pendingRef = useRef<Feature[]>([])
@@ -60,6 +61,13 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
   const lastHoverPayloadRef = useRef<(Omit<HoverInfo, 'heroTransform'> & { id: string }) | null>(null)
 
   const subdivisionCodes = profileIndex.renderableSubdivisionCodes
+
+  useEffect(() => {
+    if (interactionsEnabled) return
+    hoveredIdRef.current = null
+    lastHoverPayloadRef.current = null
+    setHoveredId(null)
+  }, [interactionsEnabled])
 
   useEffect(() => {
     let isActive = true
@@ -176,6 +184,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
     centroid: [number, number],
     geometry: Geometry | null,
   ) {
+    if (!interactionsEnabled) return
     if (hoveredIdRef.current === id) return
     hoveredIdRef.current = id
     setHoveredId(id)
@@ -211,6 +220,8 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
             opacityTarget={opacity}
             heroPicUrl={heroPicUrl}
             heroTransform={heroTransforms[id]}
+            interactive
+            hoverEnabled={interactionsEnabled}
             palette={palette}
             onHover={() => handleHover(id, name, heroPicUrl, centroid, geometry)}
             onUnhover={handleUnhover}

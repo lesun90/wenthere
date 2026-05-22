@@ -10,10 +10,7 @@ export interface PhotoFrameTransform {
 
 export interface PhotoLocation {
   countryCode: string
-  countryName: string
-  countryNumericId?: string
   subdivisionCode?: string
-  subdivisionName?: string
   renderable?: boolean
 }
 
@@ -83,10 +80,7 @@ function photo(
   url: string,
   caption: string,
   countryCode: string,
-  countryName: string,
-  countryNumericId: string,
   subdivisionCode: string,
-  subdivisionName: string,
 ): TravelPhoto {
   return {
     id,
@@ -94,10 +88,7 @@ function photo(
     caption,
     location: {
       countryCode,
-      countryName,
-      countryNumericId,
       subdivisionCode,
-      subdivisionName,
     },
   }
 }
@@ -106,32 +97,32 @@ export const travelerProfile: TravelerProfile = {
   id: 'demo-traveler',
   name: 'Demo Traveler',
   photos: [
-    photo('demo-usa-ca-1', '/demo/10.jpg', 'Golden Gate at dusk', 'USA', 'United States', '840', 'USA-3521', 'California'),
-    photo('demo-usa-ca-2', '/demo/11.jpg', 'Big Sur coastline', 'USA', 'United States', '840', 'USA-3521', 'California'),
-    photo('demo-usa-tx-1', '/demo/12.jpg', 'Big Bend canyon', 'USA', 'United States', '840', 'USA-3536', 'Texas'),
-    photo('demo-usa-tx-2', '/demo/13.jpg', 'Hill Country wildflowers', 'USA', 'United States', '840', 'USA-3536', 'Texas'),
-    photo('demo-usa-ny-1', '/demo/14.jpg', 'Manhattan skyline', 'USA', 'United States', '840', 'USA-3559', 'New York'),
-    photo('demo-usa-ny-2', '/demo/15.jpg', 'Central Park in fall', 'USA', 'United States', '840', 'USA-3559', 'New York'),
-    photo('demo-usa-il-1', '/demo/16.jpg', 'Chicago lakefront', 'USA', 'United States', '840', 'USA-3546', 'Illinois'),
-    photo('demo-usa-il-2', '/demo/17.jpg', 'The Bean at sunrise', 'USA', 'United States', '840', 'USA-3546', 'Illinois'),
-    photo('demo-usa-fl-1', '/demo/18.jpg', 'Everglades waterway', 'USA', 'United States', '840', 'USA-3542', 'Florida'),
-    photo('demo-usa-fl-2', '/demo/19.jpg', 'Key West at sunset', 'USA', 'United States', '840', 'USA-3542', 'Florida'),
-    photo('demo-chn-gd-1', '/demo/20.jpg', 'Pearl River delta', 'CHN', 'China', '156', 'CHN-1180', 'Guangdong'),
-    photo('demo-chn-gd-2', '/demo/21.jpg', 'Guangzhou skyline', 'CHN', 'China', '156', 'CHN-1180', 'Guangdong'),
-    photo('demo-chn-sc-1', '/demo/22.jpg', 'Jiuzhaigou valley', 'CHN', 'China', '156', 'CHN-1809', 'Sichuan'),
-    photo('demo-chn-sc-2', '/demo/23.jpg', 'Chengdu teahouse', 'CHN', 'China', '156', 'CHN-1809', 'Sichuan'),
-    photo('demo-chn-yn-1', '/demo/24.jpg', 'Tiger Leaping Gorge', 'CHN', 'China', '156', 'CHN-1810', 'Yunnan'),
-    photo('demo-chn-yn-2', '/demo/25.jpg', 'Rice terraces at Yuanyang', 'CHN', 'China', '156', 'CHN-1810', 'Yunnan'),
-    photo('demo-chn-bj-1', '/demo/26.jpg', 'Great Wall at Mutianyu', 'CHN', 'China', '156', 'CHN-1155', 'Beijing'),
-    photo('demo-chn-bj-2', '/demo/27.jpg', 'Temple of Heaven courtyard', 'CHN', 'China', '156', 'CHN-1155', 'Beijing'),
-    photo('demo-chn-xj-1', '/demo/28.jpg', 'Karakul Lake dunes', 'CHN', 'China', '156', 'CHN-1756', 'Xinjiang'),
-    photo('demo-chn-xj-2', '/demo/29.jpg', 'Silk Road desert road', 'CHN', 'China', '156', 'CHN-1756', 'Xinjiang'),
-    photo('demo-vnm-dn-1', '/demo/30.jpg', 'Dragon Bridge at night', 'VNM', 'Vietnam', '704', 'VNM-491', 'Da Nang'),
-    photo('demo-vnm-dn-2', '/demo/31.jpg', 'My Khe beach morning', 'VNM', 'Vietnam', '704', 'VNM-491', 'Da Nang'),
-    photo('demo-vnm-hn-1', '/demo/32.jpg', 'Hoan Kiem Lake', 'VNM', 'Vietnam', '704', 'VNM-462', 'Ha Noi'),
-    photo('demo-vnm-hn-2', '/demo/33.jpg', 'Old Quarter at dusk', 'VNM', 'Vietnam', '704', 'VNM-462', 'Ha Noi'),
-    photo('demo-vnm-hcm-1', '/demo/34.jpg', 'Ben Thanh market', 'VNM', 'Vietnam', '704', 'VNM-501', 'Ho Chi Minh'),
-    photo('demo-vnm-hcm-2', '/demo/35.jpg', 'Saigon River at night', 'VNM', 'Vietnam', '704', 'VNM-501', 'Ho Chi Minh'),
+    photo('demo-usa-ca-1', '/demo/10.jpg', 'Golden Gate at dusk', 'USA', 'USA-3521'),
+    photo('demo-usa-ca-2', '/demo/11.jpg', 'Big Sur coastline', 'USA', 'USA-3521'),
+    photo('demo-usa-tx-1', '/demo/12.jpg', 'Big Bend canyon', 'USA', 'USA-3536'),
+    photo('demo-usa-tx-2', '/demo/13.jpg', 'Hill Country wildflowers', 'USA', 'USA-3536'),
+    photo('demo-usa-ny-1', '/demo/14.jpg', 'Manhattan skyline', 'USA', 'USA-3559'),
+    photo('demo-usa-ny-2', '/demo/15.jpg', 'Central Park in fall', 'USA', 'USA-3559'),
+    photo('demo-usa-il-1', '/demo/16.jpg', 'Chicago lakefront', 'USA', 'USA-3546'),
+    photo('demo-usa-il-2', '/demo/17.jpg', 'The Bean at sunrise', 'USA', 'USA-3546'),
+    photo('demo-usa-fl-1', '/demo/18.jpg', 'Everglades waterway', 'USA', 'USA-3542'),
+    photo('demo-usa-fl-2', '/demo/19.jpg', 'Key West at sunset', 'USA', 'USA-3542'),
+    photo('demo-chn-gd-1', '/demo/20.jpg', 'Pearl River delta', 'CHN', 'CHN-1180'),
+    photo('demo-chn-gd-2', '/demo/21.jpg', 'Guangzhou skyline', 'CHN', 'CHN-1180'),
+    photo('demo-chn-sc-1', '/demo/22.jpg', 'Jiuzhaigou valley', 'CHN', 'CHN-1809'),
+    photo('demo-chn-sc-2', '/demo/23.jpg', 'Chengdu teahouse', 'CHN', 'CHN-1809'),
+    photo('demo-chn-yn-1', '/demo/24.jpg', 'Tiger Leaping Gorge', 'CHN', 'CHN-1810'),
+    photo('demo-chn-yn-2', '/demo/25.jpg', 'Rice terraces at Yuanyang', 'CHN', 'CHN-1810'),
+    photo('demo-chn-bj-1', '/demo/26.jpg', 'Great Wall at Mutianyu', 'CHN', 'CHN-1155'),
+    photo('demo-chn-bj-2', '/demo/27.jpg', 'Temple of Heaven courtyard', 'CHN', 'CHN-1155'),
+    photo('demo-chn-xj-1', '/demo/28.jpg', 'Karakul Lake dunes', 'CHN', 'CHN-1756'),
+    photo('demo-chn-xj-2', '/demo/29.jpg', 'Silk Road desert road', 'CHN', 'CHN-1756'),
+    photo('demo-vnm-dn-1', '/demo/30.jpg', 'Dragon Bridge at night', 'VNM', 'VNM-491'),
+    photo('demo-vnm-dn-2', '/demo/31.jpg', 'My Khe beach morning', 'VNM', 'VNM-491'),
+    photo('demo-vnm-hn-1', '/demo/32.jpg', 'Hoan Kiem Lake', 'VNM', 'VNM-462'),
+    photo('demo-vnm-hn-2', '/demo/33.jpg', 'Old Quarter at dusk', 'VNM', 'VNM-462'),
+    photo('demo-vnm-hcm-1', '/demo/34.jpg', 'Ben Thanh market', 'VNM', 'VNM-501'),
+    photo('demo-vnm-hcm-2', '/demo/35.jpg', 'Saigon River at night', 'VNM', 'VNM-501'),
   ],
   presentation: {
     countryHeroes: {

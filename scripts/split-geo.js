@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Usage: node scripts/split-geo.js <path-to-ne_admin_1_states_provinces.geojson>
 // Splits a Natural Earth admin-1 GeoJSON into one file per subdivision under
-// public/geo/subdivisions/<adm1_code>.geojson
+// data/geo/subdivisions/<adm1_code>.geojson
 
 const fs = require('fs')
 const path = require('path')
@@ -12,7 +12,7 @@ if (!inputPath) {
   process.exit(1)
 }
 
-const outDir = path.join(__dirname, '..', 'public', 'geo', 'subdivisions')
+const outDir = path.join(__dirname, '..', 'data', 'geo', 'subdivisions')
 fs.mkdirSync(outDir, { recursive: true })
 
 console.log(`Reading ${inputPath}...`)

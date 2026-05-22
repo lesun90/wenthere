@@ -35,15 +35,23 @@ try {
   } = require(path.join(repoRoot, 'lib/geodata.ts'))
 
   const demoIndex = buildProfileIndex(travelerProfile)
+  assert.equal(travelerProfile.locations, undefined, 'demo profile should not carry geo metadata')
   assert.equal(demoIndex.stats.countryCount, 3, 'demo country count')
   assert.equal(demoIndex.stats.placeCount, 13, 'demo place count')
   assert.equal(demoIndex.stats.photoCount, 26, 'demo photo count')
   assert.equal(demoIndex.countrySummariesByCode.USA.heroPic, '/demo/10.jpg', 'demo USA hero')
+  assert.equal(demoIndex.countrySummariesByCode.USA.name, 'United States', 'demo USA name')
   assert.equal(demoIndex.subdivisionSummariesByCode['USA-3521'].heroPic, '/demo/10.jpg', 'demo California hero')
+  assert.equal(demoIndex.subdivisionSummariesByCode['USA-3521'].name, 'California', 'demo California name')
   assert.deepEqual(
     demoIndex.photosBySubdivisionCode['USA-3521'].map(photo => photo.url),
     ['/demo/10.jpg', '/demo/11.jpg'],
     'demo subdivision gallery order',
+  )
+  assert.deepEqual(
+    Object.keys(travelerProfile.photos[0].location).sort(),
+    ['countryCode', 'subdivisionCode'],
+    'photo locations should expose stable codes only',
   )
 
   const nonRenderablePhoto = {
@@ -52,10 +60,7 @@ try {
     caption: 'Non-renderable test memory',
     location: {
       countryCode: 'USA',
-      countryName: 'United States',
-      countryNumericId: '840',
       subdivisionCode: 'SYN-USA-CHECK',
-      subdivisionName: 'Synthetic check place',
       renderable: false,
     },
   }
@@ -81,10 +86,7 @@ try {
   const movedHero = updatePhoto(travelerProfile, 'demo-usa-ca-1', {
     location: {
       countryCode: 'USA',
-      countryName: 'United States',
-      countryNumericId: '840',
       subdivisionCode: 'USA-3536',
-      subdivisionName: 'Texas',
     },
   })
   const movedHeroIndex = buildProfileIndex(movedHero)
@@ -103,8 +105,6 @@ try {
       caption: 'Country-only photo should not create a visited country',
       location: {
         countryCode: 'CHN',
-        countryName: 'China',
-        countryNumericId: '156',
       },
     }],
   })
@@ -113,6 +113,7 @@ try {
 
   const roamerIndex = buildProfileIndex(roamerProfile)
   assert.equal(roamerProfile.name, 'Roamer', 'roamer name')
+  assert.equal(roamerProfile.locations, undefined, 'roamer profile should not carry geo metadata')
   assert.ok(roamerIndex.stats.placeCount > 200, 'roamer should visit more than 200 regions')
   assert.ok(roamerIndex.stats.photoCount > roamerIndex.stats.placeCount * 3, 'roamer should have more than 3 photos per region')
   assert.equal(roamerIndex.renderableSubdivisionCodes.length, roamerIndex.stats.placeCount, 'roamer renderable region count')
@@ -142,6 +143,19 @@ try {
     Object.values(roamerIndex.countrySummariesByCode).some(country => country.renderablePlaceCount === 0),
     false,
     'roamer profile should not include countries with zero renderable places',
+  )
+
+  const mismatchedSubdivision = updatePhoto(travelerProfile, 'demo-usa-ca-1', {
+    location: {
+      countryCode: 'CHN',
+      subdivisionCode: 'USA-3521',
+    },
+  })
+  assert.ok(
+    validateProfile(mismatchedSubdivision).some(issue =>
+      issue.includes('USA-3521') && issue.includes('CHN') && issue.includes('USA'),
+    ),
+    'subdivision/country mismatch should be reported from shared geo metadata',
   )
 } finally {
   if (originalTs) {

@@ -40,13 +40,14 @@ interface Props {
   onHoverChange: (info: HoverInfo | null) => void
   onCountryTap: (countryCode: string, centroid: [number, number]) => void
   onCountryHover?: (countryCode: string) => void
+  interactionsEnabled?: boolean
   palette: GlobePalette
   countryHeroOverrides?: Record<string, string>
   countryHeroTransforms?: Record<string, HeroTransform>
   profileIndex: ProfileIndex
 }
 
-export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, onCountryTap, onCountryHover, palette, countryHeroOverrides = {}, countryHeroTransforms = {}, profileIndex }: Props) {
+export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, onCountryTap, onCountryHover, interactionsEnabled = true, palette, countryHeroOverrides = {}, countryHeroTransforms = {}, profileIndex }: Props) {
   const { camera, size } = useThree()
   const [topology, setTopology] = useState<Topology<{ countries: GeometryCollection }> | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -66,6 +67,12 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     hoveredIdRef.current = null
     setHoveredId(null)
   }, [showSubdivisions])
+
+  useEffect(() => {
+    if (interactionsEnabled) return
+    hoveredIdRef.current = null
+    setHoveredId(null)
+  }, [interactionsEnabled])
 
   const features = useMemo(() => {
     if (!topology) return []
@@ -131,6 +138,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
 
   const dimmed = showSubdivisions
   const countryInteractionsEnabled = !showSubdivisions
+  const countryHoverEnabled = interactionsEnabled && !showSubdivisions
 
   return (
     <>
@@ -143,9 +151,10 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
             fillGeometry={fillGeometry}
             photoGeometry={photoGeometry}
             lineGeometry={lineGeometry}
-            isHovered={countryInteractionsEnabled && hoveredId === id}
+            isHovered={countryHoverEnabled && hoveredId === id}
             dimmed={dimmed}
             interactive={countryInteractionsEnabled}
+            hoverEnabled={countryHoverEnabled}
             photoOpacityTarget={photoOpacity}
             heroPicUrl={heroPicUrl}
             hoverHeroTransform={summary ? countryHeroTransforms[summary.countryCode] ?? summary.heroTransform : undefined}

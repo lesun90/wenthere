@@ -25,9 +25,13 @@ function MoonIcon() {
 export function IdentityStrip({
   profile = travelerProfile,
   profileIndex,
+  onOpenDrawer,
+  drawerOpen,
 }: {
   profile?: TravelerProfile
   profileIndex?: ProfileIndex
+  onOpenDrawer?: () => void
+  drawerOpen?: boolean
 }) {
   const [copied, setCopied] = useState(false)
   const { theme, toggle } = useTheme()
@@ -50,7 +54,8 @@ export function IdentityStrip({
         position: 'fixed',
         top: 16,
         left: '50%',
-        transform: 'translateX(-50%)',
+        transform: drawerOpen ? 'translateX(calc(-50% - 190px))' : 'translateX(-50%)',
+        transition: 'transform 340ms cubic-bezier(0.16,1,0.3,1)',
         zIndex: 40,
         display: 'flex',
         alignItems: 'center',
@@ -95,6 +100,31 @@ export function IdentityStrip({
       }}>
         {placeCount} {placeCount === 1 ? 'place' : 'places'}
       </span>
+      {onOpenDrawer && (
+        <button
+          onClick={onOpenDrawer}
+          aria-label="Manage photos"
+          className={`add-photos-btn${drawerOpen ? ' active' : ''}`}
+          style={{
+            marginLeft: 4,
+            background: 'none',
+            borderRadius: 9999,
+            fontSize: 12,
+            fontFamily: 'var(--font-dm-sans), sans-serif',
+            cursor: 'pointer',
+            padding: '3px 10px',
+            lineHeight: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path d="M5 1v8M1 5h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+          Add
+        </button>
+      )}
       <button
         onClick={handleShare}
         className={`share-btn${copied ? ' copied' : ''}`}
