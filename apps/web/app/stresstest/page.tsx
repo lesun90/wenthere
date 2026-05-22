@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { GlobeScene } from '@beenthere/ui/components/globe/GlobeScene'
 import { ProfileUI } from '@beenthere/ui/components/ProfileUI'
-import { roamerProfile } from '@beenthere/ui/data/roamerProfile'
+import roamerProfile from '../../data/roamerProfile.json'
 import { buildProfileIndex } from '@beenthere/ui/lib/geodata'
 
 function GlobeLoader() {

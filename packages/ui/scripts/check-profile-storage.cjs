@@ -27,7 +27,7 @@ require.extensions['.ts'] = loadTypeScript
 require.extensions['.tsx'] = loadTypeScript
 
 try {
-  const { travelerProfile } = require(path.join(repoRoot, 'data/demoProfile.ts'))
+  const travelerProfile = require(path.resolve(repoRoot, '../../apps/web/data/demoProfile.json'))
   const {
     appendLocalPhotos,
     applyPhotoEditDraft,

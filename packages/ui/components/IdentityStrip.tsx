@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import type { ProfileIndex, TravelerProfile } from '../lib/types'
-import { travelerProfile } from '../data/demoProfile'
 import { buildProfileIndex } from '../lib/geodata'
 import { useTheme } from '../lib/theme-context'
 
@@ -24,12 +23,12 @@ function MoonIcon() {
 }
 
 export function IdentityStrip({
-  profile = travelerProfile,
+  profile,
   profileIndex,
   onOpenDrawer,
   drawerOpen,
 }: {
-  profile?: TravelerProfile
+  profile: TravelerProfile
   profileIndex?: ProfileIndex
   onOpenDrawer?: () => void
   drawerOpen?: boolean

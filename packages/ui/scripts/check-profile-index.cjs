@@ -1,6 +1,5 @@
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
-const Module = require('node:module')
 const path = require('node:path')
 const ts = require('typescript')
 
@@ -24,8 +23,9 @@ require.extensions['.ts'] = function loadTypeScript(module, filename) {
 }
 
 try {
-  const { travelerProfile } = require(path.join(repoRoot, 'data/demoProfile.ts'))
-  const { roamerProfile } = require(path.join(repoRoot, 'data/roamerProfile.ts'))
+  const webDataDir = path.resolve(repoRoot, '../../apps/web/data')
+  const travelerProfile = require(path.join(webDataDir, 'demoProfile.json'))
+  const roamerProfile = require(path.join(webDataDir, 'roamerProfile.json'))
   const {
     addPhoto,
     buildProfileIndex,

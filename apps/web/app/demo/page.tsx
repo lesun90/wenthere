@@ -4,7 +4,7 @@ import { Suspense, useState } from 'react'
 import { GlobeScene } from '@beenthere/ui/components/globe/GlobeScene'
 import { ProfileUI } from '@beenthere/ui/components/ProfileUI'
 import { ProfileProvider } from '@beenthere/ui/components/profile/ProfileProvider'
-import { travelerProfile } from '@beenthere/ui/data/demoProfile'
+import travelerProfile from '../../data/demoProfile.json'
 import { LocalProfileStore } from '@beenthere/storage-local/local-store'
 
 const store = new LocalProfileStore()

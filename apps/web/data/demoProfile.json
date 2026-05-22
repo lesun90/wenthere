@@ -1,0 +1,54 @@
+{
+  "id": "demo-traveler",
+  "name": "Demo Traveler",
+  "photos": [
+    { "id": "demo-usa-ca-1", "url": "/demo/10.jpg", "caption": "Golden Gate at dusk", "location": { "countryCode": "USA", "subdivisionCode": "USA-3521" } },
+    { "id": "demo-usa-ca-2", "url": "/demo/11.jpg", "caption": "Big Sur coastline", "location": { "countryCode": "USA", "subdivisionCode": "USA-3521" } },
+    { "id": "demo-usa-tx-1", "url": "/demo/12.jpg", "caption": "Big Bend canyon", "location": { "countryCode": "USA", "subdivisionCode": "USA-3536" } },
+    { "id": "demo-usa-tx-2", "url": "/demo/13.jpg", "caption": "Hill Country wildflowers", "location": { "countryCode": "USA", "subdivisionCode": "USA-3536" } },
+    { "id": "demo-usa-ny-1", "url": "/demo/14.jpg", "caption": "Manhattan skyline", "location": { "countryCode": "USA", "subdivisionCode": "USA-3559" } },
+    { "id": "demo-usa-ny-2", "url": "/demo/15.jpg", "caption": "Central Park in fall", "location": { "countryCode": "USA", "subdivisionCode": "USA-3559" } },
+    { "id": "demo-usa-il-1", "url": "/demo/16.jpg", "caption": "Chicago lakefront", "location": { "countryCode": "USA", "subdivisionCode": "USA-3546" } },
+    { "id": "demo-usa-il-2", "url": "/demo/17.jpg", "caption": "The Bean at sunrise", "location": { "countryCode": "USA", "subdivisionCode": "USA-3546" } },
+    { "id": "demo-usa-fl-1", "url": "/demo/18.jpg", "caption": "Everglades waterway", "location": { "countryCode": "USA", "subdivisionCode": "USA-3542" } },
+    { "id": "demo-usa-fl-2", "url": "/demo/19.jpg", "caption": "Key West at sunset", "location": { "countryCode": "USA", "subdivisionCode": "USA-3542" } },
+    { "id": "demo-chn-gd-1", "url": "/demo/20.jpg", "caption": "Pearl River delta", "location": { "countryCode": "CHN", "subdivisionCode": "CHN-1180" } },
+    { "id": "demo-chn-gd-2", "url": "/demo/21.jpg", "caption": "Guangzhou skyline", "location": { "countryCode": "CHN", "subdivisionCode": "CHN-1180" } },
+    { "id": "demo-chn-sc-1", "url": "/demo/22.jpg", "caption": "Jiuzhaigou valley", "location": { "countryCode": "CHN", "subdivisionCode": "CHN-1809" } },
+    { "id": "demo-chn-sc-2", "url": "/demo/23.jpg", "caption": "Chengdu teahouse", "location": { "countryCode": "CHN", "subdivisionCode": "CHN-1809" } },
+    { "id": "demo-chn-yn-1", "url": "/demo/24.jpg", "caption": "Tiger Leaping Gorge", "location": { "countryCode": "CHN", "subdivisionCode": "CHN-1810" } },
+    { "id": "demo-chn-yn-2", "url": "/demo/25.jpg", "caption": "Rice terraces at Yuanyang", "location": { "countryCode": "CHN", "subdivisionCode": "CHN-1810" } },
+    { "id": "demo-chn-bj-1", "url": "/demo/26.jpg", "caption": "Great Wall at Mutianyu", "location": { "countryCode": "CHN", "subdivisionCode": "CHN-1155" } },
+    { "id": "demo-chn-bj-2", "url": "/demo/27.jpg", "caption": "Temple of Heaven courtyard", "location": { "countryCode": "CHN", "subdivisionCode": "CHN-1155" } },
+    { "id": "demo-chn-xj-1", "url": "/demo/28.jpg", "caption": "Karakul Lake dunes", "location": { "countryCode": "CHN", "subdivisionCode": "CHN-1756" } },
+    { "id": "demo-chn-xj-2", "url": "/demo/29.jpg", "caption": "Silk Road desert road", "location": { "countryCode": "CHN", "subdivisionCode": "CHN-1756" } },
+    { "id": "demo-vnm-dn-1", "url": "/demo/30.jpg", "caption": "Dragon Bridge at night", "location": { "countryCode": "VNM", "subdivisionCode": "VNM-491" } },
+    { "id": "demo-vnm-dn-2", "url": "/demo/31.jpg", "caption": "My Khe beach morning", "location": { "countryCode": "VNM", "subdivisionCode": "VNM-491" } },
+    { "id": "demo-vnm-hn-1", "url": "/demo/32.jpg", "caption": "Hoan Kiem Lake", "location": { "countryCode": "VNM", "subdivisionCode": "VNM-462" } },
+    { "id": "demo-vnm-hn-2", "url": "/demo/33.jpg", "caption": "Old Quarter at dusk", "location": { "countryCode": "VNM", "subdivisionCode": "VNM-462" } },
+    { "id": "demo-vnm-hcm-1", "url": "/demo/34.jpg", "caption": "Ben Thanh market", "location": { "countryCode": "VNM", "subdivisionCode": "VNM-501" } },
+    { "id": "demo-vnm-hcm-2", "url": "/demo/35.jpg", "caption": "Saigon River at night", "location": { "countryCode": "VNM", "subdivisionCode": "VNM-501" } }
+  ],
+  "presentation": {
+    "countryHeroes": {
+      "USA": { "photoId": "demo-usa-ca-1" },
+      "CHN": { "photoId": "demo-chn-gd-1" },
+      "VNM": { "photoId": "demo-vnm-dn-1" }
+    },
+    "subdivisionHeroes": {
+      "USA-3521": { "photoId": "demo-usa-ca-1" },
+      "USA-3536": { "photoId": "demo-usa-tx-1" },
+      "USA-3559": { "photoId": "demo-usa-ny-1" },
+      "USA-3546": { "photoId": "demo-usa-il-1" },
+      "USA-3542": { "photoId": "demo-usa-fl-1" },
+      "CHN-1180": { "photoId": "demo-chn-gd-1" },
+      "CHN-1809": { "photoId": "demo-chn-sc-1" },
+      "CHN-1810": { "photoId": "demo-chn-yn-1" },
+      "CHN-1155": { "photoId": "demo-chn-bj-1" },
+      "CHN-1756": { "photoId": "demo-chn-xj-1" },
+      "VNM-491":  { "photoId": "demo-vnm-dn-1" },
+      "VNM-462":  { "photoId": "demo-vnm-hn-1" },
+      "VNM-501":  { "photoId": "demo-vnm-hcm-1" }
+    }
+  }
+}

@@ -14,7 +14,6 @@ import { useTheme } from '../../lib/theme-context'
 import type { HoverInfo, GlobeState, GlobePalette, HeroTransform } from './types'
 import { latLngToVec3 } from '../../lib/geo'
 import type { TravelerProfile } from '../../lib/types'
-import { travelerProfile } from '../../data/demoProfile'
 import { buildProfileIndex } from '../../lib/geodata'
 
 const MODE_TRANSITION_MS = 300
@@ -187,13 +186,13 @@ function useLayerPresence(show: boolean) {
 }
 
 interface GlobeSceneProps {
-  profile?: TravelerProfile
+  profile: TravelerProfile
   onSetCountryHero?: (countryCode: string, photoId: string, framing: HeroTransform) => void
   onSetSubdivisionHero?: (subdivisionCode: string, photoId: string, framing: HeroTransform) => void
 }
 
 function GlobeSceneComponent({
-  profile = travelerProfile,
+  profile,
   onSetCountryHero,
   onSetSubdivisionHero,
 }: GlobeSceneProps) {
