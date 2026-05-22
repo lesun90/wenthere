@@ -12,7 +12,7 @@ into independent packages. One repo, multiple deployable apps, no code duplicati
 - Isolate storage implementations into `packages/storage-github`,
   `packages/storage-local`, and `packages/storage-supabase` so they can be swapped
   per app.
-- `apps/personal` composes ui + storage-github (production) or storage-local (dev).
+- `apps/web` composes ui + storage-github (production) or storage-local (dev).
 - `apps/service` is scaffolded for Phase 2 (Supabase, multi-user) but not implemented.
 - All imports inside `packages/ui` work unchanged (`@/` alias preserved).
 - Docker, scripts, and dev workflow continue to work.
@@ -150,10 +150,10 @@ packages/storage-github/
 ```
 
 Route handlers are exported as plain async functions, not as Next.js files.
-`apps/personal/app/api/` imports and re-exports them:
+`apps/web/app/api/` imports and re-exports them:
 
 ```ts
-// apps/personal/app/api/profile/route.ts
+// apps/web/app/api/profile/route.ts
 export { GET, PUT } from '@beenthere/storage-github/routes/profile'
 ```
 
@@ -177,7 +177,7 @@ packages/storage-local/
     └── photo-key.ts       ← GET streams file, DELETE removes file
 ```
 
-Data is written to `apps/personal/dev-data/` (gitignored). Route handlers resolve
+Data is written to `apps/web/dev-data/` (gitignored). Route handlers resolve
 paths using `process.cwd()` — standard for Next.js server-side code.
 
 ## `packages/storage-supabase` — `@beenthere/storage-supabase`
@@ -193,13 +193,13 @@ packages/storage-supabase/
 
 Exists so `apps/service` can reference the package without breaking the workspace.
 
-## `apps/personal` — Phase 1 deployable
+## `apps/web` — Phase 1 deployable
 
 Thin Next.js app. Pages, API route wiring, and public assets only. No business logic.
 
 ```
-apps/personal/
-├── package.json           ← name: "@beenthere/personal"
+apps/web/
+├── package.json           ← name: "@beenthere/web"
 ├── tsconfig.json          ← extends ../../tsconfig.base.json, no @/ alias
 ├── next.config.ts         ← transpilePackages + geo cache headers
 ├── postcss.config.mjs
@@ -230,7 +230,7 @@ transpilePackages: ['@beenthere/ui', '@beenthere/storage-github', '@beenthere/st
 **`package.json` dependencies:**
 ```json
 {
-  "name": "@beenthere/personal",
+  "name": "@beenthere/web",
   "dependencies": {
     "@beenthere/ui": "workspace:*",
     "@beenthere/storage-github": "workspace:*",
@@ -244,7 +244,7 @@ transpilePackages: ['@beenthere/ui', '@beenthere/storage-github', '@beenthere/st
 active implementation at runtime:
 
 ```ts
-// apps/personal/app/api/profile/route.ts
+// apps/web/app/api/profile/route.ts
 import { GET as ghGet, PUT as ghPut } from '@beenthere/storage-github/routes/profile'
 import { GET as localGet, PUT as localPut } from '@beenthere/storage-local/routes/profile'
 
@@ -267,7 +267,7 @@ GITHUB_STORAGE_REPO=owner/repo
 GITHUB_OWNER_SECRET=...
 ```
 
-`apps/personal/dev-data/` is added to `.gitignore`.
+`apps/web/dev-data/` is added to `.gitignore`.
 
 ## `apps/service` — Phase 2 scaffold
 
@@ -293,7 +293,7 @@ apps/service/
 `@/components/...` import inside the package works unchanged. Zero import rewrites
 inside `packages/ui`.
 
-**`apps/personal/tsconfig.json`:**
+**`apps/web/tsconfig.json`:**
 ```json
 { "compilerOptions": { "paths": {} } }
 ```
@@ -314,24 +314,24 @@ without circular dependencies. Resolves to source during type-checking;
 
 ## Docker
 
-`Dockerfile` and `docker-compose*.yml` move to `apps/personal/`. Build context is
+`Dockerfile` and `docker-compose*.yml` move to `apps/web/`. Build context is
 the monorepo root (all packages must be present to install deps).
 
-**`apps/personal/Dockerfile` (key changes):**
+**`apps/web/Dockerfile` (key changes):**
 ```dockerfile
 WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/ ./packages/
-COPY apps/personal/ ./apps/personal/
+COPY apps/web/ ./apps/web/
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @beenthere/personal build
+RUN pnpm --filter @beenthere/web build
 ```
 
-**`apps/personal/docker-compose.yml`:**
+**`apps/web/docker-compose.yml`:**
 ```yaml
 build:
   context: ../..            ← monorepo root
-  dockerfile: apps/personal/Dockerfile
+  dockerfile: apps/web/Dockerfile
 ```
 
 ## Dev Workflow
@@ -340,11 +340,11 @@ build:
 # From monorepo root — runs all apps in parallel via Turborepo
 pnpm dev
 
-# Build apps/personal only
-pnpm --filter @beenthere/personal build
+# Build apps/web only
+pnpm --filter @beenthere/web build
 
 # Type-check without building
-pnpm --filter @beenthere/personal exec tsc --noEmit
+pnpm --filter @beenthere/web exec tsc --noEmit
 
 # Run profile sanity check
 pnpm --filter @beenthere/ui check:profile
@@ -360,22 +360,22 @@ The restructure is a pure file reorganization — no logic changes. Safe order:
 3. Create `packages/storage-local/` — full implementation (filesystem routes).
 4. Create `packages/storage-github/` — scaffold only (no implementation yet).
 5. Create `packages/storage-supabase/` — empty placeholder.
-6. Create `apps/personal/` — move `app/`, `public/`, `next.config.ts`, Docker files.
+6. Create `apps/web/` — move `app/`, `public/`, `next.config.ts`, Docker files.
    Update imports in app-level files. Add `transpilePackages`. Add `dev-data/` to
    `.gitignore`. Wire `STORAGE_BACKEND` switching in API route wrappers.
 7. Create `apps/service/` — placeholder page only.
 8. Update root `package.json` to workspace root shape.
 9. Delete files that have moved (old root-level `components/`, `lib/`, etc.).
-10. Verify: `pnpm install`, `pnpm --filter @beenthere/personal build`, `pnpm --filter @beenthere/ui check:profile`.
+10. Verify: `pnpm install`, `pnpm --filter @beenthere/web build`, `pnpm --filter @beenthere/ui check:profile`.
 
 ## Verification
 
 - `pnpm install` from root resolves all workspace dependencies.
-- `pnpm --filter @beenthere/personal build` produces a working Next.js build.
+- `pnpm --filter @beenthere/web build` produces a working Next.js build.
 - `pnpm exec tsc --noEmit` (per package) passes with no errors.
 - `pnpm --filter @beenthere/ui check:profile` passes.
 - `pnpm dev` with `STORAGE_BACKEND=local` starts the dev server, the globe loads at
-  `localhost:3000/demo`, and profile writes persist to `apps/personal/dev-data/`.
+  `localhost:3000/demo`, and profile writes persist to `apps/web/dev-data/`.
 - `pnpm dev` with `STORAGE_BACKEND=github` (and valid credentials) reads/writes to
   the GitHub storage repo.
 - No component or lib files are modified — only moved and re-referenced.
