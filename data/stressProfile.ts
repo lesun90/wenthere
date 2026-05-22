@@ -1,13 +1,5 @@
-import countriesTopology from '../public/geo/countries-10m.json'
 import subdivisionsFeatureCollection from '../public/geo/states-provinces-stress.json'
-import type { CountryMemory, Photo, SubdivisionMemory, TravelerProfile } from './seed'
-
-type CountryGeometry = {
-  id?: string | number
-  properties?: {
-    name?: string
-  }
-}
+import type { ProfilePresentation, TravelPhoto, TravelerProfile } from './seed'
 
 type SubdivisionFeature = {
   properties?: {
@@ -18,31 +10,34 @@ type SubdivisionFeature = {
   }
 }
 
-type CountryReference = {
-  numericId: string
+type RegionReference = {
+  countryCode: string
+  countryName: string
+  countryNumericId: string
+  subdivisionCode: string
   name: string
 }
 
-const COUNTRY_COUNT = 100
 const REGION_COUNT = 500
 const IMAGE_WIDTH = 1200
 const IMAGE_HEIGHT = 800
 
-const countryGeometries = countriesTopology.objects.countries.geometries as CountryGeometry[]
 const subdivisionFeatures = subdivisionsFeatureCollection.features as SubdivisionFeature[]
 
-const countryByAlpha3: Record<string, CountryReference> = {
+const countryByAlpha3: Record<string, { numericId: string; name: string }> = {
   ABW: { numericId: '533', name: 'Aruba' },
   AFG: { numericId: '004', name: 'Afghanistan' },
   AGO: { numericId: '024', name: 'Angola' },
   AIA: { numericId: '660', name: 'Anguilla' },
   ALB: { numericId: '008', name: 'Albania' },
+  ALD: { numericId: '248', name: 'Aland' },
   AND: { numericId: '020', name: 'Andorra' },
   ARE: { numericId: '784', name: 'United Arab Emirates' },
   ARG: { numericId: '032', name: 'Argentina' },
   ARM: { numericId: '051', name: 'Armenia' },
   ASM: { numericId: '016', name: 'American Samoa' },
   ATA: { numericId: '010', name: 'Antarctica' },
+  ATC: { numericId: '036', name: 'Ashmore and Cartier Is.' },
   ATF: { numericId: '260', name: 'Fr. S. Antarctic Lands' },
   ATG: { numericId: '028', name: 'Antigua and Barb.' },
   AUS: { numericId: '036', name: 'Australia' },
@@ -70,166 +65,60 @@ function picsumUrl(seed: string): string {
   return `https://picsum.photos/seed/${seed}/${IMAGE_WIDTH}/${IMAGE_HEIGHT}`
 }
 
-function stressPhoto(seed: string, caption: string): Photo {
-  return {
-    url: picsumUrl(seed),
-    caption,
-  }
-}
-
-function makeSubdivisionMemory(
-  subdivisionCode: string,
-  name: string,
-  countryName: string,
-  index: number,
-): SubdivisionMemory {
-  const photo = stressPhoto(
-    `wenthere-stress-region-${index + 1}`,
-    `Stress memory ${index + 1} in ${name}, ${countryName}`,
-  )
-
-  return {
-    subdivisionCode,
-    name,
-    heroPic: photo.url,
-    photos: [photo],
-  }
-}
-
-function makeSyntheticSubdivisionMemory(country: CountryMemory, index: number): SubdivisionMemory {
+function makeRegionPhoto(region: RegionReference, index: number): TravelPhoto {
   const displayIndex = index + 1
   return {
-    ...makeSubdivisionMemory(
-      `SYN-${country.countryCode}-${displayIndex}`,
-      `${country.name} stress place ${displayIndex}`,
-      country.name,
-      index,
-    ),
-    renderable: false,
+    id: `stress-region-${displayIndex}`,
+    url: picsumUrl(`wenthere-stress-region-${displayIndex}`),
+    caption: `Stress memory ${displayIndex} in ${region.name}, ${region.countryName}`,
+    location: {
+      countryCode: region.countryCode,
+      countryName: region.countryName,
+      countryNumericId: region.countryNumericId,
+      subdivisionCode: region.subdivisionCode,
+      subdivisionName: region.name,
+    },
   }
 }
 
 const realRegions = subdivisionFeatures
-  .map((feature, index) => {
+  .map(feature => {
     const properties = feature.properties
     const country = properties?.adm0_a3 ? countryByAlpha3[properties.adm0_a3] : undefined
-    if (!properties?.adm1_code || !properties.adm0_a3 || !properties.name || !country) {
+    if (!properties?.adm1_code || !properties.adm0_a3 || !country) {
       return null
     }
 
     return {
-      index,
       countryCode: properties.adm0_a3,
       countryName: country.name,
       countryNumericId: country.numericId,
       subdivisionCode: properties.adm1_code,
-      name: properties.name_en ?? properties.name,
+      name: properties.name_en || properties.name || properties.adm1_code,
     }
   })
-  .filter((region): region is NonNullable<typeof region> => region != null)
+  .filter((region): region is RegionReference => region != null)
+  .slice(0, REGION_COUNT)
 
-const seededCountries = new Map<string, CountryMemory>()
-
-for (const region of realRegions) {
-  if (seededCountries.has(region.countryCode)) continue
-  const countryHero = stressPhoto(
-    `wenthere-stress-country-${region.countryCode}`,
-    `Stress country hero for ${region.countryName}`,
-  )
-
-  seededCountries.set(region.countryCode, {
-    countryCode: region.countryCode,
-    countryNumericId: region.countryNumericId,
-    name: region.countryName,
-    heroPic: countryHero.url,
-    photos: [],
-    subdivisions: [],
-  })
+const photos: TravelPhoto[] = realRegions.map(makeRegionPhoto)
+const presentation: ProfilePresentation = {
+  countryHeroes: {},
+  subdivisionHeroes: {},
 }
 
-for (const geometry of countryGeometries) {
-  if (seededCountries.size >= COUNTRY_COUNT) break
-
-  const id = geometry.id == null ? '' : String(geometry.id)
-  const name = geometry.properties?.name ?? ''
-  if (!id || !name || [...seededCountries.values()].some(country => country.countryNumericId === id)) continue
-
-  const countryHero = stressPhoto(
-    `wenthere-stress-country-${id}`,
-    `Stress country hero for ${name}`,
-  )
-
-  seededCountries.set(id, {
-    countryCode: id,
-    countryNumericId: id,
-    name,
-    heroPic: countryHero.url,
-    photos: [],
-    subdivisions: [],
-  })
-}
-
-const stressCountries = [...seededCountries.values()]
-const countryLookup = new Map(stressCountries.map(country => [country.countryCode, country]))
-const regionsByCountry = new Map<string, typeof realRegions>()
-
-for (const region of realRegions) {
-  const regions = regionsByCountry.get(region.countryCode) ?? []
-  regions.push(region)
-  regionsByCountry.set(region.countryCode, regions)
-}
-
-let memoryIndex = 0
-const usedRealRegionCodes = new Set<string>()
-
-for (const country of stressCountries) {
-  if (memoryIndex >= REGION_COUNT) break
-
-  const region = regionsByCountry.get(country.countryCode)?.find(item => !usedRealRegionCodes.has(item.subdivisionCode))
-  const memory = region
-    ? makeSubdivisionMemory(region.subdivisionCode, region.name, region.countryName, memoryIndex)
-    : makeSyntheticSubdivisionMemory(country, memoryIndex)
-
-  if (region) usedRealRegionCodes.add(region.subdivisionCode)
-  country.subdivisions.push(memory)
-  country.heroPic = memory.heroPic
-  memoryIndex += 1
-}
-
-for (const region of realRegions) {
-  if (memoryIndex >= REGION_COUNT) break
-  if (usedRealRegionCodes.has(region.subdivisionCode)) continue
-
-  const country = countryLookup.get(region.countryCode)
-  if (!country) continue
-
-  const memory = makeSubdivisionMemory(
-    region.subdivisionCode,
-    region.name,
-    region.countryName,
-    memoryIndex,
-  )
-
-  country.subdivisions.push(memory)
-  usedRealRegionCodes.add(region.subdivisionCode)
-  memoryIndex += 1
-}
-
-let syntheticCountryIndex = 0
-while (memoryIndex < REGION_COUNT) {
-  const country = stressCountries[syntheticCountryIndex % stressCountries.length]
-  country.subdivisions.push(makeSyntheticSubdivisionMemory(country, memoryIndex))
-  syntheticCountryIndex += 1
-  memoryIndex += 1
+for (const photo of photos) {
+  const { countryCode, subdivisionCode } = photo.location
+  if (subdivisionCode && !presentation.subdivisionHeroes?.[subdivisionCode]) {
+    presentation.subdivisionHeroes![subdivisionCode] = { photoId: photo.id }
+  }
+  if (!presentation.countryHeroes?.[countryCode]) {
+    presentation.countryHeroes![countryCode] = { photoId: photo.id }
+  }
 }
 
 export const stressTravelerProfile: TravelerProfile = {
+  id: 'stress-test-traveler',
   name: 'Stress Test Traveler',
-  countries: stressCountries,
-}
-
-export const stressProfileStats = {
-  countries: stressTravelerProfile.countries.length,
-  regions: stressTravelerProfile.countries.reduce((total, country) => total + country.subdivisions.length, 0),
-  realRenderableRegions: usedRealRegionCodes.size,
+  photos,
+  presentation,
 }
