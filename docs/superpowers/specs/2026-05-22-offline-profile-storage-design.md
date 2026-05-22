@@ -12,7 +12,6 @@ The first implementation stores user photos, edits, deletions, and hero framing 
 - Store imported photo files locally.
 - Support add, edit, and remove photo workflows from the existing drawer.
 - Persist country and subdivision hero selections and framing.
-- Support export/import backup so an offline profile can move between browsers or devices.
 - Keep the current visual design and interaction model.
 
 ## Non-Goals
@@ -22,6 +21,7 @@ The first implementation stores user photos, edits, deletions, and hero framing 
 - No visual redesign.
 - No EXIF/GPS location parsing.
 - No multi-profile account switching.
+- No backup export/import.
 - No background sync or conflict resolution.
 
 ## Architecture
@@ -30,9 +30,9 @@ Add an offline-first storage boundary around the existing `TravelerProfile` shap
 
 Core modules:
 
-- `lib/profile-store/types.ts`: shared store contracts, mutation payloads, backup shape, and storage status types.
+- `lib/profile-store/types.ts`: shared store contracts, mutation payloads, and storage status types.
 - `lib/profile-store/indexed-db-store.ts`: IndexedDB adapter for persisted profile records and local photo blobs.
-- `lib/profile-store/local-profile-service.ts`: higher-level operations for add photos, edit photo, delete photo, update hero/framing, export backup, and import backup.
+- `lib/profile-store/local-profile-service.ts`: higher-level operations for add photos, edit photo, delete photo, and update hero/framing.
 - `components/profile/ProfileProvider.tsx`: client state owner that loads the offline profile, resolves local photo URLs, builds `profileIndex`, and passes the same data down to `GlobeScene` and `ProfileUI`.
 
 `app/demo/page.tsx` should stop treating `travelerProfile` as the live source after first load. The demo seed becomes the initial offline profile only when no stored profile exists.
@@ -121,27 +121,6 @@ The first version supports one active profile. The store interfaces should avoid
 
 This replaces the current ephemeral `GlobeScene` override state for persisted behavior. The user should see the same immediate visual update, but the result should survive reloads.
 
-### Backup Export
-
-Export creates a single versioned JSON file that contains:
-
-- backup schema version
-- profile metadata with local blob source keys
-- local blobs encoded as data URLs or base64 records
-
-The backup should include enough metadata to restore filenames, mime types, captions, dates, locations, and framing.
-
-### Backup Import
-
-Start with replace semantics.
-
-1. Parse and validate the backup version and shape.
-2. Validate the profile and local blob records.
-3. Only after validation passes, replace the current offline profile and blob records.
-4. If validation fails, leave the current profile unchanged.
-
-Merge semantics can be added later when online sync and multi-profile needs are clearer.
-
 ## Error Handling And States
 
 - Loading: use the existing full-screen `beenthere` loader while IndexedDB opens.
@@ -149,7 +128,6 @@ Merge semantics can be added later when online sync and multi-profile needs are 
 - Import failure: skip failed files, keep successful files, and show concise drawer feedback.
 - Edit validation failure: keep the edit panel open and show the issue without changing the globe.
 - Delete failure: keep the row visible and show retry feedback.
-- Backup import failure: do not alter existing stored data unless validation passes.
 
 The provider owns object URL creation and cleanup. It should revoke old object URLs when a profile reloads, when local photos are deleted, and when the provider unmounts.
 
@@ -171,8 +149,6 @@ interface ProfileState {
   setSubdivisionHero(subdivisionCode: string, photoId: string): Promise<void>
   setCountryFraming(countryCode: string, framing: PhotoFrameTransform): Promise<void>
   setSubdivisionFraming(subdivisionCode: string, framing: PhotoFrameTransform): Promise<void>
-  exportBackup(): Promise<Blob>
-  importBackup(file: File): Promise<void>
 }
 ```
 
@@ -189,8 +165,6 @@ Persisted updates should reuse or extend `validateProfile(profile)` for:
 - country hero photo outside the country
 - subdivision hero photo outside the subdivision
 
-Backup import should validate before replacing current data.
-
 ## Testing
 
 Add focused checks for the service-level mutation logic:
@@ -199,8 +173,6 @@ Add focused checks for the service-level mutation logic:
 - edit caption, date, and location
 - delete photo and clear hero references
 - update country and subdivision framing
-- export and import a valid backup
-- reject invalid backup import without changing the current profile
 
 Keep most logic testable without real IndexedDB by testing pure profile mutations separately from the adapter. IndexedDB behavior can be covered with a small browser-compatible fake or a narrow adapter test.
 
