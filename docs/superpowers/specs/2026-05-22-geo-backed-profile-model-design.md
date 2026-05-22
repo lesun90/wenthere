@@ -58,9 +58,47 @@ The metadata layer owns country names, numeric country IDs, subdivision names, a
 Initial metadata can be derived from existing project geo data:
 
 - countries from the existing country TopoJSON properties or a generated/static country metadata map
-- subdivisions from `public/geo/subdivisions/*.geojson` properties such as `adm1_code`, `adm0_a3`, `name`, and `name_en`
+- subdivisions from GeoJSON properties such as `adm1_code`, `adm0_a3`, `name`, and `name_en`
 
 The important boundary is that profiles do not copy this data.
+
+## Geo Data Storage
+
+Move canonical geo data out of `public/`.
+
+`public/` should not be the source of truth for country or subdivision metadata. It is a client-serving directory, so keeping canonical data there couples server-side indexing, validation, profile generation, and browser asset delivery too tightly.
+
+Use a private source-data location for canonical geo data, such as:
+
+- `data/geo/`
+- `geodata/`
+- another non-public app data directory chosen during implementation
+
+The app may still generate or expose optimized client assets under `public/geo/` when browser-side rendering needs direct URLs. Those files should be treated as build/runtime artifacts derived from canonical geo data, not as the model's source of truth.
+
+This split supports future webapp behavior where server-side profile validation, API routes, background imports, and user-specific indexing can read shared geo metadata without depending on publicly served static files.
+
+## Multi-User Webapp Readiness
+
+This refactor should make seeded profiles replaceable by API or database records without changing the globe/indexing model.
+
+Future user data should be shaped around user-owned records:
+
+- users
+- profiles
+- photos
+- photo location codes
+- presentation preferences such as selected hero photos
+
+Shared geo records should remain app-owned/reference records:
+
+- countries
+- subdivisions
+- geometry
+- display metadata
+- country/subdivision relationships
+
+No user profile should contain copied country names, subdivision names, country numeric IDs, or subdivision ownership maps. Multiple users can reference the same `countryCode` and `subdivisionCode`; the app resolves those codes through the shared geo metadata layer.
 
 ## Profile Index Behavior
 
