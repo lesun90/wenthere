@@ -3,8 +3,9 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Geometry } from 'geojson'
 import type { ProfileIndex } from '../../data/seed'
-import { geoJsonToSvgPath } from '../../lib/geomath'
+import { geoJsonToSvgPath, geometryFrameBounds } from '../../lib/geomath'
 import { getSubdivisionGeometry, getCountryGeometry } from '../../lib/geo-registry'
+import { shapeFrameToTextureTransform } from './framingTransform'
 import type { HeroTransform } from './types'
 
 interface Props {
@@ -333,14 +334,19 @@ function HeroFramingOverlay({
 
   // Returns the rendered image dimensions for objectFit:contain.
   // The image is centered, so transform offsets must be in image space, not container space.
-  function getRenderedSize(cw: number, ch: number): { w: number; h: number } {
+  function getRenderedImageRect(cw: number, ch: number): { x: number; y: number; width: number; height: number } {
     const img = imgRef.current
     const nw = img?.naturalWidth ?? 0
     const nh = img?.naturalHeight ?? 0
-    if (!nw || !nh) return { w: cw, h: ch }
-    return nw / nh > cw / ch
-      ? { w: cw, h: cw * nh / nw }
-      : { w: ch * nw / nh, h: ch }
+    if (!nw || !nh) return { x: 0, y: 0, width: cw, height: ch }
+    const size = nw / nh > cw / ch
+      ? { width: cw, height: cw * nh / nw }
+      : { width: ch * nw / nh, height: ch }
+    return {
+      x: (cw - size.width) / 2,
+      y: (ch - size.height) / 2,
+      ...size,
+    }
   }
 
   useEffect(() => {
@@ -363,7 +369,7 @@ function HeroFramingOverlay({
     if (!geometry || !containerRef.current) return
     const { clientWidth: cw, clientHeight: ch } = containerRef.current
     if (cw === 0 || ch === 0) return
-    const { w: rw, h: rh } = getRenderedSize(cw, ch)
+    const { width: rw, height: rh } = getRenderedImageRect(cw, ch)
     const shapeScale = 1 / initialTransform.scale
     // Invert the coupled formula: x = -shapeX/(rw*shapeScale) → shapeX = -x*rw*shapeScale = -x*rw/scale
     shapeStateRef.current = {
@@ -395,12 +401,33 @@ function HeroFramingOverlay({
     maskGroupRef.current?.setAttribute('transform', t)
     borderGroupRef.current?.setAttribute('transform', t)
     shapeStateRef.current = { shapeX, shapeY, shapeScale }
-    // Normalize to image-space fractions so FloatingCard, ShapePreviewButton, and
-    // Three.js texture offsets all receive coordinates relative to the image, not the container.
-    // Scale is included in the denominator because the Three.js formula couples position and zoom:
-    // UV center = 0.5 - x/s, so x must equal -shapeX/(rw*shapeScale) to place the center correctly.
-    const { w: rw, h: rh } = getRenderedSize(cw, ch)
-    liveRef.current = { x: -shapeX / (rw * shapeScale), y: -shapeY / (rh * shapeScale), scale: 1 / shapeScale }
+    // Keep x/y/scale for reopening the editor, and store an explicit UV transform
+    // for the globe because its texture coordinates use the fitted geometry bounds,
+    // not the gallery container bounds.
+    const imageRect = getRenderedImageRect(cw, ch)
+    const textureTransform = geometry
+      ? shapeFrameToTextureTransform({
+        frame: { width: cw, height: ch },
+        imageRect,
+        shapeBounds: geometryFrameBounds(geometry, cw, ch, 24) ?? { x: 0, y: 0, width: cw, height: ch },
+        shapeX,
+        shapeY,
+        shapeScale,
+      })
+      : null
+    liveRef.current = {
+      x: -shapeX / (imageRect.width * shapeScale),
+      y: -shapeY / (imageRect.height * shapeScale),
+      scale: 1 / shapeScale,
+      ...(textureTransform
+        ? {
+          textureOffsetX: textureTransform.offset.x,
+          textureOffsetY: textureTransform.offset.y,
+          textureRepeatX: textureTransform.repeat.x,
+          textureRepeatY: textureTransform.repeat.y,
+        }
+        : {}),
+    }
   }
 
   function dismiss(commit: boolean) {

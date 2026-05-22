@@ -2,6 +2,10 @@ export interface PhotoFrameTransform {
   x: number
   y: number
   scale: number
+  textureOffsetX?: number
+  textureOffsetY?: number
+  textureRepeatX?: number
+  textureRepeatY?: number
 }
 
 export interface PhotoLocation {

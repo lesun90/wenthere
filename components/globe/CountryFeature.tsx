@@ -4,6 +4,7 @@ import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { FALLBACK_COLOR, useSharedTexture } from './useSharedTexture'
 import { isFrontHemisphereHit } from './pointerHit'
+import { heroTransformToTextureTransform, isIdentityHeroTransform, sameHeroTransform } from './framingTransform'
 import type { GlobePalette, HeroTransform } from './types'
 
 interface Props {
@@ -20,16 +21,6 @@ interface Props {
   onHover: () => void
   onUnhover: () => void
   onClick: () => void
-}
-
-function sameHeroTransform(a?: HeroTransform, b?: HeroTransform) {
-  if (a === b) return true
-  if (!a || !b) return false
-  return a.x === b.x && a.y === b.y && a.scale === b.scale
-}
-
-function isIdentityTransform(t: HeroTransform): boolean {
-  return t.x === 0 && t.y === 0 && t.scale === 1
 }
 
 function CountryFeatureComponent({
@@ -70,7 +61,7 @@ function CountryFeatureComponent({
       prevSharedTextureRef.current = sharedTexture
     }
 
-    if (!hoverHeroTransform || isIdentityTransform(hoverHeroTransform)) {
+    if (!hoverHeroTransform || isIdentityHeroTransform(hoverHeroTransform)) {
       cloneRef.current?.dispose()
       cloneRef.current = null
       if (photoMaterialRef.current) {
@@ -85,11 +76,9 @@ function CountryFeatureComponent({
     }
 
     const t = cloneRef.current
-    const s = hoverHeroTransform.scale
-    t.repeat.set(1 / s, 1 / s)
-    // Solve for offset from u_center = 0.5 * repeat + offset.
-    t.offset.x = 0.5 - (0.5 + hoverHeroTransform.x) / s
-    t.offset.y = 0.5 - (0.5 - hoverHeroTransform.y) / s
+    const { repeat, offset } = heroTransformToTextureTransform(hoverHeroTransform)
+    t.repeat.set(repeat.x, repeat.y)
+    t.offset.set(offset.x, offset.y)
     if (photoMaterialRef.current) {
       photoMaterialRef.current.map = t
       photoMaterialRef.current.needsUpdate = true
@@ -100,7 +89,7 @@ function CountryFeatureComponent({
     return () => { cloneRef.current?.dispose() }
   }, [])
 
-  const needsTransform = !!(hoverHeroTransform && !isIdentityTransform(hoverHeroTransform))
+  const needsTransform = !!(hoverHeroTransform && !isIdentityHeroTransform(hoverHeroTransform))
   const effectiveTexture = needsTransform && cloneRef.current ? cloneRef.current : sharedTexture
 
   const hasPhoto = !!heroPicUrl

@@ -4,6 +4,7 @@ import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { FALLBACK_COLOR, useSharedTexture } from './useSharedTexture'
 import { isFrontHemisphereHit } from './pointerHit'
+import { heroTransformToTextureTransform, isIdentityHeroTransform, sameHeroTransform } from './framingTransform'
 import type { GlobePalette, HeroTransform } from './types'
 
 interface Props {
@@ -17,16 +18,6 @@ interface Props {
   onHover: () => void
   onUnhover: () => void
   onClick: () => void
-}
-
-function isIdentityTransform(t: HeroTransform): boolean {
-  return t.x === 0 && t.y === 0 && t.scale === 1
-}
-
-function sameHeroTransform(a?: HeroTransform, b?: HeroTransform) {
-  if (a === b) return true
-  if (!a || !b) return false
-  return a.x === b.x && a.y === b.y && a.scale === b.scale
 }
 
 function SubdivisionFeatureComponent({
@@ -65,7 +56,7 @@ function SubdivisionFeatureComponent({
       prevSharedTextureRef.current = sharedTexture
     }
 
-    if (!heroTransform || isIdentityTransform(heroTransform)) {
+    if (!heroTransform || isIdentityHeroTransform(heroTransform)) {
       cloneRef.current?.dispose()
       cloneRef.current = null
       if (materialRef.current) {
@@ -80,11 +71,9 @@ function SubdivisionFeatureComponent({
     }
 
     const t = cloneRef.current
-    const s = heroTransform.scale
-    t.repeat.set(1 / s, 1 / s)
-    // Solve for offset from u_center = 0.5 * repeat + offset.
-    t.offset.x = 0.5 - (0.5 + heroTransform.x) / s
-    t.offset.y = 0.5 - (0.5 - heroTransform.y) / s
+    const { repeat, offset } = heroTransformToTextureTransform(heroTransform)
+    t.repeat.set(repeat.x, repeat.y)
+    t.offset.set(offset.x, offset.y)
     if (materialRef.current) {
       materialRef.current.map = t
       materialRef.current.needsUpdate = true
@@ -95,7 +84,7 @@ function SubdivisionFeatureComponent({
     return () => { cloneRef.current?.dispose() }
   }, [])
 
-  const needsTransform = !!(heroTransform && !isIdentityTransform(heroTransform))
+  const needsTransform = !!(heroTransform && !isIdentityHeroTransform(heroTransform))
   const effectiveTexture = needsTransform && cloneRef.current ? cloneRef.current : sharedTexture
 
   const borderColor = isHovered ? palette.subdivisionBorderHover : palette.subdivisionBorder
