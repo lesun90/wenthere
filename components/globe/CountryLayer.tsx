@@ -12,6 +12,27 @@ import { prepareCountryRecords } from '../../lib/geo-cache'
 import { registerCountryGeometry } from '../../lib/geo-registry'
 import { latLngToVec3 } from '../../lib/geo'
 
+let countriesTopology: Topology<{ countries: GeometryCollection }> | null = null
+let countriesTopologyRequest: Promise<Topology<{ countries: GeometryCollection }> | null> | null = null
+
+function fetchCountriesTopology(): Promise<Topology<{ countries: GeometryCollection }> | null> {
+  if (countriesTopology) return Promise.resolve(countriesTopology)
+  if (countriesTopologyRequest) return countriesTopologyRequest
+
+  countriesTopologyRequest = fetch('/geo/countries-10m.json', { cache: 'force-cache' })
+    .then(r => r.json() as Promise<Topology<{ countries: GeometryCollection }>>)
+    .then(topology => {
+      countriesTopology = topology
+      return topology
+    })
+    .catch(() => null)
+    .finally(() => {
+      countriesTopologyRequest = null
+    })
+
+  return countriesTopologyRequest
+}
+
 interface Props {
   showSubdivisions: boolean
   photoOpacity: number
@@ -31,10 +52,13 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
   const hoveredIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    fetch('/geo/countries-10m.json')
-      .then(r => r.json())
-      .then(setTopology)
-      .catch(() => {})
+    let isActive = true
+    void fetchCountriesTopology().then(topology => {
+      if (isActive && topology) setTopology(topology)
+    })
+    return () => {
+      isActive = false
+    }
   }, [])
 
   useEffect(() => {
@@ -116,6 +140,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     <>
       {features.map(({ id, name, centroid, geometry, fillGeometry, photoGeometry, lineGeometry }) => {
         const heroPicUrl = visitedCountries[id]
+        const summary = profileIndex.countrySummariesByNumericId[id]
         return (
           <CountryFeature
             key={id}
@@ -127,6 +152,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
             interactive={countryInteractionsEnabled}
             photoOpacityTarget={photoOpacity}
             heroPicUrl={heroPicUrl}
+            hoverHeroTransform={summary ? countryHeroTransforms[summary.countryCode] ?? summary.heroTransform : undefined}
             palette={palette}
             onHover={() => handleHover(id, name, heroPicUrl, centroid, geometry)}
             onUnhover={handleUnhover}

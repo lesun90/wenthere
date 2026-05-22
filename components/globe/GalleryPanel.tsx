@@ -180,6 +180,7 @@ function Lightbox({
           key={index}
           src={photo.url}
           alt={photo.caption}
+          decoding="async"
           style={{ display: 'block', width: '100%', objectFit: 'cover', maxHeight: 'min(82vh, 660px)' }}
         />
 
@@ -521,6 +522,7 @@ function HeroFramingOverlay({
       <img
         src={imageUrl}
         alt=""
+        decoding="async"
         draggable={false}
         style={{
           position: 'absolute',
@@ -834,6 +836,7 @@ export function GalleryPanel({
               key={selectedIndex}
               src={heroPhoto.url}
               alt={heroPhoto.caption}
+              decoding="async"
               className="gallery-hero-img"
               style={{ width: '100%', height: '100%', objectFit: HERO_IMAGE_OBJECT_FIT, display: 'block' }}
             />
@@ -1027,6 +1030,8 @@ export function GalleryPanel({
                     <img
                       src={photo.url}
                       alt={photo.caption}
+                      loading={isSel ? 'eager' : 'lazy'}
+                      decoding="async"
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                     />
                     {isSel && (

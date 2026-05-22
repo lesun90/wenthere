@@ -6,6 +6,7 @@ import { hasCachedEntry, setCachedFeature, getCachedFeature } from '../../lib/su
 import { preloadSharedTexture } from './useSharedTexture'
 
 const subdivisionFetches = new Map<string, Promise<Feature | null>>()
+const SUBDIVISION_PRELOAD_BATCH_SIZE = 8
 
 export function fetchSubdivisionFeature(subdivisionCode: string): Promise<Feature | null> {
   const cached = getCachedFeature(subdivisionCode)
@@ -15,7 +16,7 @@ export function fetchSubdivisionFeature(subdivisionCode: string): Promise<Featur
   const inFlight = subdivisionFetches.get(subdivisionCode)
   if (inFlight) return inFlight
 
-  const request = fetch(`/geo/subdivisions/${subdivisionCode}.geojson`)
+  const request = fetch(`/geo/subdivisions/${subdivisionCode}.geojson`, { cache: 'force-cache' })
     .then(r => r.json() as Promise<Feature>)
     .then(feature => {
       setCachedFeature(subdivisionCode, feature)
@@ -34,9 +35,14 @@ export function fetchSubdivisionFeature(subdivisionCode: string): Promise<Featur
 }
 
 async function preloadSubdivisionGeometry(subdivisionCodes: string[]) {
-  const results = await Promise.all(
-    subdivisionCodes.map(code => fetchSubdivisionFeature(code))
-  )
+  const results: Feature[] = []
+
+  for (let i = 0; i < subdivisionCodes.length; i += SUBDIVISION_PRELOAD_BATCH_SIZE) {
+    const batch = subdivisionCodes.slice(i, i + SUBDIVISION_PRELOAD_BATCH_SIZE)
+    const batchResults = await Promise.all(batch.map(code => fetchSubdivisionFeature(code)))
+    results.push(...batchResults.filter((f): f is Feature => f !== null))
+  }
+
   prepareSubdivisionRecords(results.filter((f): f is Feature => f !== null))
 }
 

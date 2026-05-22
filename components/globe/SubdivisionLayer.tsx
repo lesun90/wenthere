@@ -12,6 +12,8 @@ import { latLngToVec3 } from '../../lib/geo'
 import { getCachedFeature, hasCachedEntry } from '../../lib/subdivision-feature-cache'
 import { fetchSubdivisionFeature } from './usePredictivePreload'
 
+const SUBDIVISION_FETCH_BATCH_SIZE = 8
+
 function subdivisionFeatureId(feature: Feature): string {
   return String(feature.properties?.adm1_code ?? '')
 }
@@ -85,17 +87,20 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
       })
     }
 
-    for (const code of missing) {
-      fetchSubdivisionFeature(code)
-        .then(f => {
-          if (!isActive) return
-          if (f) {
-            pendingRef.current.push(f)
-            scheduleFlush()
-          }
-        })
-        .catch(() => {})
+    async function loadMissingSubdivisions() {
+      for (let i = 0; i < missing.length && isActive; i += SUBDIVISION_FETCH_BATCH_SIZE) {
+        const batch = missing.slice(i, i + SUBDIVISION_FETCH_BATCH_SIZE)
+        const loaded = await Promise.all(batch.map(code => fetchSubdivisionFeature(code).catch(() => null)))
+        if (!isActive) return
+
+        for (const f of loaded) {
+          if (f) pendingRef.current.push(f)
+        }
+        scheduleFlush()
+      }
     }
+
+    void loadMissingSubdivisions()
 
     return () => {
       isActive = false

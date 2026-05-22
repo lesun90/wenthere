@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -23,7 +23,13 @@ function isIdentityTransform(t: HeroTransform): boolean {
   return t.x === 0 && t.y === 0 && t.scale === 1
 }
 
-export function SubdivisionFeature({
+function sameHeroTransform(a?: HeroTransform, b?: HeroTransform) {
+  if (a === b) return true
+  if (!a || !b) return false
+  return a.x === b.x && a.y === b.y && a.scale === b.scale
+}
+
+function SubdivisionFeatureComponent({
   fillGeometry,
   lineGeometry,
   isHovered,
@@ -152,3 +158,13 @@ export function SubdivisionFeature({
     </group>
   )
 }
+
+export const SubdivisionFeature = memo(SubdivisionFeatureComponent, (prev, next) => (
+  prev.fillGeometry === next.fillGeometry
+  && prev.lineGeometry === next.lineGeometry
+  && prev.isHovered === next.isHovered
+  && prev.opacityTarget === next.opacityTarget
+  && prev.heroPicUrl === next.heroPicUrl
+  && sameHeroTransform(prev.heroTransform, next.heroTransform)
+  && prev.palette === next.palette
+))

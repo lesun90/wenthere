@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { HoverInfo, HeroTransform } from './types'
 import { geoJsonToSvgPath } from '../../lib/geomath'
 
@@ -64,18 +64,59 @@ function ShapedImage({
 
 export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
   const [visible, setVisible] = useState(false)
-  const [mousePos, setMousePos] = useState({ x: info.screenX, y: info.screenY })
+  const cardRef = useRef<HTMLDivElement>(null)
+  const mousePosRef = useRef({ x: info.screenX, y: info.screenY })
+  const rafRef = useRef<number | null>(null)
   const prevNameRef = useRef<string | null>(null)
   const rawId = useId()
   const clipId = `clip${rawId.replace(/:/g, '')}`
 
   useEffect(() => {
+    mousePosRef.current = { x: info.screenX, y: info.screenY }
+    updateCardPosition()
+  }, [info.screenX, info.screenY, viewportWidth, viewportHeight])
+
+  useEffect(() => {
+    updateCardPosition()
+  })
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
+  function updateCardPosition() {
+    const card = cardRef.current
+    if (!card) return
+
+    const { x, y } = mousePosRef.current
+    let left = x + CURSOR_OFFSET_X
+    let top = y + CURSOR_OFFSET_Y
+
+    if (left + CARD_WIDTH > viewportWidth - 8) left = x - CARD_WIDTH - CURSOR_OFFSET_X
+    if (top + CARD_HEIGHT_EST > viewportHeight - 8) top = viewportHeight - CARD_HEIGHT_EST - 8
+    if (top < 8) top = 8
+
+    card.style.transform = `translate3d(${left}px, ${top}px, 0)`
+  }
+
+  useEffect(() => {
+    function schedulePositionUpdate() {
+      if (rafRef.current !== null) return
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null
+        updateCardPosition()
+      })
+    }
+
     function onMove(e: MouseEvent) {
-      setMousePos({ x: e.clientX, y: e.clientY })
+      mousePosRef.current = { x: e.clientX, y: e.clientY }
+      schedulePositionUpdate()
     }
     window.addEventListener('mousemove', onMove)
     return () => window.removeEventListener('mousemove', onMove)
-  }, [])
+  }, [viewportWidth, viewportHeight])
 
   useEffect(() => {
     if (prevNameRef.current !== info.name) {
@@ -91,28 +132,26 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
     prevNameRef.current = info.name
   }, [])
 
-  let left = mousePos.x + CURSOR_OFFSET_X
-  let top = mousePos.y + CURSOR_OFFSET_Y
-
-  if (left + CARD_WIDTH > viewportWidth - 8) left = mousePos.x - CARD_WIDTH - CURSOR_OFFSET_X
-  if (top + CARD_HEIGHT_EST > viewportHeight - 8) top = viewportHeight - CARD_HEIGHT_EST - 8
-  if (top < 8) top = 8
-
-  const shapePath = geoJsonToSvgPath(info.geometry, FRAME_VIEW_W, FRAME_VIEW_H, 10)
+  const shapePath = useMemo(() => (
+    geoJsonToSvgPath(info.geometry, FRAME_VIEW_W, FRAME_VIEW_H, 10)
+  ), [info.geometry])
   const photoUrls = [info.heroPicUrl, ...info.otherPicUrls].slice(0, 3)
 
   return (
     <div
+      ref={cardRef}
       className="floating-card"
       style={{
         position: 'absolute',
-        left,
-        top,
+        left: 0,
+        top: 0,
         width: CARD_WIDTH,
         pointerEvents: 'none',
         zIndex: 30,
         opacity: visible ? 1 : 0,
         transition: visible ? 'opacity 150ms ease-out' : 'opacity 100ms ease-in',
+        transform: `translate3d(${info.screenX + CURSOR_OFFSET_X}px, ${info.screenY + CURSOR_OFFSET_Y}px, 0)`,
+        willChange: 'transform, opacity',
         backdropFilter: 'blur(18px)',
         WebkitBackdropFilter: 'blur(18px)',
         borderRadius: 18,
@@ -160,6 +199,7 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
             <img
               src={info.heroPicUrl}
               alt=""
+              decoding="async"
               style={{
                 width: 76,
                 height: 76,
@@ -203,6 +243,8 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
                   key={`${url}-${i}`}
                   src={url}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     position: 'absolute',
                     left: i * 22,

@@ -1,10 +1,10 @@
-import { useRef } from 'react'
+import { memo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { FALLBACK_COLOR, useSharedTexture } from './useSharedTexture'
 import { isFrontHemisphereHit } from './pointerHit'
-import type { GlobePalette } from './types'
+import type { GlobePalette, HeroTransform } from './types'
 
 interface Props {
   fillGeometry: THREE.BufferGeometry
@@ -15,13 +15,20 @@ interface Props {
   interactive: boolean
   photoOpacityTarget: number
   heroPicUrl?: string
+  hoverHeroTransform?: HeroTransform
   palette: GlobePalette
   onHover: () => void
   onUnhover: () => void
   onClick: () => void
 }
 
-export function CountryFeature({
+function sameHeroTransform(a?: HeroTransform, b?: HeroTransform) {
+  if (a === b) return true
+  if (!a || !b) return false
+  return a.x === b.x && a.y === b.y && a.scale === b.scale
+}
+
+function CountryFeatureComponent({
   fillGeometry,
   photoGeometry,
   lineGeometry,
@@ -141,3 +148,16 @@ export function CountryFeature({
     </group>
   )
 }
+
+export const CountryFeature = memo(CountryFeatureComponent, (prev, next) => (
+  prev.fillGeometry === next.fillGeometry
+  && prev.photoGeometry === next.photoGeometry
+  && prev.lineGeometry === next.lineGeometry
+  && prev.isHovered === next.isHovered
+  && prev.dimmed === next.dimmed
+  && prev.interactive === next.interactive
+  && prev.photoOpacityTarget === next.photoOpacityTarget
+  && prev.heroPicUrl === next.heroPicUrl
+  && sameHeroTransform(prev.hoverHeroTransform, next.hoverHeroTransform)
+  && prev.palette === next.palette
+))

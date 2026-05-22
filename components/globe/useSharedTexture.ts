@@ -17,6 +17,9 @@ export type SharedTextureState =
 
 const textureCache = new Map<string, SharedTextureEntry>()
 const loader = new THREE.TextureLoader()
+const MAX_ACTIVE_TEXTURE_LOADS = 4
+let activeTextureLoads = 0
+const textureLoadQueue: string[] = []
 
 function getEntry(url: string): SharedTextureEntry {
   let entry = textureCache.get(url)
@@ -36,6 +39,44 @@ function notify(entry: SharedTextureEntry) {
   for (const listener of entry.listeners) listener()
 }
 
+function pumpTextureQueue() {
+  while (activeTextureLoads < MAX_ACTIVE_TEXTURE_LOADS && textureLoadQueue.length > 0) {
+    const url = textureLoadQueue.shift()!
+    const entry = textureCache.get(url)
+    if (!entry || entry.status !== 'loading') continue
+    if (!entry.promise) continue
+
+    activeTextureLoads += 1
+    loader.load(
+      url,
+      (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace
+        textureCache.set(url, {
+          status: 'ready',
+          texture,
+          listeners: entry.listeners,
+          promise: null,
+        })
+        notify(textureCache.get(url)!)
+        activeTextureLoads -= 1
+        pumpTextureQueue()
+      },
+      undefined,
+      () => {
+        textureCache.set(url, {
+          status: 'failed',
+          texture: null,
+          listeners: entry.listeners,
+          promise: null,
+        })
+        notify(textureCache.get(url)!)
+        activeTextureLoads -= 1
+        pumpTextureQueue()
+      },
+    )
+  }
+}
+
 export function preloadSharedTexture(url?: string) {
   if (!url) return
 
@@ -51,34 +92,18 @@ export function preloadSharedTexture(url?: string) {
   textureCache.set(url, loadingEntry)
 
   loadingEntry.promise = new Promise<void>((resolve) => {
-    loader.load(
-      url,
-      (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace
-        textureCache.set(url, {
-          status: 'ready',
-          texture,
-          listeners: loadingEntry.listeners,
-          promise: null,
-        })
-        notify(textureCache.get(url)!)
-        resolve()
-      },
-      undefined,
-      () => {
-        textureCache.set(url, {
-          status: 'failed',
-          texture: null,
-          listeners: loadingEntry.listeners,
-          promise: null,
-        })
-        notify(textureCache.get(url)!)
-        resolve()
-      },
-    )
+    const unsubscribe = () => {
+      const current = textureCache.get(url)
+      if (!current || current.status === 'loading') return
+      current.listeners.delete(unsubscribe)
+      resolve()
+    }
+    loadingEntry.listeners.add(unsubscribe)
   })
 
+  textureLoadQueue.push(url)
   notify(loadingEntry)
+  pumpTextureQueue()
 }
 
 export function useSharedTexture(url?: string): SharedTextureState {
