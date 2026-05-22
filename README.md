@@ -16,6 +16,12 @@ Opens the app at [localhost:3000](http://localhost:3000).
 
 Hot reload is active — changes to source files are reflected immediately without rebuilding the image.
 
+Focused profile/index sanity checks can be run without Docker:
+
+```bash
+pnpm check:profile
+```
+
 ### Live Debugger
 
 The dev container exposes the Node.js inspector on port `9229`. Attach any DAP-compatible debugger to `localhost:9229`.
@@ -64,3 +70,5 @@ docker-compose.yml          Base service definition
 docker-compose.override.yml Dev overrides (auto-applied by `docker compose up`)
 docker-compose.prod.yml     Production overrides
 ```
+
+Traveler profiles are photo-centric: `TravelerProfile.photos` is the source of truth, while `lib/geodata.ts` derives country/subdivision summaries, hero fallbacks, renderable subdivision codes, and counts through `buildProfileIndex`. A country is treated as visited only when it has at least one renderable subdivision visit, so country-only photos cannot create empty drill-down states.

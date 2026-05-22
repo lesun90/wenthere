@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
 import { GlobeScene } from '@/components/globe/GlobeScene'
 import { IdentityStrip } from '@/components/IdentityStrip'
+import { travelerProfile } from '@/data/seed'
+import { buildProfileIndex } from '@/lib/geodata'
 
 function GlobeLoader() {
   return (
@@ -32,12 +34,14 @@ function GlobeLoader() {
 }
 
 export default function DemoPage() {
+  const profileIndex = buildProfileIndex(travelerProfile)
+
   return (
     <main className="fixed inset-0 overflow-hidden">
       <Suspense fallback={<GlobeLoader />}>
-        <GlobeScene />
+        <GlobeScene profile={travelerProfile} />
       </Suspense>
-      <IdentityStrip />
+      <IdentityStrip profile={travelerProfile} profileIndex={profileIndex} />
     </main>
   )
 }

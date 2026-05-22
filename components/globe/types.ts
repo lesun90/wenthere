@@ -1,10 +1,7 @@
 import type { Geometry } from 'geojson'
+import type { PhotoFrameTransform } from '../../data/seed'
 
-export interface HeroTransform {
-  x: number
-  y: number
-  scale: number
-}
+export type HeroTransform = PhotoFrameTransform
 
 export interface HoverInfo {
   name: string

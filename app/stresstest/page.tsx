@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { GlobeScene } from '../../components/globe/GlobeScene'
 import { IdentityStrip } from '../../components/IdentityStrip'
 import { stressTravelerProfile } from '../../data/stressProfile'
+import { buildProfileIndex } from '../../lib/geodata'
 
 function GlobeLoader() {
   return (
@@ -33,12 +34,14 @@ function GlobeLoader() {
 }
 
 export default function StressTestPage() {
+  const profileIndex = buildProfileIndex(stressTravelerProfile)
+
   return (
     <main className="fixed inset-0 overflow-hidden">
       <Suspense fallback={<GlobeLoader />}>
         <GlobeScene profile={stressTravelerProfile} />
       </Suspense>
-      <IdentityStrip profile={stressTravelerProfile} />
+      <IdentityStrip profile={stressTravelerProfile} profileIndex={profileIndex} />
     </main>
   )
 }

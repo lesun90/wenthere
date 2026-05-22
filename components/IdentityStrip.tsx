@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { travelerProfile, type TravelerProfile } from '../data/seed'
+import { useMemo, useState } from 'react'
+import { travelerProfile, type ProfileIndex, type TravelerProfile } from '../data/seed'
+import { buildProfileIndex } from '../lib/geodata'
 import { useTheme } from '../lib/theme-context'
 
 function SunIcon() {
@@ -21,15 +22,19 @@ function MoonIcon() {
   )
 }
 
-export function IdentityStrip({ profile = travelerProfile }: { profile?: TravelerProfile }) {
+export function IdentityStrip({
+  profile = travelerProfile,
+  profileIndex,
+}: {
+  profile?: TravelerProfile
+  profileIndex?: ProfileIndex
+}) {
   const [copied, setCopied] = useState(false)
   const { theme, toggle } = useTheme()
+  const index = useMemo(() => profileIndex ?? buildProfileIndex(profile), [profile, profileIndex])
 
-  const countryCount = profile.countries.length
-  const placeCount = profile.countries.reduce(
-    (acc, c) => acc + c.subdivisions.reduce((a, s) => a + s.photos.length, 0),
-    0,
-  )
+  const countryCount = index.stats.countryCount
+  const placeCount = index.stats.placeCount
 
   function handleShare() {
     navigator.clipboard.writeText(window.location.href).then(() => {

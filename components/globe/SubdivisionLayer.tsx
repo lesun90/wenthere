@@ -5,12 +5,30 @@ import { useThree } from '@react-three/fiber'
 import type { Feature, Geometry } from 'geojson'
 import { SubdivisionFeature } from './SubdivisionFeature'
 import type { HoverInfo, GlobePalette, HeroTransform } from './types'
-import { travelerProfile, type TravelerProfile } from '../../data/seed'
-import { getVisitedSubdivisions, getSubdivisionMemoryByCode } from '../../lib/geodata'
+import type { ProfileIndex } from '../../data/seed'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { registerSubdivisionGeometry } from '../../lib/geo-registry'
 import { latLngToVec3 } from '../../lib/geo'
-import { getCachedFeature, setCachedFeature, hasCachedEntry } from '../../lib/subdivision-feature-cache'
+import { getCachedFeature, hasCachedEntry } from '../../lib/subdivision-feature-cache'
+import { fetchSubdivisionFeature } from './usePredictivePreload'
+
+function subdivisionFeatureId(feature: Feature): string {
+  return String(feature.properties?.adm1_code ?? '')
+}
+
+function mergeUniqueSubdivisionFeatures(existing: Feature[], incoming: Feature[]): Feature[] {
+  const seen = new Set<string>()
+  const merged: Feature[] = []
+
+  for (const feature of [...existing, ...incoming]) {
+    const id = subdivisionFeatureId(feature)
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    merged.push(feature)
+  }
+
+  return merged
+}
 
 interface Props {
   opacity: number
@@ -19,10 +37,10 @@ interface Props {
   palette: GlobePalette
   heroOverrides?: Record<string, string>
   heroTransforms?: Record<string, HeroTransform>
-  profile?: TravelerProfile
+  profileIndex: ProfileIndex
 }
 
-export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette, heroOverrides = {}, heroTransforms = {}, profile = travelerProfile }: Props) {
+export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, palette, heroOverrides = {}, heroTransforms = {}, profileIndex }: Props) {
   const { camera, size } = useThree()
   const [features, setFeatures] = useState<Feature[]>([])
   const pendingRef = useRef<Feature[]>([])
@@ -30,16 +48,17 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const hoveredIdRef = useRef<string | null>(null)
 
-  const subdivisionCodes = useMemo(
-    () => profile.countries.flatMap(c => c.subdivisions
-      .filter(s => s.renderable !== false)
-      .map(s => s.subdivisionCode),
-    ),
-    [profile],
-  )
+  const subdivisionCodes = profileIndex.renderableSubdivisionCodes
 
   useEffect(() => {
-    if (subdivisionCodes.length === 0) return
+    let isActive = true
+
+    if (subdivisionCodes.length === 0) {
+      setFeatures([])
+      return () => {
+        isActive = false
+      }
+    }
 
     const cached: Feature[] = []
     const missing: string[] = []
@@ -60,25 +79,26 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = null
         const batch = pendingRef.current.splice(0)
-        if (batch.length > 0) setFeatures(prev => [...prev, ...batch])
+        if (batch.length > 0) {
+          setFeatures(prev => mergeUniqueSubdivisionFeatures(prev, batch))
+        }
       })
     }
 
     for (const code of missing) {
-      fetch(`/geo/subdivisions/${code}.geojson`)
-        .then(r => r.json() as Promise<Feature>)
+      fetchSubdivisionFeature(code)
         .then(f => {
-          const firstToCache = !hasCachedEntry(code)
-          setCachedFeature(code, f)
-          if (firstToCache) {
+          if (!isActive) return
+          if (f) {
             pendingRef.current.push(f)
             scheduleFlush()
           }
         })
-        .catch(() => setCachedFeature(code, null))
+        .catch(() => {})
     }
 
     return () => {
+      isActive = false
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = null
@@ -87,11 +107,13 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
     }
   }, [subdivisionCodes])
 
-  const visitedSubdivisions = useMemo(
-    () => getVisitedSubdivisions(profile, heroOverrides),
-    [heroOverrides, profile],
-  )
-  const subdivisionMemories = useMemo(() => getSubdivisionMemoryByCode(profile), [profile])
+  const visitedSubdivisions = useMemo(() => {
+    const result: Record<string, string> = {}
+    for (const [subdivisionCode, summary] of Object.entries(profileIndex.subdivisionSummariesByCode)) {
+      result[subdivisionCode] = heroOverrides[subdivisionCode] ?? summary.heroPic
+    }
+    return result
+  }, [heroOverrides, profileIndex])
 
   const visitedFeatures = useMemo(() => {
     const rawVisitedFeatures = features.filter(feature => {
@@ -131,13 +153,22 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, pal
     if (hoveredIdRef.current === id) return
     hoveredIdRef.current = id
     setHoveredId(id)
-    const memory = subdivisionMemories[id]
-    const otherPicUrls = memory
-      ? memory.photos.filter(p => p.url !== heroPicUrl).map(p => p.url).slice(0, 4)
+    const summary = profileIndex.subdivisionSummariesByCode[id]
+    const otherPicUrls = summary
+      ? summary.photos.filter(photo => photo.url !== heroPicUrl).map(photo => photo.url).slice(0, 4)
       : []
-    const placeCount = memory ? memory.photos.length : 0
+    const placeCount = summary ? summary.photos.length : 0
     const { screenX, screenY } = projectToScreen(centroid)
-    onHoverChange({ name, heroPicUrl, heroTransform: heroTransforms[id], otherPicUrls, placeCount, screenX, screenY, geometry })
+    onHoverChange({
+      name,
+      heroPicUrl,
+      heroTransform: heroTransforms[id] ?? summary?.heroTransform,
+      otherPicUrls,
+      placeCount,
+      screenX,
+      screenY,
+      geometry,
+    })
   }
 
   function handleUnhover() {

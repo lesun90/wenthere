@@ -7,8 +7,7 @@ import type { Topology, GeometryCollection } from 'topojson-specification'
 import type { Geometry } from 'geojson'
 import { CountryFeature } from './CountryFeature'
 import type { HoverInfo, GlobePalette, HeroTransform } from './types'
-import { travelerProfile, type TravelerProfile } from '../../data/seed'
-import { getVisitedCountries, getCountryMemoryByNumericId } from '../../lib/geodata'
+import type { ProfileIndex } from '../../data/seed'
 import { prepareCountryRecords } from '../../lib/geo-cache'
 import { registerCountryGeometry } from '../../lib/geo-registry'
 import { latLngToVec3 } from '../../lib/geo'
@@ -22,10 +21,10 @@ interface Props {
   palette: GlobePalette
   countryHeroOverrides?: Record<string, string>
   countryHeroTransforms?: Record<string, HeroTransform>
-  profile?: TravelerProfile
+  profileIndex: ProfileIndex
 }
 
-export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, onCountryTap, onCountryHover, palette, countryHeroOverrides = {}, countryHeroTransforms = {}, profile = travelerProfile }: Props) {
+export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, onCountryTap, onCountryHover, palette, countryHeroOverrides = {}, countryHeroTransforms = {}, profileIndex }: Props) {
   const { camera, size } = useThree()
   const [topology, setTopology] = useState<Topology<{ countries: GeometryCollection }> | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -48,18 +47,20 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     return prepareCountryRecords(feature(topology, topology.objects.countries).features)
   }, [topology])
 
-  const visitedCountries = useMemo(
-    () => getVisitedCountries(profile, countryHeroOverrides),
-    [countryHeroOverrides, profile],
-  )
-  const countryMemories = useMemo(() => getCountryMemoryByNumericId(profile), [profile])
+  const visitedCountries = useMemo(() => {
+    const result: Record<string, string> = {}
+    for (const [numericId, summary] of Object.entries(profileIndex.countrySummariesByNumericId)) {
+      result[numericId] = countryHeroOverrides[summary.countryCode] ?? summary.heroPic
+    }
+    return result
+  }, [countryHeroOverrides, profileIndex])
 
   useEffect(() => {
     for (const { id, geometry } of features) {
-      const memory = countryMemories[id]
-      if (memory?.countryCode) registerCountryGeometry(memory.countryCode, geometry)
+      const summary = profileIndex.countrySummariesByNumericId[id]
+      if (summary?.countryCode) registerCountryGeometry(summary.countryCode, geometry)
     }
-  }, [features, countryMemories])
+  }, [features, profileIndex])
 
   function projectToScreen(lonLat: [number, number]): { screenX: number; screenY: number } {
     const [lon, lat] = lonLat
@@ -81,19 +82,17 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     hoveredIdRef.current = id
     setHoveredId(id)
     if (!heroPicUrl) return
-    const memory = countryMemories[id]
-    const otherPicUrls = memory
-      ? memory.subdivisions
-          .flatMap(s => s.photos.map(p => p.url))
-          .filter(u => u !== heroPicUrl)
+    const summary = profileIndex.countrySummariesByNumericId[id]
+    const otherPicUrls = summary
+      ? summary.photos
+          .map(photo => photo.url)
+          .filter(url => url !== heroPicUrl)
           .slice(0, 4)
       : []
-    const placeCount = memory
-      ? memory.subdivisions.reduce((acc, s) => acc + s.photos.length, 0)
-      : 0
+    const placeCount = summary?.renderablePlaceCount ?? 0
     const { screenX, screenY } = projectToScreen(centroid)
-    const heroTransform = memory ? countryHeroTransforms[memory.countryCode] : undefined
-    if (memory?.countryCode) onCountryHover?.(memory.countryCode)
+    const heroTransform = summary ? countryHeroTransforms[summary.countryCode] ?? summary.heroTransform : undefined
+    if (summary?.countryCode && placeCount > 0) onCountryHover?.(summary.countryCode)
     onHoverChange({ name, heroPicUrl, heroTransform, otherPicUrls, placeCount, screenX, screenY, geometry })
   }
 
@@ -105,9 +104,9 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
   }
 
   function handleTap(id: string, centroid: [number, number]) {
-    const memory = countryMemories[id]
-    if (!memory) return
-    onCountryTap(memory.countryCode, centroid)
+    const summary = profileIndex.countrySummariesByNumericId[id]
+    if (!summary || summary.renderablePlaceCount === 0) return
+    onCountryTap(summary.countryCode, centroid)
   }
 
   const dimmed = showSubdivisions

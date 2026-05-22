@@ -1,13 +1,13 @@
 import { useEffect } from 'react'
 import type { Feature } from 'geojson'
-import { travelerProfile, type TravelerProfile } from '../../data/seed'
+import type { ProfileIndex } from '../../data/seed'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { hasCachedEntry, setCachedFeature, getCachedFeature } from '../../lib/subdivision-feature-cache'
 import { preloadSharedTexture } from './useSharedTexture'
 
 const subdivisionFetches = new Map<string, Promise<Feature | null>>()
 
-function fetchSubdivisionFeature(subdivisionCode: string): Promise<Feature | null> {
+export function fetchSubdivisionFeature(subdivisionCode: string): Promise<Feature | null> {
   const cached = getCachedFeature(subdivisionCode)
   if (cached) return Promise.resolve(cached)
   if (hasCachedEntry(subdivisionCode)) return Promise.resolve(null)
@@ -33,13 +33,6 @@ function fetchSubdivisionFeature(subdivisionCode: string): Promise<Feature | nul
   return request
 }
 
-export function preloadSubdivisionFile(subdivisionCode: string): void {
-  if (hasCachedEntry(subdivisionCode)) return
-  if (subdivisionFetches.has(subdivisionCode)) return
-
-  void fetchSubdivisionFeature(subdivisionCode)
-}
-
 async function preloadSubdivisionGeometry(subdivisionCodes: string[]) {
   const results = await Promise.all(
     subdivisionCodes.map(code => fetchSubdivisionFeature(code))
@@ -50,28 +43,32 @@ async function preloadSubdivisionGeometry(subdivisionCodes: string[]) {
 export function usePredictivePreload({
   hoveredCountryCode,
   focusedCountryCode,
-  profile = travelerProfile,
+  profileIndex,
 }: {
   hoveredCountryCode: string | null
   focusedCountryCode: string | null
-  profile?: TravelerProfile
+  profileIndex: ProfileIndex
 }) {
   useEffect(() => {
     if (!hoveredCountryCode) return
-    const country = profile.countries.find(c => c.countryCode === hoveredCountryCode)
+    const country = profileIndex.countrySummariesByCode[hoveredCountryCode]
     if (!country) return
     preloadSharedTexture(country.heroPic)
-  }, [hoveredCountryCode, profile])
+  }, [hoveredCountryCode, profileIndex])
 
   useEffect(() => {
     if (!focusedCountryCode) return
-    const country = profile.countries.find(c => c.countryCode === focusedCountryCode)
+    const country = profileIndex.countrySummariesByCode[focusedCountryCode]
     if (!country) return
 
-    for (const sub of country.subdivisions) {
-      preloadSharedTexture(sub.heroPic)
+    for (const subdivisionCode of country.subdivisionCodes) {
+      const sub = profileIndex.subdivisionSummariesByCode[subdivisionCode]
+      if (sub) preloadSharedTexture(sub.heroPic)
     }
 
-    void preloadSubdivisionGeometry(country.subdivisions.map(s => s.subdivisionCode)).catch(() => {})
-  }, [focusedCountryCode, profile])
+    const renderableCodes = country.subdivisionCodes.filter(code =>
+      profileIndex.renderableSubdivisionCodes.includes(code),
+    )
+    void preloadSubdivisionGeometry(renderableCodes).catch(() => {})
+  }, [focusedCountryCode, profileIndex])
 }

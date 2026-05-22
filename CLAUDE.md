@@ -19,11 +19,12 @@ To run without Docker (Node.js / pnpm required):
 ```bash
 pnpm dev        # dev server
 pnpm build      # production build
+pnpm check:profile # profile-index sanity checks
 pnpm start      # serve production build
 pnpm lint       # ESLint via next lint
 ```
 
-There are no tests. No test runner is configured.
+There is no general test runner configured. `pnpm check:profile` runs the focused profile-index sanity script.
 
 Type-check without building:
 
@@ -37,9 +38,11 @@ pnpm exec tsc --noEmit
 
 ### Data model (`data/seed.ts`)
 
-All traveler data flows from a single `TravelerProfile` object defined in `data/seed.ts`. A profile contains `CountryMemory[]`, each with `SubdivisionMemory[]`. Every entity holds a `heroPic` URL and a `photos[]` array. This is the only data source — there is no backend, database, or API.
+All traveler data flows from a single photo-centric `TravelerProfile` object defined in `data/seed.ts`. A profile contains one `photos: TravelPhoto[]` array plus optional `presentation` hero/framing maps keyed by country or subdivision code. Countries and subdivisions are derived from photo locations; there is no backend, database, or API.
 
 `TravelerProfile` is injectable: `GlobeScene` accepts `profile` as a prop (defaults to the seeded demo profile), enabling the stress-test page to pass in a different profile.
+
+`lib/geodata.ts` builds the pure `ProfileIndex` once per profile identity in `GlobeScene`. Components should consume indexed summaries/lookups instead of scanning `profile.photos` directly. A country summary is emitted only when at least one subdivision in that country is renderable; country-only photos may enrich an already visited country, but must not create empty visited countries by themselves.
 
 ### Globe rendering (`components/globe/`)
 
@@ -60,7 +63,7 @@ Navigation is zoom-driven: `ZoomDetailController` watches camera distance each f
 - **`lib/geo-cache.ts`** — memoizes `THREE.BufferGeometry` instances keyed by `layer:id:role:radius`. Also computes and caches centroids and SVG paths. Each country/subdivision gets three geometries: fill (radius 1.001), photo (radius 1.0015), line/border (radius 1.002) — slightly different radii prevent z-fighting.
 - **`lib/geomath.ts`** — `featureCentroid` and `geoJsonToSvgPath` for the hover card minimap.
 - **`lib/geo-registry.ts`** — module-level Maps holding `Geometry | null` keyed by alpha-3 country code or subdivision `adm1_code`. Used so geometry is accessible outside React component trees (e.g., the hover card SVG minimap).
-- **`lib/geodata.ts`** — helpers that index `TravelerProfile` data by numeric country ID or subdivision code, for O(1) lookups during render.
+- **`lib/geodata.ts`** — `buildProfileIndex(profile)`, immutable add/remove/update helpers, and lightweight profile validation. The index groups photos by country/subdivision, resolves deterministic hero fallbacks, exposes renderable subdivision codes, and provides O(1) lookups during render.
 - **`lib/subdivision-feature-cache.ts`** — module-level `Map<code, Feature | null>` caching parsed GeoJSON features by `adm1_code`. `null` entries mark known-404 codes so they are never re-fetched. Consumed by `SubdivisionLayer` (cache-first loading) and `usePredictivePreload` (stores parsed features on preload).
 
 ### Texture sharing (`components/globe/useSharedTexture.ts`)
@@ -75,9 +78,9 @@ On country hover, the country's hero texture and subdivision GeoJSON files are p
 
 - `public/geo/countries-10m.json` — Natural Earth 10m TopoJSON, `objects.countries` collection. Feature IDs are numeric ISO 3166-1.
 - `public/geo/subdivisions/*.geojson` — generated Natural Earth admin-1 GeoJSON, one feature per file keyed by `properties.adm1_code`.
-- `public/geo/states-provinces-50m.json` — legacy monolithic Natural Earth 50m GeoJSON, still imported by `data/stressProfile.ts` for stress data generation.
+- `public/geo/states-provinces-stress.json` — trimmed Natural Earth admin-1 GeoJSON imported by `data/stressProfile.ts` for deterministic stress data generation. The stress profile uses only region-backed photos from this file.
 
-Subdivision codes in `data/seed.ts` must match generated subdivision filenames and `adm1_code` values exactly (e.g. `"USA-3521"` for California).
+Renderable subdivision codes in photo locations must match generated subdivision filenames and `adm1_code` values exactly (e.g. `"USA-3521"` for California).
 
 ### Theming
 

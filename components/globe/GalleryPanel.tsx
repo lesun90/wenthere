@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Geometry } from 'geojson'
-import { travelerProfile, type TravelerProfile } from '../../data/seed'
+import type { ProfileIndex } from '../../data/seed'
 import { geoJsonToSvgPath } from '../../lib/geomath'
 import { getSubdivisionGeometry, getCountryGeometry } from '../../lib/geo-registry'
 import type { HeroTransform } from './types'
@@ -20,7 +20,7 @@ interface Props {
   onSubdivisionTransformChange?: (subdivisionId: string, transform: HeroTransform) => void
   onCountryTransformChange?: (countryCode: string, transform: HeroTransform) => void
   clickOrigin?: { x: number; y: number }
-  profile?: TravelerProfile
+  profileIndex: ProfileIndex
 }
 
 interface Photo {
@@ -631,21 +631,19 @@ export function GalleryPanel({
   onSubdivisionTransformChange,
   onCountryTransformChange,
   clickOrigin,
-  profile = travelerProfile,
+  profileIndex,
 }: Props) {
   const subdivisionGeometry = getSubdivisionGeometry(subdivisionId)
   const countryGeometry = getCountryGeometry(countryCode)
 
-  const memory = profile.countries
-    .flatMap(c => c.subdivisions)
-    .find(s => s.subdivisionCode === subdivisionId)
-  const photos = memory?.photos ?? []
-  const name = memory?.name ?? ''
+  const summary = profileIndex.subdivisionSummariesByCode[subdivisionId]
+  const photos = summary?.photos ?? []
+  const name = summary?.name ?? ''
 
   const [visible, setVisible] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const [heroUrl, setHeroUrl] = useState<string>(initialHeroUrl ?? memory?.heroPic ?? photos[0]?.url ?? '')
+  const [heroUrl, setHeroUrl] = useState<string>(initialHeroUrl ?? summary?.heroPic ?? photos[0]?.url ?? '')
   const [countryHeroUrl, setCountryHeroUrl] = useState<string>(initialCountryHeroUrl ?? '')
   const [stagedSubTransform, setStagedSubTransform] = useState<HeroTransform>(initialSubdivisionTransform ?? DEFAULT_TRANSFORM)
   const [stagedCountryTransform, setStagedCountryTransform] = useState<HeroTransform>(initialCountryTransform ?? DEFAULT_TRANSFORM)
@@ -995,7 +993,7 @@ export function GalleryPanel({
               const isCtryHero = photo.url === countryHeroUrl
               return (
                 <div
-                  key={i}
+                  key={photo.id}
                   style={{
                     flexShrink: 0,
                     display: 'flex',

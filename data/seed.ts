@@ -1,173 +1,154 @@
-export interface Photo {
+export interface PhotoFrameTransform {
+  x: number
+  y: number
+  scale: number
+}
+
+export interface PhotoLocation {
+  countryCode: string
+  countryName: string
+  countryNumericId?: string
+  subdivisionCode?: string
+  subdivisionName?: string
+  renderable?: boolean
+}
+
+export interface TravelPhoto {
+  id: string
   url: string
   caption: string
+  takenAt?: string
+  location: PhotoLocation
 }
 
-export interface SubdivisionMemory {
-  subdivisionCode: string // adm1_code from Natural Earth GeoJSON
-  name: string
-  heroPic: string // URL — references one photo in photos[]
-  photos: Photo[] // all photos for this subdivision (includes hero)
-  renderable?: boolean // false for stress-only memories without matching GeoJSON
+export interface PlaceHero {
+  photoId: string
+  framing?: PhotoFrameTransform
 }
 
-export interface CountryMemory {
-  countryCode: string // ISO 3166-1 alpha-3 (e.g. "USA", "CHN", "VNM")
-  countryNumericId?: string // TopoJSON country feature id when countryCode is not enough
-  name: string
-  heroPic: string // URL — references one photo in photos[] (reuses first subdivision hero)
-  photos: Photo[] // country-level photos; empty in demo, populated from subdivision gallery in M3
-  subdivisions: SubdivisionMemory[]
+export interface ProfilePresentation {
+  countryHeroes?: Record<string, PlaceHero>
+  subdivisionHeroes?: Record<string, PlaceHero>
 }
 
 export interface TravelerProfile {
+  id: string
   name: string
-  countries: CountryMemory[]
+  photos: TravelPhoto[]
+  presentation?: ProfilePresentation
+}
+
+export interface CountrySummary {
+  countryCode: string
+  countryNumericId: string
+  name: string
+  heroPic: string
+  heroTransform?: PhotoFrameTransform
+  photos: TravelPhoto[]
+  subdivisionCodes: string[]
+  renderablePlaceCount: number
+  photoCount: number
+}
+
+export interface SubdivisionSummary {
+  subdivisionCode: string
+  countryCode: string
+  name: string
+  heroPic: string
+  heroTransform?: PhotoFrameTransform
+  photos: TravelPhoto[]
+  renderable: boolean
+}
+
+export interface ProfileIndex {
+  countrySummariesByCode: Record<string, CountrySummary>
+  countrySummariesByNumericId: Record<string, CountrySummary>
+  subdivisionSummariesByCode: Record<string, SubdivisionSummary>
+  photosByCountryCode: Record<string, TravelPhoto[]>
+  photosBySubdivisionCode: Record<string, TravelPhoto[]>
+  renderableSubdivisionCodes: string[]
+  stats: {
+    countryCount: number
+    placeCount: number
+    photoCount: number
+  }
+}
+
+function photo(
+  id: string,
+  url: string,
+  caption: string,
+  countryCode: string,
+  countryName: string,
+  countryNumericId: string,
+  subdivisionCode: string,
+  subdivisionName: string,
+): TravelPhoto {
+  return {
+    id,
+    url,
+    caption,
+    location: {
+      countryCode,
+      countryName,
+      countryNumericId,
+      subdivisionCode,
+      subdivisionName,
+    },
+  }
 }
 
 export const travelerProfile: TravelerProfile = {
+  id: 'demo-traveler',
   name: 'Demo Traveler',
-  countries: [
-    {
-      countryCode: 'USA',
-      name: 'United States',
-      heroPic: '/demo/10.jpg',
-      photos: [],
-      subdivisions: [
-        {
-          subdivisionCode: 'USA-3521',
-          name: 'California',
-          heroPic: '/demo/10.jpg',
-          photos: [
-            { url: '/demo/10.jpg', caption: 'Golden Gate at dusk' },
-            { url: '/demo/11.jpg', caption: 'Big Sur coastline' },
-          ],
-        },
-        {
-          subdivisionCode: 'USA-3536',
-          name: 'Texas',
-          heroPic: '/demo/12.jpg',
-          photos: [
-            { url: '/demo/12.jpg', caption: 'Big Bend canyon' },
-            { url: '/demo/13.jpg', caption: 'Hill Country wildflowers' },
-          ],
-        },
-        {
-          subdivisionCode: 'USA-3559',
-          name: 'New York',
-          heroPic: '/demo/14.jpg',
-          photos: [
-            { url: '/demo/14.jpg', caption: 'Manhattan skyline' },
-            { url: '/demo/15.jpg', caption: 'Central Park in fall' },
-          ],
-        },
-        {
-          subdivisionCode: 'USA-3546',
-          name: 'Illinois',
-          heroPic: '/demo/16.jpg',
-          photos: [
-            { url: '/demo/16.jpg', caption: 'Chicago lakefront' },
-            { url: '/demo/17.jpg', caption: 'The Bean at sunrise' },
-          ],
-        },
-        {
-          subdivisionCode: 'USA-3542',
-          name: 'Florida',
-          heroPic: '/demo/18.jpg',
-          photos: [
-            { url: '/demo/18.jpg', caption: 'Everglades waterway' },
-            { url: '/demo/19.jpg', caption: 'Key West at sunset' },
-          ],
-        },
-      ],
-    },
-    {
-      countryCode: 'CHN',
-      name: 'China',
-      heroPic: '/demo/20.jpg',
-      photos: [],
-      subdivisions: [
-        {
-          subdivisionCode: 'CHN-1180',
-          name: 'Guangdong',
-          heroPic: '/demo/20.jpg',
-          photos: [
-            { url: '/demo/20.jpg', caption: 'Pearl River delta' },
-            { url: '/demo/21.jpg', caption: 'Guangzhou skyline' },
-          ],
-        },
-        {
-          subdivisionCode: 'CHN-1809',
-          name: 'Sichuan',
-          heroPic: '/demo/22.jpg',
-          photos: [
-            { url: '/demo/22.jpg', caption: 'Jiuzhaigou valley' },
-            { url: '/demo/23.jpg', caption: 'Chengdu teahouse' },
-          ],
-        },
-        {
-          subdivisionCode: 'CHN-1810',
-          name: 'Yunnan',
-          heroPic: '/demo/24.jpg',
-          photos: [
-            { url: '/demo/24.jpg', caption: 'Tiger Leaping Gorge' },
-            { url: '/demo/25.jpg', caption: 'Rice terraces at Yuanyang' },
-          ],
-        },
-        {
-          subdivisionCode: 'CHN-1155',
-          name: 'Beijing',
-          heroPic: '/demo/26.jpg',
-          photos: [
-            { url: '/demo/26.jpg', caption: 'Great Wall at Mutianyu' },
-            { url: '/demo/27.jpg', caption: 'Temple of Heaven courtyard' },
-          ],
-        },
-        {
-          subdivisionCode: 'CHN-1756',
-          name: 'Xinjiang',
-          heroPic: '/demo/28.jpg',
-          photos: [
-            { url: '/demo/28.jpg', caption: 'Karakul Lake dunes' },
-            { url: '/demo/29.jpg', caption: 'Silk Road desert road' },
-          ],
-        },
-      ],
-    },
-    {
-      countryCode: 'VNM',
-      name: 'Vietnam',
-      heroPic: '/demo/30.jpg',
-      photos: [],
-      subdivisions: [
-        {
-          subdivisionCode: 'VNM-491',
-          name: 'Đà Nẵng',
-          heroPic: '/demo/30.jpg',
-          photos: [
-            { url: '/demo/30.jpg', caption: 'Dragon Bridge at night' },
-            { url: '/demo/31.jpg', caption: 'My Khe beach morning' },
-          ],
-        },
-        {
-          subdivisionCode: 'VNM-462',
-          name: 'Ha Noi',
-          heroPic: '/demo/32.jpg',
-          photos: [
-            { url: '/demo/32.jpg', caption: 'Hoan Kiem Lake' },
-            { url: '/demo/33.jpg', caption: 'Old Quarter at dusk' },
-          ],
-        },
-        {
-          subdivisionCode: 'VNM-501',
-          name: 'Hồ Chí Minh',
-          heroPic: '/demo/34.jpg',
-          photos: [
-            { url: '/demo/34.jpg', caption: 'Bến Thành market' },
-            { url: '/demo/35.jpg', caption: 'Saigon River at night' },
-          ],
-        },
-      ],
-    },
+  photos: [
+    photo('demo-usa-ca-1', '/demo/10.jpg', 'Golden Gate at dusk', 'USA', 'United States', '840', 'USA-3521', 'California'),
+    photo('demo-usa-ca-2', '/demo/11.jpg', 'Big Sur coastline', 'USA', 'United States', '840', 'USA-3521', 'California'),
+    photo('demo-usa-tx-1', '/demo/12.jpg', 'Big Bend canyon', 'USA', 'United States', '840', 'USA-3536', 'Texas'),
+    photo('demo-usa-tx-2', '/demo/13.jpg', 'Hill Country wildflowers', 'USA', 'United States', '840', 'USA-3536', 'Texas'),
+    photo('demo-usa-ny-1', '/demo/14.jpg', 'Manhattan skyline', 'USA', 'United States', '840', 'USA-3559', 'New York'),
+    photo('demo-usa-ny-2', '/demo/15.jpg', 'Central Park in fall', 'USA', 'United States', '840', 'USA-3559', 'New York'),
+    photo('demo-usa-il-1', '/demo/16.jpg', 'Chicago lakefront', 'USA', 'United States', '840', 'USA-3546', 'Illinois'),
+    photo('demo-usa-il-2', '/demo/17.jpg', 'The Bean at sunrise', 'USA', 'United States', '840', 'USA-3546', 'Illinois'),
+    photo('demo-usa-fl-1', '/demo/18.jpg', 'Everglades waterway', 'USA', 'United States', '840', 'USA-3542', 'Florida'),
+    photo('demo-usa-fl-2', '/demo/19.jpg', 'Key West at sunset', 'USA', 'United States', '840', 'USA-3542', 'Florida'),
+    photo('demo-chn-gd-1', '/demo/20.jpg', 'Pearl River delta', 'CHN', 'China', '156', 'CHN-1180', 'Guangdong'),
+    photo('demo-chn-gd-2', '/demo/21.jpg', 'Guangzhou skyline', 'CHN', 'China', '156', 'CHN-1180', 'Guangdong'),
+    photo('demo-chn-sc-1', '/demo/22.jpg', 'Jiuzhaigou valley', 'CHN', 'China', '156', 'CHN-1809', 'Sichuan'),
+    photo('demo-chn-sc-2', '/demo/23.jpg', 'Chengdu teahouse', 'CHN', 'China', '156', 'CHN-1809', 'Sichuan'),
+    photo('demo-chn-yn-1', '/demo/24.jpg', 'Tiger Leaping Gorge', 'CHN', 'China', '156', 'CHN-1810', 'Yunnan'),
+    photo('demo-chn-yn-2', '/demo/25.jpg', 'Rice terraces at Yuanyang', 'CHN', 'China', '156', 'CHN-1810', 'Yunnan'),
+    photo('demo-chn-bj-1', '/demo/26.jpg', 'Great Wall at Mutianyu', 'CHN', 'China', '156', 'CHN-1155', 'Beijing'),
+    photo('demo-chn-bj-2', '/demo/27.jpg', 'Temple of Heaven courtyard', 'CHN', 'China', '156', 'CHN-1155', 'Beijing'),
+    photo('demo-chn-xj-1', '/demo/28.jpg', 'Karakul Lake dunes', 'CHN', 'China', '156', 'CHN-1756', 'Xinjiang'),
+    photo('demo-chn-xj-2', '/demo/29.jpg', 'Silk Road desert road', 'CHN', 'China', '156', 'CHN-1756', 'Xinjiang'),
+    photo('demo-vnm-dn-1', '/demo/30.jpg', 'Dragon Bridge at night', 'VNM', 'Vietnam', '704', 'VNM-491', 'Da Nang'),
+    photo('demo-vnm-dn-2', '/demo/31.jpg', 'My Khe beach morning', 'VNM', 'Vietnam', '704', 'VNM-491', 'Da Nang'),
+    photo('demo-vnm-hn-1', '/demo/32.jpg', 'Hoan Kiem Lake', 'VNM', 'Vietnam', '704', 'VNM-462', 'Ha Noi'),
+    photo('demo-vnm-hn-2', '/demo/33.jpg', 'Old Quarter at dusk', 'VNM', 'Vietnam', '704', 'VNM-462', 'Ha Noi'),
+    photo('demo-vnm-hcm-1', '/demo/34.jpg', 'Ben Thanh market', 'VNM', 'Vietnam', '704', 'VNM-501', 'Ho Chi Minh'),
+    photo('demo-vnm-hcm-2', '/demo/35.jpg', 'Saigon River at night', 'VNM', 'Vietnam', '704', 'VNM-501', 'Ho Chi Minh'),
   ],
+  presentation: {
+    countryHeroes: {
+      USA: { photoId: 'demo-usa-ca-1' },
+      CHN: { photoId: 'demo-chn-gd-1' },
+      VNM: { photoId: 'demo-vnm-dn-1' },
+    },
+    subdivisionHeroes: {
+      'USA-3521': { photoId: 'demo-usa-ca-1' },
+      'USA-3536': { photoId: 'demo-usa-tx-1' },
+      'USA-3559': { photoId: 'demo-usa-ny-1' },
+      'USA-3546': { photoId: 'demo-usa-il-1' },
+      'USA-3542': { photoId: 'demo-usa-fl-1' },
+      'CHN-1180': { photoId: 'demo-chn-gd-1' },
+      'CHN-1809': { photoId: 'demo-chn-sc-1' },
+      'CHN-1810': { photoId: 'demo-chn-yn-1' },
+      'CHN-1155': { photoId: 'demo-chn-bj-1' },
+      'CHN-1756': { photoId: 'demo-chn-xj-1' },
+      'VNM-491': { photoId: 'demo-vnm-dn-1' },
+      'VNM-462': { photoId: 'demo-vnm-hn-1' },
+      'VNM-501': { photoId: 'demo-vnm-hcm-1' },
+    },
+  },
 }

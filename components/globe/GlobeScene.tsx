@@ -14,7 +14,7 @@ import { useTheme } from '../../lib/theme-context'
 import type { HoverInfo, GlobeState, GlobePalette, HeroTransform } from './types'
 import { latLngToVec3 } from '../../lib/geo'
 import { travelerProfile, type TravelerProfile } from '../../data/seed'
-import { getCountryHeroByCode } from '../../lib/geodata'
+import { buildProfileIndex } from '../../lib/geodata'
 
 const MODE_TRANSITION_MS = 300
 const MIN_CAMERA_DISTANCE = 1.2
@@ -188,6 +188,7 @@ function useLayerPresence(show: boolean) {
 export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerProfile }) {
   const { theme } = useTheme()
   const palette = GLOBE_PALETTES[theme]
+  const profileIndex = useMemo(() => buildProfileIndex(profile), [profile])
 
   const [navStack, setNavStack] = useState<GlobeState[]>([{ level: 'world' }])
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null)
@@ -205,7 +206,27 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
   const [subdivisionHeroTransforms, setSubdivisionHeroTransforms] = useState<Record<string, HeroTransform>>({})
   const [countryHeroTransforms, setCountryHeroTransforms] = useState<Record<string, HeroTransform>>({})
 
-  const seedCountryHeroes = useMemo(() => getCountryHeroByCode(profile), [profile])
+  const seedCountryHeroes = useMemo(() => {
+    const result: Record<string, string> = {}
+    for (const [countryCode, summary] of Object.entries(profileIndex.countrySummariesByCode)) {
+      result[countryCode] = summary.heroPic
+    }
+    return result
+  }, [profileIndex])
+  const seedCountryTransforms = useMemo(() => {
+    const result: Record<string, HeroTransform> = {}
+    for (const [countryCode, summary] of Object.entries(profileIndex.countrySummariesByCode)) {
+      if (summary.heroTransform) result[countryCode] = summary.heroTransform
+    }
+    return result
+  }, [profileIndex])
+  const seedSubdivisionTransforms = useMemo(() => {
+    const result: Record<string, HeroTransform> = {}
+    for (const [subdivisionCode, summary] of Object.entries(profileIndex.subdivisionSummariesByCode)) {
+      if (summary.heroTransform) result[subdivisionCode] = summary.heroTransform
+    }
+    return result
+  }, [profileIndex])
 
   const current = navStack[navStack.length - 1]
   const showSubdivisions = current.level === 'detail' || current.level === 'subdivision' || current.level === 'gallery'
@@ -216,7 +237,7 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
   const subdivisionOpacity = showSubdivisions ? 1 : 0
   const shouldRenderSubdivisions = useLayerPresence(showSubdivisions)
 
-  usePredictivePreload({ hoveredCountryCode, focusedCountryCode, profile })
+  usePredictivePreload({ hoveredCountryCode, focusedCountryCode, profileIndex })
 
   function push(state: GlobeState) {
     setNavStack(s => [...s, state])
@@ -340,7 +361,7 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
             palette={palette}
             countryHeroOverrides={countryHeroOverrides}
             countryHeroTransforms={countryHeroTransforms}
-            profile={profile}
+            profileIndex={profileIndex}
           />
           {shouldRenderSubdivisions && (
             <SubdivisionLayer
@@ -350,7 +371,7 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
               palette={palette}
               heroOverrides={subdivisionHeroOverrides}
               heroTransforms={subdivisionHeroTransforms}
-              profile={profile}
+              profileIndex={profileIndex}
             />
           )}
           <OrbitControls
@@ -388,14 +409,14 @@ export function GlobeScene({ profile = travelerProfile }: { profile?: TravelerPr
           onBack={back}
           initialHeroUrl={subdivisionHeroOverrides[galleryState.subdivisionId]}
           initialCountryHeroUrl={countryHeroOverrides[galleryState.countryCode] ?? seedCountryHeroes[galleryState.countryCode]}
-          initialSubdivisionTransform={subdivisionHeroTransforms[galleryState.subdivisionId]}
-          initialCountryTransform={countryHeroTransforms[galleryState.countryCode]}
+          initialSubdivisionTransform={subdivisionHeroTransforms[galleryState.subdivisionId] ?? seedSubdivisionTransforms[galleryState.subdivisionId]}
+          initialCountryTransform={countryHeroTransforms[galleryState.countryCode] ?? seedCountryTransforms[galleryState.countryCode]}
           onHeroChange={handleSubdivisionHeroChange}
           onCountryHeroChange={handleCountryHeroChange}
           onSubdivisionTransformChange={handleSubdivisionTransformChange}
           onCountryTransformChange={handleCountryTransformChange}
           clickOrigin={clickOrigin ?? undefined}
-          profile={profile}
+          profileIndex={profileIndex}
         />
       )}
     </div>
