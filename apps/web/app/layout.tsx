@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Caveat, DM_Sans } from 'next/font/google'
 import { ThemeProvider } from '@beenthere/ui/lib/theme-context'
-import '@beenthere/ui/app/globals.css'
+import './globals.css'
 
 const caveat = Caveat({
   subsets: ['latin'],

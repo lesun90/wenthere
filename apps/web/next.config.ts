@@ -4,14 +4,14 @@ import path from "node:path";
 const nextConfig: NextConfig = {
   output: "standalone",
   transpilePackages: ['@beenthere/ui', '@beenthere/storage-local', '@beenthere/storage-github'],
-  // Expose packages/ui/data path so roamerProfile.ts can find geo files regardless of cwd
+  // Expose packages/ui/data path so the subdivision route can find geo files regardless of cwd
   env: {
     UI_DATA_DIR: path.resolve(__dirname, '../../packages/ui/data'),
   },
   async headers() {
     return [
       {
-        source: "/geo/:path*",
+        source: "/geo/subdivisions/:path*",
         headers: [
           {
             key: "Cache-Control",

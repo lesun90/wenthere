@@ -20,11 +20,10 @@ function fetchCountriesTopology(): Promise<Topology<{ countries: GeometryCollect
   if (countriesTopology) return Promise.resolve(countriesTopology)
   if (countriesTopologyRequest) return countriesTopologyRequest
 
-  countriesTopologyRequest = fetch('/geo/countries-10m.json', { cache: 'force-cache' })
-    .then(r => r.json() as Promise<Topology<{ countries: GeometryCollection }>>)
-    .then(topology => {
-      countriesTopology = topology
-      return topology
+  countriesTopologyRequest = import('../../data/geo/countries-10m.json')
+    .then(mod => {
+      countriesTopology = mod.default as unknown as Topology<{ countries: GeometryCollection }>
+      return countriesTopology
     })
     .catch(() => null)
     .finally(() => {

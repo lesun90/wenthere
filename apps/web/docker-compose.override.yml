@@ -3,11 +3,15 @@ services:
     build:
       target: dev
     volumes:
-      - .:/app
+      - ../..:/app
       - /app/node_modules
-      - /app/.next
+      - /app/apps/web/.next
     ports:
       - "9229:9229"
     environment:
       NODE_ENV: development
       NODE_OPTIONS: --inspect=0.0.0.0:9229
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_STORAGE_REPO: ${GITHUB_STORAGE_REPO:-}
+      GITHUB_OWNER_SECRET: ${GITHUB_OWNER_SECRET:-}

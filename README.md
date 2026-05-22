@@ -30,9 +30,10 @@ corepack enable   # activates the pnpm version pinned in package.json
 ```bash
 pnpm install
 cd apps/web
-cp .env.example .env.local   # default is STORAGE_BACKEND=local, no credentials needed
 pnpm dev
 ```
+
+No `.env.local` needed — local filesystem storage is the default.
 
 Opens the app at [localhost:3000](http://localhost:3000). Profile and photos are saved to `apps/web/dev-data/` (gitignored).
 
@@ -41,6 +42,21 @@ Opens the app at [localhost:3000](http://localhost:3000). Profile and photos are
 ```bash
 cd apps/web
 docker compose up
+```
+
+Local filesystem storage is the default. To use GitHub storage, pass `STORAGE_BACKEND=github` inline:
+
+```bash
+docker compose up                          # local (default)
+STORAGE_BACKEND=github docker compose up   # github
+```
+
+Store your GitHub credentials in `apps/web/.env` (loaded automatically by Docker Compose, gitignored):
+
+```bash
+GITHUB_TOKEN=ghp_...
+GITHUB_STORAGE_REPO=owner/repo-name
+GITHUB_OWNER_SECRET=some-long-secret
 ```
 
 Hot reload is active. The dev container exposes the Node.js inspector on port `9229`.
@@ -71,11 +87,11 @@ Builds the standalone Next.js image and serves it at [localhost:3000](http://loc
 
 ## Environment variables
 
-Copy `apps/web/.env.example` to `apps/web/.env.local` and fill in values.
+Copy `apps/web/.env.example` to `apps/web/.env` (Docker) or `apps/web/.env.local` (pnpm dev) and fill in values.
 
 | Variable | Required | Description |
 |---|---|---|
-| `STORAGE_BACKEND` | yes | `local` (dev) or `github` (production) |
+| `STORAGE_BACKEND` | no | `local` (default) or `github` |
 | `GITHUB_TOKEN` | github only | PAT with `repo` scope |
 | `GITHUB_STORAGE_REPO` | github only | `owner/repo-name` of your private storage repo |
 | `GITHUB_OWNER_SECRET` | github only | Secret that grants write access via `?edit=<secret>` URL |
