@@ -77,10 +77,11 @@ packages/ui/
 │   └── profile-store/
 │       ├── types.ts       ← ProfileStore interface (NEW — shared contract)
 │       └── mutations.ts   ← pure profile mutation functions (unchanged)
-├── data/                  ← demoProfile.ts, roamerProfile.ts
+├── data/                  ← demoProfile.ts, roamerProfile.ts, data/geo/
 ├── app/
 │   └── globals.css        ← current app/globals.css
-└── scripts/               ← check-profile-index.cjs, build-geo-metadata.cjs, split-geo.js
+├── test/                  ← framing-transform.test.mjs (moved from root test/)
+└── scripts/               ← check-profile-index.cjs, check-profile-storage.cjs, build-geo-metadata.cjs, split-geo.js
 ```
 
 **`package.json` exports:**
@@ -123,6 +124,7 @@ clean drop-in swap.
 ```json
 "scripts": {
   "check:profile":      "node scripts/check-profile-index.cjs",
+  "check:storage":      "node scripts/check-profile-storage.cjs",
   "build:geo-metadata": "node scripts/build-geo-metadata.cjs"
 }
 ```
