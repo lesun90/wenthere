@@ -44,12 +44,17 @@ An `.env.example` file documents these variables without values.
 beenthere-data/          ← private GitHub repo
 ├── profile.json         ← serialized TravelerProfile
 └── photos/
-    └── <blobKey>        ← e.g. photo:abc123:xyz789 (filename = blobKey)
+    └── <blobKey>        ← e.g. photo-abc123-xyz789 (filename = blobKey)
 ```
 
 `profile.json` uses the existing `TravelerProfile` shape from `lib/types.ts` — no new
 schema. Photo filenames match `TravelPhoto.source.key` exactly, so no mapping layer is
 needed.
+
+**BlobKey format:** The current IndexedDB format uses colons (`photo:profileId:photoId`).
+For GitHub storage, switch to hyphens (`photo-profileId-photoId`) so blobKeys are safe
+as both GitHub filenames and URL path segments in `/api/photo/<key>`. The key generator
+in `ProfileProvider` must be updated accordingly.
 
 Imported photos store `url: '/api/photo/<key>'` directly in `profile.json`. This URL is
 stable across devices and deployments.
