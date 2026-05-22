@@ -8,3 +8,4 @@ playwright-report/
 test-results/
 .superpowers/
 public/geojson/
+apps/web/dev-data/

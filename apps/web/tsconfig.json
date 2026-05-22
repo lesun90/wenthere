@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@beenthere/ui": ["../../packages/ui/index.ts"],
+      "@beenthere/ui/*": ["../../packages/ui/*"],
+      "@beenthere/storage-local": ["../../packages/storage-local/index.ts"],
+      "@beenthere/storage-local/*": ["../../packages/storage-local/*"],
+      "@beenthere/storage-github": ["../../packages/storage-github/index.ts"],
+      "@beenthere/storage-github/*": ["../../packages/storage-github/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -2,36 +2,8 @@
   "name": "beenthere",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "check:profile": "node scripts/check-profile-index.cjs",
-    "build:geo-metadata": "node scripts/build-geo-metadata.cjs",
-    "start": "next start",
-    "lint": "next lint",
-    "split-geo": "node scripts/split-geo.js"
-  },
-  "dependencies": {
-    "@react-three/drei": "^10.0.0",
-    "@react-three/fiber": "^9.0.0",
-    "next": "15.3.9",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "three": "^0.177.0",
-    "topojson-client": "^3.1.0"
-  },
+  "packageManager": "pnpm@10.30.2",
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/geojson": "^7946.0.16",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/three": "^0.177.0",
-    "@types/topojson-client": "^3.1.4",
-    "@types/topojson-specification": "^1.0.5",
-    "postcss": "^8",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  },
-  "packageManager": "pnpm@10.30.2"
+    "turbo": "^2"
+  }
 }

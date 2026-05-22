@@ -1,0 +1,437 @@
+@import "tailwindcss";
+
+/* ─── Base ────────────────────────────────────── */
+body {
+  background: var(--bg);
+}
+
+/* ─── Dark theme (default) ───────────────────── */
+:root {
+  --bg: #080c14;
+  --surface: rgba(8, 12, 20, 0.82);
+  --surface-panel: rgba(8, 12, 20, 0.95);
+  --border: rgba(255, 255, 255, 0.10);
+  --divider: rgba(255, 255, 255, 0.06);
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: rgba(255, 255, 255, 0.20);
+  --accent: #60A5FA;
+  --ring: rgba(96, 165, 250, 0.50);
+  --scrollbar: rgba(255, 255, 255, 0.15);
+  --card-shape-stroke: rgba(248, 250, 252, 0.76);
+}
+
+/* ─── Light theme ─────────────────────────────── */
+.light {
+  --bg: #FFFFFF;
+  --surface: rgba(255, 255, 255, 0.85);
+  --surface-panel: rgba(255, 255, 255, 0.98);
+  --border: rgba(15, 23, 42, 0.08);
+  --divider: rgba(15, 23, 42, 0.06);
+  --text-primary: #0C1525;
+  --text-secondary: #64748B;
+  --text-muted: rgba(15, 23, 42, 0.18);
+  --accent: #3B82F6;
+  --ring: rgba(59, 130, 246, 0.40);
+  --scrollbar: rgba(15, 23, 42, 0.14);
+  --card-shape-stroke: rgba(248, 250, 252, 0.76);
+}
+
+/* ─── Identity strip ──────────────────────────── */
+.identity-strip {
+  background: rgba(8, 12, 20, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.light .identity-strip {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+/* ─── Share button ────────────────────────────── */
+.share-btn {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #94A3B8;
+  transition: color 150ms, border-color 150ms;
+}
+.share-btn.copied {
+  color: #60A5FA;
+  border-color: rgba(96, 165, 250, 0.40);
+}
+.light .share-btn {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  color: #64748B;
+}
+.light .share-btn.copied {
+  color: #3B82F6;
+  border-color: rgba(59, 130, 246, 0.36);
+}
+
+/* ─── Theme toggle button ─────────────────────── */
+.theme-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #94A3B8;
+  transition: color 150ms, border-color 150ms;
+}
+.theme-toggle:hover {
+  color: #F8FAFC;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.light .theme-toggle {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  color: #64748B;
+}
+.light .theme-toggle:hover {
+  color: #0C1525;
+  border-color: rgba(15, 23, 42, 0.28);
+}
+
+/* ─── Floating card ───────────────────────────── */
+.floating-card {
+  background: linear-gradient(140deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02) 36%, rgba(8,12,20,0.78) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.36);
+}
+.light .floating-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.10);
+}
+
+/* ─── Gallery panel ───────────────────────────── */
+.gallery-panel {
+  background: linear-gradient(170deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.04) 35%, rgba(8,12,20,0.58) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  box-shadow: 0 -12px 48px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.11);
+}
+.light .gallery-panel {
+  background: linear-gradient(170deg, rgba(255,255,255,0.88) 0%, rgba(248,250,255,0.76) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  box-shadow: 0 -12px 48px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.95);
+}
+.gallery-panel-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.light .gallery-panel-header {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* ─── Gallery drag handle ────────────────────── */
+.gallery-drag-handle {
+  background: rgba(255, 255, 255, 0.28);
+}
+.light .gallery-drag-handle {
+  background: rgba(15, 23, 42, 0.20);
+}
+
+/* ─── Gallery nav buttons (Back / Close) ────── */
+.gallery-nav-btn {
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: var(--text-secondary);
+  transition: background 150ms ease, color 150ms ease;
+}
+.gallery-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text-primary);
+}
+.light .gallery-nav-btn {
+  background: rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(15, 23, 42, 0.10);
+}
+.light .gallery-nav-btn:hover {
+  background: rgba(15, 23, 42, 0.10);
+}
+
+/* ─── Hero image fade on switch ─────────────── */
+@keyframes gallery-hero-fade {
+  from { opacity: 0.55; transform: scale(1.012); }
+  to   { opacity: 1;    transform: scale(1); }
+}
+.gallery-hero-img {
+  animation: gallery-hero-fade 220ms cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ─── Thumbnail strip scrollbar ─────────────── */
+.gallery-thumbs::-webkit-scrollbar { display: none; }
+
+/* ─── Lightbox overlay ───────────────────────── */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 7, 16, 0.82);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+  padding: 24px;
+}
+.light .lightbox-overlay {
+  background: rgba(200, 210, 230, 0.72);
+}
+.lightbox-card {
+  position: relative;
+  max-width: min(90vw, 900px);
+  max-height: min(90vh, 700px);
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(160deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 50%, rgba(8,12,20,0.60) 100%);
+  border: 1px solid rgba(255,255,255,0.20);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.14);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.light .lightbox-card {
+  background: linear-gradient(160deg, rgba(255,255,255,0.88) 0%, rgba(240,245,255,0.80) 100%);
+  border: 1px solid rgba(255,255,255,0.80);
+  box-shadow: 0 24px 80px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.95);
+}
+/* ─── Globe push animation ───────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .globe-shift-wrapper,
+  .identity-strip {
+    transition: none !important;
+  }
+}
+
+/* ─── Add photos button (IdentityStrip) ─────────── */
+.add-photos-btn {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #94A3B8;
+  transition: color 150ms, border-color 150ms, background 150ms;
+}
+.add-photos-btn:hover,
+.add-photos-btn.active {
+  color: var(--accent);
+  border-color: rgba(96, 165, 250, 0.45);
+  background: rgba(96, 165, 250, 0.10);
+}
+.light .add-photos-btn {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  color: #64748B;
+}
+.light .add-photos-btn:hover,
+.light .add-photos-btn.active {
+  color: var(--accent);
+  border-color: rgba(59, 130, 246, 0.40);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* ─── Photo management drawer ────────────────────── */
+.photo-drawer {
+  background: linear-gradient(175deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 45%, rgba(8,12,20,0.90) 100%);
+  border-left: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  box-shadow: -12px 0 56px rgba(0,0,0,0.44), inset 1px 0 0 rgba(255,255,255,0.06);
+}
+.light .photo-drawer {
+  background: linear-gradient(175deg, rgba(255,255,255,0.97) 0%, rgba(248,250,255,0.94) 100%);
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: -12px 0 56px rgba(15,23,42,0.12), inset 1px 0 0 rgba(255,255,255,0.90);
+}
+.photo-drawer-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.light .photo-drawer-header {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* ─── Import drop zone ───────────────────────────── */
+.photo-import-zone {
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px dashed rgba(255, 255, 255, 0.14);
+}
+.photo-import-zone:hover,
+.photo-import-zone:focus-visible {
+  background: rgba(96, 165, 250, 0.07);
+  border-color: rgba(96, 165, 250, 0.38);
+  outline: none;
+}
+.photo-import-zone.drag-over {
+  background: rgba(96, 165, 250, 0.13);
+  border-color: rgba(96, 165, 250, 0.58);
+}
+.light .photo-import-zone {
+  background: rgba(15, 23, 42, 0.03);
+  border: 2px dashed rgba(15, 23, 42, 0.14);
+}
+.light .photo-import-zone:hover,
+.light .photo-import-zone:focus-visible {
+  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(59, 130, 246, 0.38);
+  outline: none;
+}
+.light .photo-import-zone.drag-over {
+  background: rgba(59, 130, 246, 0.11);
+  border-color: rgba(59, 130, 246, 0.52);
+}
+
+/* ─── Stats bar ──────────────────────────────────── */
+.photo-drawer-stats {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.light .photo-drawer-stats {
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+/* ─── Search box ─────────────────────────────────── */
+.photo-search-box {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.photo-search-box:focus-within {
+  border-color: rgba(96, 165, 250, 0.52);
+  background: rgba(255, 255, 255, 0.09);
+}
+.light .photo-search-box {
+  background: rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+.light .photo-search-box:focus-within {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(15, 23, 42, 0.07);
+}
+.photo-search-input::placeholder { color: var(--text-muted); }
+.photo-search-input::-webkit-search-cancel-button { display: none; }
+
+/* ─── Suggestion dropdown ────────────────────────── */
+.photo-search-suggestions {
+  background: linear-gradient(160deg, rgba(255,255,255,0.13) 0%, rgba(8,12,20,0.94) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.42);
+}
+.light .photo-search-suggestions {
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  box-shadow: 0 8px 32px rgba(15,23,42,0.12);
+}
+.photo-search-suggestion-item { background: transparent; }
+.photo-search-suggestion-item.highlighted,
+.photo-search-suggestion-item:hover { background: rgba(255, 255, 255, 0.09); }
+.light .photo-search-suggestion-item.highlighted,
+.light .photo-search-suggestion-item:hover { background: rgba(15, 23, 42, 0.06); }
+
+/* ─── Photo list paint containment ───────────────── */
+.photo-list-country-block {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+.photo-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 67px;
+}
+.photo-row-actions {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.photo-row:hover .photo-row-actions,
+.photo-row:focus-within .photo-row-actions {
+  opacity: 1;
+}
+.photo-row:hover .photo-row-edit-btn,
+.photo-row-edit-btn:focus-visible {
+  background: rgba(96,165,250,0.14) !important;
+  border-color: rgba(96,165,250,0.30) !important;
+  color: var(--accent) !important;
+}
+.photo-row:hover .photo-row-delete-btn,
+.photo-row-delete-btn:focus-visible {
+  background: rgba(220,38,38,0.16) !important;
+  border-color: rgba(220,38,38,0.30) !important;
+  color: #EF4444 !important;
+}
+
+/* ─── Edit form inputs ───────────────────────────── */
+.photo-edit-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: var(--font-dm-sans), sans-serif;
+  outline: none;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.photo-edit-input:focus {
+  border-color: rgba(96, 165, 250, 0.52);
+  background: rgba(255, 255, 255, 0.09);
+}
+.photo-edit-input::placeholder { color: var(--text-muted); }
+.light .photo-edit-input {
+  background: rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  color: var(--text-primary);
+}
+.light .photo-edit-input:focus {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(15, 23, 42, 0.07);
+}
+
+/* ─── Edit section divider ───────────────────────── */
+.photo-edit-section {
+  border-top: 1px solid var(--divider);
+  padding-top: 14px;
+  margin-top: 4px;
+  margin-bottom: 14px;
+}
+.photo-edit-section-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-family: var(--font-dm-sans), sans-serif;
+  margin-bottom: 12px;
+}
+
+/* ─── Edit save button ───────────────────────────── */
+.photo-edit-save-btn {
+  background: var(--accent);
+  color: #fff;
+  transition: opacity 150ms ease;
+}
+.photo-edit-save-btn:hover { opacity: 0.88; }
+
+/* ─── Edit header Save button ────────────────────── */
+.photo-edit-header-save {
+  background: rgba(96, 165, 250, 0.18);
+  border: 1px solid rgba(96, 165, 250, 0.38);
+  color: var(--accent);
+  transition: background 150ms ease;
+}
+.photo-edit-header-save:hover {
+  background: rgba(96, 165, 250, 0.26);
+}
+.light .photo-edit-header-save {
+  background: rgba(59, 130, 246, 0.10);
+  border: 1px solid rgba(59, 130, 246, 0.30);
+}
+.light .photo-edit-header-save:hover {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+/* ─── Drawer scrollbar ───────────────────────────── */
+.photo-drawer-scroll::-webkit-scrollbar { width: 3px; }
+.photo-drawer-scroll::-webkit-scrollbar-track { background: transparent; }
+.photo-drawer-scroll::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 999px; }
+
+.lightbox-caption {
+  background: linear-gradient(to top, rgba(4,7,16,0.88) 0%, rgba(4,7,16,0.50) 60%, transparent 100%);
+}
+.light .lightbox-caption {
+  background: linear-gradient(to top, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.60) 60%, transparent 100%);
+}

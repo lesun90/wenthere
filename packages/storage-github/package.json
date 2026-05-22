@@ -1,0 +1,17 @@
+{
+  "name": "@beenthere/storage-github",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@beenthere/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "next": "15.3.9",
+    "typescript": "^5"
+  }
+}
