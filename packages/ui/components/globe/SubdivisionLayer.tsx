@@ -208,6 +208,8 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, int
     onHoverChange(null)
   }
 
+  const subdivisionInteractionsEnabled = opacity > 0
+
   return (
     <>
       {visitedFeatures.map(({ id, name, countryCode, heroPicUrl, centroid, geometry, fillGeometry, lineGeometry }) => {
@@ -220,7 +222,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, int
             opacityTarget={opacity}
             heroPicUrl={heroPicUrl}
             heroTransform={heroTransforms[id]}
-            interactive={interactionsEnabled}
+            interactive={subdivisionInteractionsEnabled}
             hoverEnabled={interactionsEnabled}
             palette={palette}
             onHover={() => handleHover(id, name, heroPicUrl, centroid, geometry)}
