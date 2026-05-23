@@ -136,7 +136,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
   }
 
   const dimmed = showSubdivisions
-  const countryInteractionsEnabled = interactionsEnabled && !showSubdivisions
+  const countryInteractionsEnabled = !showSubdivisions
   const countryHoverEnabled = interactionsEnabled && !showSubdivisions
 
   return (
