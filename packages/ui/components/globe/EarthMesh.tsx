@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import type {} from './r3f-jsx'
 import type { GlobePalette } from './types'
 
 interface Props {

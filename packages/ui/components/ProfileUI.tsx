@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { IdentityStrip } from './IdentityStrip'
 import { PhotoManagementDrawer, type PhotoEditDraft } from './globe/PhotoManagementDrawer'
-import type { TravelerProfile, ProfileIndex, TravelPhoto } from '../lib/types'
+import type { TravelerProfile, ProfileIndex, TravelPhoto } from '@beenthere/domain/lib/types'
 
 interface Props {
   profile: TravelerProfile

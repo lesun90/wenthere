@@ -2,6 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "paths": {
+      "@beenthere/domain": ["../domain/index.ts"],
+      "@beenthere/domain/*": ["../domain/*"],
       "@beenthere/ui/*": ["../ui/*"]
     }
   },

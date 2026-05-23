@@ -1,16 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { fileNameFor } from '../filename'
 
 export const runtime = 'nodejs'
 
 const geoDir = join(process.env.UI_DATA_DIR ?? join(process.cwd(), '../../packages/ui/data'), 'geo')
-
-function fileNameFor(code: string): string | null {
-  if (!code.endsWith('.geojson')) return null
-  const subdivisionCode = code.slice(0, -'.geojson'.length)
-  if (!/^[A-Za-z0-9-]+$/.test(subdivisionCode)) return null
-  return `${subdivisionCode}.geojson`
-}
 
 export async function GET(
   _request: Request,

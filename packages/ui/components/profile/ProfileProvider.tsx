@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { PhotoFrameTransform, ProfileIndex, TravelerProfile, TravelPhoto } from '../../lib/types'
-import { buildProfileIndex, validateProfile } from '../../lib/geodata'
+import type { PhotoFrameTransform, ProfileIndex, TravelerProfile, TravelPhoto } from '@beenthere/domain/lib/types'
+import { buildProfileIndex, validateProfile } from '@beenthere/domain/lib/geodata'
 import {
   appendLocalPhotos,
   applyPhotoEditDraft,
@@ -11,8 +11,8 @@ import {
   setCountryFraming,
   setSubdivisionFraming,
   type PhotoEditDraftData,
-} from '../../lib/profile-store/mutations'
-import type { ProfileStore } from '../../lib/profile-store/types'
+} from '@beenthere/domain/lib/profile-store/mutations'
+import type { ProfileStore } from '@beenthere/domain/lib/profile-store/types'
 
 type StorageStatus = 'loading' | 'ready' | 'memory-fallback'
 

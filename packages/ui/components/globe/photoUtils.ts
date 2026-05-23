@@ -1,4 +1,4 @@
-import type { TravelPhoto } from '../../lib/types'
+import type { TravelPhoto } from '@beenthere/domain/lib/types'
 
 export function firstOtherPhotoUrls(photos: TravelPhoto[], heroPicUrl: string, limit: number) {
   const urls: string[] = []

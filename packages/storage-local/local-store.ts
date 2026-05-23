@@ -1,5 +1,5 @@
-import type { TravelerProfile } from '@beenthere/ui/lib/types'
-import type { ProfileStore } from '@beenthere/ui/lib/profile-store/types'
+import type { TravelerProfile } from '@beenthere/domain/lib/types'
+import type { ProfileStore } from '@beenthere/domain/lib/profile-store/types'
 
 export class LocalProfileStore implements ProfileStore {
   async getActiveProfile(): Promise<TravelerProfile | null> {

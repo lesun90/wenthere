@@ -3,11 +3,10 @@ const fs = require('node:fs')
 const path = require('node:path')
 const ts = require('typescript')
 
-const repoRoot = path.resolve(__dirname, '..')
+const packageRoot = path.resolve(__dirname, '..')
 const originalTs = require.extensions['.ts']
-const originalTsx = require.extensions['.tsx']
 
-function loadTypeScript(module, filename) {
+require.extensions['.ts'] = function loadTypeScript(module, filename) {
   const source = fs.readFileSync(filename, 'utf8')
   const output = ts.transpileModule(source, {
     compilerOptions: {
@@ -23,22 +22,30 @@ function loadTypeScript(module, filename) {
   module._compile(output, filename)
 }
 
-require.extensions['.ts'] = loadTypeScript
-require.extensions['.tsx'] = loadTypeScript
+const sampleProfile = {
+  id: 'sample-traveler',
+  name: 'Sample Traveler',
+  photos: [
+    { id: 'sample-usa-ca-1', url: '/sample/10.jpg', caption: 'California one', location: { countryCode: 'USA', subdivisionCode: 'USA-3521' } },
+  ],
+  presentation: {
+    countryHeroes: { USA: { photoId: 'sample-usa-ca-1' } },
+    subdivisionHeroes: { 'USA-3521': { photoId: 'sample-usa-ca-1' } },
+  },
+}
 
 try {
-  const travelerProfile = require(path.resolve(repoRoot, '../../apps/web/data/demoProfile.json'))
   const {
     appendLocalPhotos,
     applyPhotoEditDraft,
     removeStoredPhoto,
     setCountryFraming,
     setSubdivisionFraming,
-  } = require(path.join(repoRoot, 'lib/profile-store/mutations.ts'))
+  } = require(path.join(packageRoot, 'lib/profile-store/mutations.ts'))
 
-  const imported = appendLocalPhotos(travelerProfile, [{
+  const imported = appendLocalPhotos(sampleProfile, [{
     id: 'local-photo-1',
-    blobKey: 'photo:demo-traveler:local-photo-1',
+    blobKey: 'photo-sample-traveler-local-photo-1',
     objectUrl: 'blob:http://localhost/local-photo-1',
     mimeType: 'image/jpeg',
     fileName: 'california.jpg',
@@ -51,7 +58,7 @@ try {
   assert.deepEqual(localPhoto.location, { countryCode: '' })
   assert.deepEqual(localPhoto.source, {
     kind: 'localBlob',
-    key: 'photo:demo-traveler:local-photo-1',
+    key: 'photo-sample-traveler-local-photo-1',
     mimeType: 'image/jpeg',
     fileName: 'california.jpg',
   })
@@ -90,9 +97,9 @@ try {
   assert.equal(removed.presentation.countryHeroes.USA, undefined)
   assert.equal(removed.presentation.subdivisionHeroes['USA-3521'], undefined)
 } finally {
-  if (originalTs) require.extensions['.ts'] = originalTs
-  else delete require.extensions['.ts']
-
-  if (originalTsx) require.extensions['.tsx'] = originalTsx
-  else delete require.extensions['.tsx']
+  if (originalTs) {
+    require.extensions['.ts'] = originalTs
+  } else {
+    delete require.extensions['.ts']
+  }
 }

@@ -1,11 +1,11 @@
 const fs = require('node:fs')
 const path = require('node:path')
 
-const repoRoot = path.resolve(__dirname, '..')
-const geoDir = path.join(repoRoot, 'data', 'geo')
-const statesPath = path.join(geoDir, 'states-provinces-50m.json')
-const subdivisionDir = path.join(geoDir, 'subdivisions')
-const metadataDir = path.join(geoDir, 'metadata')
+const repoRoot = path.resolve(__dirname, '../../..')
+const sourceGeoDir = path.join(repoRoot, 'packages/ui/data/geo')
+const statesPath = path.join(sourceGeoDir, 'states-provinces-50m.json')
+const subdivisionDir = path.join(sourceGeoDir, 'subdivisions')
+const metadataDir = path.join(repoRoot, 'packages/domain/data/geo/metadata')
 
 const countryNumericIds = {
   CHN: '156',

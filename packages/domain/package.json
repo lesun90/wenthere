@@ -1,5 +1,5 @@
 {
-  "name": "@beenthere/storage-local",
+  "name": "@beenthere/domain",
   "version": "0.1.0",
   "private": true,
   "exports": {
@@ -11,13 +11,13 @@
       "*": ["./*"]
     }
   },
-  "dependencies": {
-    "@beenthere/domain": "workspace:*",
-    "@beenthere/ui": "workspace:*"
+  "scripts": {
+    "build:geo-metadata": "node scripts/build-geo-metadata.cjs",
+    "check:profile": "node scripts/check-profile-index.cjs",
+    "check:storage": "node scripts/check-profile-storage.cjs"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "next": "15.3.9",
     "typescript": "^5"
   }
 }

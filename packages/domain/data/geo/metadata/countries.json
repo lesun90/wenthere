@@ -1,0 +1,86 @@
+{
+  "AUS": {
+    "name": "Australia",
+    "numericId": "AUS"
+  },
+  "BRA": {
+    "name": "Brazil",
+    "numericId": "BRA"
+  },
+  "CAN": {
+    "name": "Canada",
+    "numericId": "CAN"
+  },
+  "CHN": {
+    "name": "China",
+    "numericId": "156"
+  },
+  "DEU": {
+    "name": "Germany",
+    "numericId": "276"
+  },
+  "EGY": {
+    "name": "Egypt",
+    "numericId": "818"
+  },
+  "ESP": {
+    "name": "Spain",
+    "numericId": "724"
+  },
+  "ETH": {
+    "name": "Ethiopia",
+    "numericId": "231"
+  },
+  "FRA": {
+    "name": "France",
+    "numericId": "250"
+  },
+  "GBR": {
+    "name": "United Kingdom",
+    "numericId": "826"
+  },
+  "IDN": {
+    "name": "Indonesia",
+    "numericId": "IDN"
+  },
+  "IND": {
+    "name": "India",
+    "numericId": "IND"
+  },
+  "ITA": {
+    "name": "Italy",
+    "numericId": "380"
+  },
+  "KEN": {
+    "name": "Kenya",
+    "numericId": "404"
+  },
+  "MAR": {
+    "name": "Morocco",
+    "numericId": "504"
+  },
+  "NGA": {
+    "name": "Nigeria",
+    "numericId": "566"
+  },
+  "NLD": {
+    "name": "Netherlands",
+    "numericId": "528"
+  },
+  "RUS": {
+    "name": "Russia",
+    "numericId": "RUS"
+  },
+  "USA": {
+    "name": "United States",
+    "numericId": "840"
+  },
+  "VNM": {
+    "name": "Vietnam",
+    "numericId": "704"
+  },
+  "ZAF": {
+    "name": "South Africa",
+    "numericId": "710"
+  }
+}

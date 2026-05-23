@@ -7,9 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check:profiles": "node scripts/check-demo-profiles.cjs",
+    "test": "node test/subdivision-route-filename.test.cjs",
     "build:roamer-profile": "node scripts/build-roamer-profile.mjs"
   },
   "dependencies": {
+    "@beenthere/domain": "workspace:*",
     "@beenthere/ui": "workspace:*",
     "@beenthere/storage-local": "workspace:*",
     "@beenthere/storage-github": "workspace:*",

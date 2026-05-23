@@ -1,7 +1,15 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "plugins": [{ "name": "next" }]
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@beenthere/domain": ["../../packages/domain/index.ts"],
+      "@beenthere/domain/*": ["../../packages/domain/*"],
+      "@beenthere/ui": ["../../packages/ui/index.ts"],
+      "@beenthere/ui/*": ["../../packages/ui/*"],
+      "@beenthere/storage-supabase": ["../../packages/storage-supabase/index.ts"],
+      "@beenthere/storage-supabase/*": ["../../packages/storage-supabase/*"]
+    }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]

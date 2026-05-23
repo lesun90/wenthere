@@ -13,6 +13,7 @@
       "dependsOn": ["^lint"]
     },
     "check:profile": {},
+    "check:profiles": {},
     "check:storage": {}
   }
 }

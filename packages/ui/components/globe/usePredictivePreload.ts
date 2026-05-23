@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { Feature } from 'geojson'
-import type { ProfileIndex } from '../../lib/types'
+import type { ProfileIndex } from '@beenthere/domain/lib/types'
 import { prepareSubdivisionRecords } from '../../lib/geo-cache'
 import { hasCachedEntry, setCachedFeature, getCachedFeature } from '../../lib/subdivision-feature-cache'
 import { preloadSharedTexture } from './useSharedTexture'
@@ -16,7 +16,7 @@ export function fetchSubdivisionFeature(subdivisionCode: string): Promise<Featur
   const inFlight = subdivisionFetches.get(subdivisionCode)
   if (inFlight) return inFlight
 
-  const request = fetch(`/geo/subdivisions/${subdivisionCode}.geojson`, { cache: 'force-cache' })
+  const request = fetch(`/geo/subdivisions/${encodeURIComponent(subdivisionCode)}.geojson`, { cache: 'force-cache' })
     .then(r => r.json() as Promise<Feature>)
     .then(feature => {
       setCachedFeature(subdivisionCode, feature)

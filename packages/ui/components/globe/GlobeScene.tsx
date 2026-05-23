@@ -1,6 +1,8 @@
 'use client'
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties, ReactElement } from 'react'
+import type {} from './r3f-jsx'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -13,8 +15,8 @@ import { usePredictivePreload } from './usePredictivePreload'
 import { useTheme } from '../../lib/theme-context'
 import type { HoverInfo, GlobeState, GlobePalette, HeroTransform } from './types'
 import { latLngToVec3 } from '../../lib/geo'
-import type { TravelerProfile } from '../../lib/types'
-import { buildProfileIndex } from '../../lib/geodata'
+import type { TravelerProfile } from '@beenthere/domain/lib/types'
+import { buildProfileIndex } from '@beenthere/domain/lib/geodata'
 
 const MODE_TRANSITION_MS = 300
 const MIN_CAMERA_DISTANCE = 1.2
@@ -29,6 +31,10 @@ const ROTATE_SPEED_DETAIL_DISTANCE = ENTER_DETAIL_DISTANCE
 const ROTATE_SPEED_WORLD_DISTANCE = EXIT_DETAIL_DISTANCE
 const COUNTRY_FLY_DISTANCE = 1.65
 const PHOTO_DRAWER_WIDTH = 380
+
+const StyledCanvas = Canvas as unknown as (
+  props: Parameters<typeof Canvas>[0] & { style?: CSSProperties }
+) => ReactElement
 
 const GLOBE_PALETTES: Record<'dark' | 'light', GlobePalette> = {
   dark: {
@@ -409,7 +415,7 @@ function GlobeSceneComponent({
           willChange: photoDrawerOpen ? 'transform' : undefined,
         }}
       >
-        <Canvas
+        <StyledCanvas
           camera={{ position: [0, 0, 2.5], fov: 45 }}
           style={{ width: '100%', height: '100%' }}
         >
@@ -464,7 +470,7 @@ function GlobeSceneComponent({
             onStart={handleControlsStart}
             onEnd={handleControlsEnd}
           />
-        </Canvas>
+        </StyledCanvas>
       </div>
 
       {hoverInfo && !galleryOpen && (

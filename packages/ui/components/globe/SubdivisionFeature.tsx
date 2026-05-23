@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef } from 'react'
+import type {} from './r3f-jsx'
 import { useFrame } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -6,6 +7,8 @@ import { FALLBACK_COLOR, useSharedTexture } from './useSharedTexture'
 import { isFrontHemisphereHit } from './pointerHit'
 import { heroTransformToTextureTransform, isIdentityHeroTransform, sameHeroTransform } from './framingTransform'
 import type { GlobePalette, HeroTransform } from './types'
+
+type SurfaceEvent<TEvent extends Event> = ThreeEvent<TEvent> & { point: THREE.Vector3 }
 
 interface Props {
   fillGeometry: THREE.BufferGeometry
@@ -149,14 +152,14 @@ function SubdivisionFeatureComponent({
     if (lineMaterial) lineMaterial.opacity = hoveredLineOpacityRef.current * nextOpacity
   })
 
-  function handleHover(e: ThreeEvent<PointerEvent>) {
+  function handleHover(e: SurfaceEvent<PointerEvent>) {
     if (!hoverEnabled) return
     if (!isFrontHemisphereHit(e.point, e.ray.origin)) return
     e.stopPropagation()
     onHover()
   }
 
-  function handleClick(e: ThreeEvent<MouseEvent>) {
+  function handleClick(e: SurfaceEvent<MouseEvent>) {
     if (!isFrontHemisphereHit(e.point, e.ray.origin)) return
     e.stopPropagation()
     onClick()
