@@ -1,14 +1,14 @@
 'use client'
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import type { CountrySummary, ProfileIndex, TravelPhoto } from '@beenthere/domain/lib/types'
+import type { CountrySummary, ProfileIndex, TravelPhoto } from '../../lib/types'
 import {
   findCountryCodeByName,
   getCountryMetadata,
   getSubdivisionMetadata,
   listCountries,
   listSubdivisions,
-} from '@beenthere/domain/lib/geo-metadata'
+} from '../../lib/geo-metadata'
 
 const DRAWER_WIDTH = 380
 const ENTER_DURATION = 340

@@ -7,7 +7,7 @@ const appRoot = path.resolve(__dirname, '..')
 const repoRoot = path.resolve(appRoot, '../..')
 const originalTs = require.extensions['.ts']
 
-require.extensions['.ts'] = function loadTypeScript(module, filename) {
+function loadTypeScript(module, filename) {
   const source = fs.readFileSync(filename, 'utf8')
   const output = ts.transpileModule(source, {
     compilerOptions: {
@@ -23,10 +23,15 @@ require.extensions['.ts'] = function loadTypeScript(module, filename) {
   module._compile(output, filename)
 }
 
+require.extensions['.ts'] = loadTypeScript
+
 try {
   const demoProfile = require(path.join(appRoot, 'data/demoProfile.json'))
   const roamerProfile = require(path.join(appRoot, 'data/roamerProfile.json'))
-  const { buildProfileIndex } = require(path.join(repoRoot, 'packages/domain/lib/geodata.ts'))
+  const { buildProfileIndex, validateProfile } = require(path.join(repoRoot, 'packages/ui/lib/geodata.ts'))
+
+  assert.equal(typeof buildProfileIndex, 'function', 'ui package should own buildProfileIndex')
+  assert.equal(typeof validateProfile, 'function', 'ui package should own validateProfile')
 
   const demoIndex = buildProfileIndex(demoProfile)
   assert.equal(demoProfile.locations, undefined, 'demo profile should not carry geo metadata')

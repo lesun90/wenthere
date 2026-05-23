@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { PhotoFrameTransform, ProfileIndex, TravelerProfile, TravelPhoto } from '@beenthere/domain/lib/types'
-import { buildProfileIndex, validateProfile } from '@beenthere/domain/lib/geodata'
+import type { PhotoFrameTransform, ProfileIndex, TravelerProfile, TravelPhoto } from '../../lib/types'
+import { buildProfileIndex, validateProfile } from '../../lib/geodata'
 import {
   appendLocalPhotos,
   applyPhotoEditDraft,
@@ -11,8 +11,8 @@ import {
   setCountryFraming,
   setSubdivisionFraming,
   type PhotoEditDraftData,
-} from '@beenthere/domain/lib/profile-store/mutations'
-import type { ProfileStore } from '@beenthere/domain/lib/profile-store/types'
+} from '../../lib/profile-store/mutations'
+import type { ProfileStore } from '../../lib/profile-store/types'
 
 type StorageStatus = 'loading' | 'ready' | 'memory-fallback'
 
@@ -105,7 +105,7 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
       // Hyphens keep the key safe as a URL path segment (/api/photo/<key>)
       const blobKey = `photo-${profile.id}-${id}`
       firstPhotoId ??= id
-      if (storeRef.current) await storeRef.current.putPhotoBlob(blobKey, file)
+      if (storeRef.current?.putPhotoBlob) await storeRef.current.putPhotoBlob(blobKey, file)
       inputs.push({
         id,
         blobKey,
@@ -133,7 +133,7 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
   const deletePhoto = useCallback(async (photoId: string) => {
     const photo = profile.photos.find(item => item.id === photoId)
     const next = removeStoredPhoto(profile, photoId)
-    if (photo?.source?.kind === 'localBlob' && storeRef.current) {
+    if (photo?.source?.kind === 'localBlob' && storeRef.current?.deletePhotoBlob) {
       await storeRef.current.deletePhotoBlob(photo.source.key)
     }
     await persistProfile(next)

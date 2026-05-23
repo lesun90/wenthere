@@ -45,9 +45,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@beenthere/domain':
-        specifier: workspace:*
-        version: link:../../packages/domain
       '@beenthere/storage-github':
         specifier: workspace:*
         version: link:../../packages/storage-github
@@ -89,15 +86,6 @@ importers:
         specifier: ^5
         version: 5.9.3
 
-  packages/domain:
-    devDependencies:
-      '@types/node':
-        specifier: ^20
-        version: 20.19.41
-      typescript:
-        specifier: ^5
-        version: 5.9.3
-
   packages/storage-github:
     dependencies:
       '@beenthere/ui':
@@ -116,9 +104,6 @@ importers:
 
   packages/storage-local:
     dependencies:
-      '@beenthere/domain':
-        specifier: workspace:*
-        version: link:../domain
       '@beenthere/ui':
         specifier: workspace:*
         version: link:../ui
@@ -141,9 +126,6 @@ importers:
 
   packages/ui:
     dependencies:
-      '@beenthere/domain':
-        specifier: workspace:*
-        version: link:../domain
       '@react-three/drei':
         specifier: ^10.0.0
         version: 10.7.7(@react-three/fiber@9.6.1(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(three@0.177.0))(@types/react@19.2.15)(@types/three@0.177.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(three@0.177.0)

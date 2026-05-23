@@ -5,7 +5,7 @@ const repoRoot = path.resolve(__dirname, '../../..')
 const sourceGeoDir = path.join(repoRoot, 'packages/ui/data/geo')
 const statesPath = path.join(sourceGeoDir, 'states-provinces-50m.json')
 const subdivisionDir = path.join(sourceGeoDir, 'subdivisions')
-const metadataDir = path.join(repoRoot, 'packages/domain/data/geo/metadata')
+const metadataDir = path.join(repoRoot, 'packages/ui/data/geo/metadata')
 
 const countryNumericIds = {
   CHN: '156',

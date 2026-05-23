@@ -3,8 +3,6 @@
   "compilerOptions": {
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@beenthere/domain": ["../domain/index.ts"],
-      "@beenthere/domain/*": ["../domain/*"],
       "@/*": ["./*"]
     }
   },

@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState } from 'react'
 import { GlobeScene } from '@beenthere/ui/components/globe/GlobeScene'
 import { ProfileUI } from '@beenthere/ui/components/ProfileUI'
 import roamerProfile from '../../data/roamerProfile.json'
-import { buildProfileIndex } from '@beenthere/domain/lib/geodata'
+import { buildProfileIndex } from '@beenthere/ui'
 
 function GlobeLoader() {
   return (

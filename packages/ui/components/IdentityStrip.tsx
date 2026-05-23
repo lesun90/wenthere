@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import type { ProfileIndex, TravelerProfile } from '@beenthere/domain/lib/types'
-import { buildProfileIndex } from '@beenthere/domain/lib/geodata'
+import type { ProfileIndex, TravelerProfile } from '../lib/types'
+import { buildProfileIndex } from '../lib/geodata'
 import { useTheme } from '../lib/theme-context'
 
 function SunIcon() {

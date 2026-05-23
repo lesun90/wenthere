@@ -15,8 +15,8 @@ import { usePredictivePreload } from './usePredictivePreload'
 import { useTheme } from '../../lib/theme-context'
 import type { HoverInfo, GlobeState, GlobePalette, HeroTransform } from './types'
 import { latLngToVec3 } from '../../lib/geo'
-import type { TravelerProfile } from '@beenthere/domain/lib/types'
-import { buildProfileIndex } from '@beenthere/domain/lib/geodata'
+import type { TravelerProfile } from '../../lib/types'
+import { buildProfileIndex } from '../../lib/geodata'
 
 const MODE_TRANSITION_MS = 300
 const MIN_CAMERA_DISTANCE = 1.2

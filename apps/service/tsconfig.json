@@ -3,8 +3,6 @@
   "compilerOptions": {
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@beenthere/domain": ["../../packages/domain/index.ts"],
-      "@beenthere/domain/*": ["../../packages/domain/*"],
       "@beenthere/ui": ["../../packages/ui/index.ts"],
       "@beenthere/ui/*": ["../../packages/ui/*"],
       "@beenthere/storage-supabase": ["../../packages/storage-supabase/index.ts"],

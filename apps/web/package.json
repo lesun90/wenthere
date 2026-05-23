@@ -12,7 +12,6 @@
     "build:roamer-profile": "node scripts/build-roamer-profile.mjs"
   },
   "dependencies": {
-    "@beenthere/domain": "workspace:*",
     "@beenthere/ui": "workspace:*",
     "@beenthere/storage-local": "workspace:*",
     "@beenthere/storage-github": "workspace:*",
