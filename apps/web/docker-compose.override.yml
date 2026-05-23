@@ -4,8 +4,13 @@ services:
       target: dev
     volumes:
       - ../..:/app
-      - /app/node_modules
-      - /app/apps/web/.next
+      - root_node_modules:/app/node_modules
+      - web_node_modules:/app/apps/web/node_modules
+      - ui_node_modules:/app/packages/ui/node_modules
+      - storage_local_node_modules:/app/packages/storage-local/node_modules
+      - storage_github_node_modules:/app/packages/storage-github/node_modules
+      - storage_supabase_node_modules:/app/packages/storage-supabase/node_modules
+      - web_next:/app/apps/web/.next
     ports:
       - "9229:9229"
     environment:
@@ -15,3 +20,12 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       GITHUB_STORAGE_REPO: ${GITHUB_STORAGE_REPO:-}
       GITHUB_OWNER_SECRET: ${GITHUB_OWNER_SECRET:-}
+
+volumes:
+  root_node_modules:
+  web_node_modules:
+  ui_node_modules:
+  storage_local_node_modules:
+  storage_github_node_modules:
+  storage_supabase_node_modules:
+  web_next:
