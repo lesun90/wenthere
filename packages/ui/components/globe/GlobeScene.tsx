@@ -23,6 +23,10 @@ const ZOOM_SPEED = 0.65
 const FLY_DURATION = 700
 const ENTER_DETAIL_DISTANCE = 1.85
 const EXIT_DETAIL_DISTANCE = 2.35
+const WORLD_ROTATE_SPEED = 1
+const DETAIL_ROTATE_SPEED = 0.35
+const ROTATE_SPEED_DETAIL_DISTANCE = ENTER_DETAIL_DISTANCE
+const ROTATE_SPEED_WORLD_DISTANCE = EXIT_DETAIL_DISTANCE
 const COUNTRY_FLY_DISTANCE = 1.65
 const PHOTO_DRAWER_WIDTH = 380
 
@@ -165,6 +169,29 @@ function ZoomDetailController({
       detailLevelRef.current = 'world'
       onDetailLevelChange('world')
     }
+  })
+
+  return null
+}
+
+function RotationSpeedController({
+  orbitRef,
+}: {
+  orbitRef: React.RefObject<React.ElementRef<typeof OrbitControls> | null>
+}) {
+  const { camera } = useThree()
+
+  useFrame(() => {
+    const controls = orbitRef.current
+    if (!controls) return
+
+    const distance = camera.position.length()
+    const t = THREE.MathUtils.clamp(
+      (distance - ROTATE_SPEED_DETAIL_DISTANCE) / (ROTATE_SPEED_WORLD_DISTANCE - ROTATE_SPEED_DETAIL_DISTANCE),
+      0,
+      1,
+    )
+    controls.rotateSpeed = THREE.MathUtils.lerp(DETAIL_ROTATE_SPEED, WORLD_ROTATE_SPEED, t)
   })
 
   return null
@@ -400,6 +427,7 @@ function GlobeSceneComponent({
             onDetailLevelChange={handleZoomDetailChange}
             disabled={flyTarget !== null}
           />
+          <RotationSpeedController orbitRef={orbitRef} />
           <EarthMesh palette={palette} />
           <CountryLayer
             showSubdivisions={showSubdivisions}
@@ -432,6 +460,7 @@ function GlobeSceneComponent({
             minDistance={MIN_CAMERA_DISTANCE}
             maxDistance={MAX_CAMERA_DISTANCE}
             zoomSpeed={ZOOM_SPEED}
+            rotateSpeed={WORLD_ROTATE_SPEED}
             onStart={handleControlsStart}
             onEnd={handleControlsEnd}
           />
