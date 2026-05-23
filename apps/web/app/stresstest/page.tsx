@@ -1,55 +1,6 @@
-'use client'
-
-import { Suspense, useMemo, useState } from 'react'
-import { GlobeScene } from '@beenthere/ui/components/globe/GlobeScene'
-import { ProfileUI } from '@beenthere/ui/components/ProfileUI'
+import { ProfileExperience } from '../ProfileExperience'
 import roamerProfile from '../../data/roamerProfile.json'
-import { buildProfileIndex } from '@beenthere/ui'
-
-function GlobeLoader() {
-  return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'var(--bg, #080c14)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 1; }
-        }
-      `}</style>
-      <span style={{
-        fontFamily: 'var(--font-caveat), cursive',
-        fontSize: 28,
-        fontWeight: 600,
-        color: 'var(--text-primary, #F8FAFC)',
-        animation: 'pulse 1.5s ease-in-out infinite',
-      }}>
-        beenthere
-      </span>
-    </div>
-  )
-}
 
 export default function StressTestPage() {
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const profileIndex = useMemo(() => buildProfileIndex(roamerProfile), [])
-
-  return (
-    <main className="fixed inset-0 overflow-hidden">
-      <Suspense fallback={<GlobeLoader />}>
-        <GlobeScene profile={roamerProfile} photoDrawerOpen={drawerOpen} />
-      </Suspense>
-      <ProfileUI
-        profile={roamerProfile}
-        profileIndex={profileIndex}
-        drawerOpen={drawerOpen}
-        onDrawerOpenChange={setDrawerOpen}
-      />
-    </main>
-  )
+  return <ProfileExperience seedProfile={roamerProfile} />
 }

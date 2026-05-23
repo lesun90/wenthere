@@ -6,6 +6,9 @@
     ".": "./index.ts",
     "./*": "./*"
   },
+  "scripts": {
+    "check:profile": "node scripts/check-profile-routes.cjs"
+  },
   "typesVersions": {
     "*": {
       "*": ["./*"]

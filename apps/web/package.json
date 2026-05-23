@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "check:profiles": "node scripts/check-demo-profiles.cjs",
-    "test": "node test/subdivision-route-filename.test.cjs",
+    "test": "node test/subdivision-route-filename.test.cjs && node test/stresstest-editable.test.cjs",
     "build:roamer-profile": "node scripts/build-roamer-profile.mjs"
   },
   "dependencies": {
