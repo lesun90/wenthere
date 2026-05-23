@@ -83,12 +83,14 @@ function SuggestionInput({
   id,
   value,
   onChange,
+  onSelect,
   suggestions,
   placeholder,
 }: {
   id: string
   value: string
   onChange: (v: string) => void
+  onSelect?: (suggestion: string) => void
   suggestions: string[]
   placeholder?: string
 }) {
@@ -98,7 +100,15 @@ function SuggestionInput({
 
   const visible = open && suggestions.length > 0
 
-  function select(s: string) { onChange(s); setHi(-1); setOpen(false) }
+  function select(s: string) {
+    if (onSelect) {
+      onSelect(s)
+    } else {
+      onChange(s)
+    }
+    setHi(-1)
+    setOpen(false)
+  }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (!visible) return
@@ -177,33 +187,55 @@ function EditPhotoPanel({
   draft,
   onChange,
   onSave,
-  profileIndex,
 }: {
   photo: TravelPhoto
   draft: PhotoEditDraft
   onChange: (k: keyof PhotoEditDraft, v: string) => void
   onSave: () => void
   onCancel: () => void
-  profileIndex: ProfileIndex
 }) {
+  const isCountryLocked = draft.subdivisionName.trim().length > 0
+
   const countrySuggestions = useMemo(() => {
+    if (isCountryLocked) return []
     const q = draft.countryName.toLowerCase().trim()
     if (!q) return []
     return listCountries()
       .map(c => c.name)
       .filter(n => n.toLowerCase().includes(q) && n !== draft.countryName)
       .slice(0, 5)
-  }, [draft.countryName])
+  }, [draft.countryName, isCountryLocked])
 
+  // Search all subdivisions globally; format as "Country · Region".
+  // Prioritize the currently set country so its regions appear first.
   const regionSuggestions = useMemo(() => {
     const q = draft.subdivisionName.toLowerCase().trim()
-    if (!q) return []
-    const countryCode = findCountryCodeByName(draft.countryName)
-    return listSubdivisions(countryCode)
-      .map(subdivision => subdivision.name)
-      .filter(n => n.toLowerCase().includes(q) && n !== draft.subdivisionName)
-      .slice(0, 5)
+    if (q.length < 2) return []
+    const currentCountryCode = findCountryCodeByName(draft.countryName)
+    const seen = new Set<string>()
+    const results: Array<{ label: string; priority: number }> = []
+    for (const sub of listSubdivisions()) {
+      if (!sub.name.toLowerCase().includes(q)) continue
+      const country = getCountryMetadata(sub.countryCode)
+      if (!country) continue
+      const label = `${country.name} · ${sub.name}`
+      if (seen.has(label)) continue
+      seen.add(label)
+      results.push({ label, priority: sub.countryCode === currentCountryCode ? 0 : 1 })
+    }
+    results.sort((a, b) => a.priority - b.priority || a.label.localeCompare(b.label))
+    return results.slice(0, MAX_SUGGESTIONS).map(r => r.label)
   }, [draft.subdivisionName, draft.countryName])
+
+  // When a "Country · Region" suggestion is selected, split and update both fields.
+  function handleRegionSelect(formatted: string) {
+    const sep = ' · '
+    const idx = formatted.indexOf(sep)
+    if (idx !== -1) {
+      onChange('countryName', formatted.slice(0, idx))
+      onChange('subdivisionName', formatted.slice(idx + sep.length))
+    }
+  }
 
   return (
     <div style={{ padding: '12px 16px 40px' }}>
@@ -241,23 +273,41 @@ function EditPhotoPanel({
       <div className="photo-edit-section">
         <div className="photo-edit-section-label">Location</div>
 
+        {/* Country — read-only when a region is set; auto-derived from region selection */}
         <FormField id="edit-country" label="Country">
-          <SuggestionInput
-            id="edit-country"
-            value={draft.countryName}
-            onChange={v => onChange('countryName', v)}
-            suggestions={countrySuggestions}
-            placeholder="e.g. United States"
-          />
+          {isCountryLocked ? (
+            <div
+              className="photo-edit-input"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.6, cursor: 'default', userSelect: 'none' }}
+            >
+              <span style={{ flex: 1, fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 13 }}>
+                {draft.countryName || '–'}
+              </span>
+              <svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+                <rect x="1" y="5" width="8" height="6.5" rx="1.5" fill="currentColor" opacity="0.45" />
+                <path d="M3 5V3.5a2 2 0 1 1 4 0V5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none" opacity="0.7" />
+              </svg>
+            </div>
+          ) : (
+            <SuggestionInput
+              id="edit-country"
+              value={draft.countryName}
+              onChange={v => onChange('countryName', v)}
+              suggestions={countrySuggestions}
+              placeholder="e.g. United States"
+            />
+          )}
         </FormField>
 
+        {/* Region — primary location input; suggestions show "Country · Region" globally */}
         <FormField id="edit-region" label="Region / State">
           <SuggestionInput
             id="edit-region"
             value={draft.subdivisionName}
             onChange={v => onChange('subdivisionName', v)}
+            onSelect={handleRegionSelect}
             suggestions={regionSuggestions}
-            placeholder="e.g. California"
+            placeholder="Optional — type to search"
           />
         </FormField>
       </div>
@@ -864,7 +914,6 @@ export function PhotoManagementDrawer({
               onChange={handleDraftChange}
               onSave={handleSave}
               onCancel={() => setEditingPhotoId(null)}
-              profileIndex={profileIndex}
             />
           )}
         </div>
