@@ -14,7 +14,7 @@
   "scripts": {
     "check:profile": "node scripts/check-profile-index.cjs",
     "check:storage": "node scripts/check-profile-storage.cjs",
-    "test": "rm -rf .test-build && tsc components/globe/framingTransform.ts --rootDir . --outDir .test-build --module commonjs --target es2020 --moduleResolution node --skipLibCheck --esModuleInterop --noEmit false && node test/subdivision-url-encoding.test.mjs && node test/framing-transform.test.mjs && node test/subdivision-layer-interaction.test.mjs && node test/country-layer-interaction.test.mjs && node test/gallery-panel-hero-commit.test.mjs && node test/profile-provider-hero-stale-write.test.mjs && node test/globe-rotation-speed.test.mjs",
+    "test": "node test/run-tests.cjs",
     "build:geo-metadata": "node scripts/build-geo-metadata.cjs",
     "split-geo": "node scripts/split-geo.js"
   },

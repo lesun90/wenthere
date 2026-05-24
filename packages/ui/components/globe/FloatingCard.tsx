@@ -94,8 +94,8 @@ export function FloatingCard({ info, viewportWidth, viewportHeight }: Props) {
     let top = y + CURSOR_OFFSET_Y
 
     if (left + CARD_WIDTH > viewportWidth - 8) left = x - CARD_WIDTH - CURSOR_OFFSET_X
-    if (top + CARD_HEIGHT_EST > viewportHeight - 8) top = viewportHeight - CARD_HEIGHT_EST - 8
-    if (top < 8) top = 8
+    left = Math.min(Math.max(left, 8), Math.max(8, viewportWidth - CARD_WIDTH - 8))
+    top = Math.min(Math.max(top, 8), Math.max(8, viewportHeight - CARD_HEIGHT_EST - 8))
 
     card.style.transform = `translate3d(${left}px, ${top}px, 0)`
   }
