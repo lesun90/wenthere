@@ -23,10 +23,10 @@ interface Props {
   onPresentationCommit?: (payload: {
     subdivisionId: string
     countryCode: string
-    subdivisionPhotoId: string
-    countryPhotoId: string
-    subdivisionTransform: HeroTransform
-    countryTransform: HeroTransform
+    subdivisionPhotoId?: string
+    countryPhotoId?: string
+    subdivisionTransform?: HeroTransform
+    countryTransform?: HeroTransform
   }) => void
   clickOrigin?: { x: number; y: number }
   profileIndex: ProfileIndex
@@ -751,13 +751,17 @@ export function GalleryPanel({
     if (countryHeroId) onCountryHeroChange?.(countryCode, countryHeroUrl, countryHeroId)
     onSubdivisionTransformChange?.(subdivisionId, stagedSubTransform)
     onCountryTransformChange?.(countryCode, stagedCountryTransform)
-    if (subdivisionHeroId && countryHeroId) {
+    if (subdivisionHeroId) onPresentationCommit?.({
+      subdivisionId,
+      countryCode,
+      subdivisionPhotoId: subdivisionHeroId,
+      subdivisionTransform: stagedSubTransform,
+    })
+    if (countryHeroId) {
       onPresentationCommit?.({
         subdivisionId,
         countryCode,
-        subdivisionPhotoId: subdivisionHeroId,
         countryPhotoId: countryHeroId,
-        subdivisionTransform: stagedSubTransform,
         countryTransform: stagedCountryTransform,
       })
     }

@@ -23,3 +23,15 @@ assert.match(
   /hoverEnabled=\{interactionsEnabled\}/,
   'region hover should still be disabled while controls are active',
 )
+
+assert.match(
+  source,
+  /const heroTransform = heroTransforms\[id\] \?\? summary\?\.heroTransform/,
+  'region globe photos should use saved profile framing when there is no live override',
+)
+
+assert.match(
+  source,
+  /heroTransform=\{heroTransform\}/,
+  'region globe photo meshes should receive the effective saved-or-live framing transform',
+)

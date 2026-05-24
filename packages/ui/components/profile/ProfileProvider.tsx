@@ -52,6 +52,8 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
   const [errorMessage, setErrorMessage] = useState<string | undefined>()
   const [pendingEditPhotoId, setPendingEditPhotoId] = useState<string | null>(null)
   const storeRef = useRef<ProfileStore | null>(store)
+  const profileRef = useRef<TravelerProfile>(seedProfile)
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
 
   const profileIndex = useMemo(() => buildProfileIndex(profile), [profile])
   const unplacedPhotos = useMemo(
@@ -59,10 +61,22 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
     [profile],
   )
 
-  const persistProfile = useCallback(async (next: TravelerProfile) => {
+  const setActiveProfile = useCallback((next: TravelerProfile) => {
+    profileRef.current = next
     setProfile(next)
-    if (storeRef.current) await storeRef.current.saveActiveProfile(next)
   }, [])
+
+  const persistProfile = useCallback(async (next: TravelerProfile) => {
+    setActiveProfile(next)
+    const currentStore = storeRef.current
+    if (!currentStore) return
+
+    const saveJob = saveQueueRef.current
+      .catch(() => undefined)
+      .then(() => currentStore.saveActiveProfile(next))
+    saveQueueRef.current = saveJob.catch(() => undefined)
+    await saveJob
+  }, [setActiveProfile])
 
   useEffect(() => {
     storeRef.current = store
@@ -74,25 +88,25 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
     async function load() {
       if (!store) {
         setStorageStatus('memory-fallback')
-        setProfile(seedProfile)
+        setActiveProfile(seedProfile)
         return
       }
       try {
         const stored = await store.getActiveProfile()
         if (cancelled) return
-        setProfile(stored ?? seedProfile)
+        setActiveProfile(stored ?? seedProfile)
         setStorageStatus('ready')
       } catch (error) {
         if (cancelled) return
         setErrorMessage(error instanceof Error ? error.message : 'Storage unavailable.')
         setStorageStatus('memory-fallback')
-        setProfile(seedProfile)
+        setActiveProfile(seedProfile)
       }
     }
 
     load()
     return () => { cancelled = true }
-  }, [store, seedProfile])
+  }, [setActiveProfile, store, seedProfile])
 
   const importPhotos = useCallback(async (files: File[]) => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'))
@@ -100,10 +114,11 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
 
     let firstPhotoId: string | null = null
     const inputs = []
+    const currentProfile = profileRef.current
     for (const file of imageFiles) {
-      const id = nextPhotoId(profile.id)
+      const id = nextPhotoId(currentProfile.id)
       // Hyphens keep the key safe as a URL path segment (/api/photo/<key>)
-      const blobKey = `photo-${profile.id}-${id}`
+      const blobKey = `photo-${currentProfile.id}-${id}`
       firstPhotoId ??= id
       if (storeRef.current?.putPhotoBlob) await storeRef.current.putPhotoBlob(blobKey, file)
       inputs.push({
@@ -115,12 +130,12 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
       })
     }
 
-    await persistProfile(appendLocalPhotos(profile, inputs))
+    await persistProfile(appendLocalPhotos(profileRef.current, inputs))
     setPendingEditPhotoId(firstPhotoId)
-  }, [persistProfile, profile])
+  }, [persistProfile])
 
   const editPhoto = useCallback(async (photoId: string, draft: PhotoEditDraftData) => {
-    const next = applyPhotoEditDraft(profile, photoId, draft)
+    const next = applyPhotoEditDraft(profileRef.current, photoId, draft)
     const issues = validateProfile(next)
     if (issues.length > 0) {
       setErrorMessage(issues[0])
@@ -128,24 +143,25 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
     }
     setErrorMessage(undefined)
     await persistProfile(next)
-  }, [persistProfile, profile])
+  }, [persistProfile])
 
   const deletePhoto = useCallback(async (photoId: string) => {
-    const photo = profile.photos.find(item => item.id === photoId)
-    const next = removeStoredPhoto(profile, photoId)
+    const currentProfile = profileRef.current
+    const photo = currentProfile.photos.find(item => item.id === photoId)
+    const next = removeStoredPhoto(currentProfile, photoId)
     if (photo?.source?.kind === 'localBlob' && storeRef.current?.deletePhotoBlob) {
       await storeRef.current.deletePhotoBlob(photo.source.key)
     }
     await persistProfile(next)
-  }, [persistProfile, profile])
+  }, [persistProfile])
 
   const setCountryHero = useCallback(async (countryCode: string, photoId: string, framing: PhotoFrameTransform = { x: 0, y: 0, scale: 1 }) => {
-    await persistProfile(setCountryFraming(profile, countryCode, photoId, framing))
-  }, [persistProfile, profile])
+    await persistProfile(setCountryFraming(profileRef.current, countryCode, photoId, framing))
+  }, [persistProfile])
 
   const setSubdivisionHero = useCallback(async (subdivisionCode: string, photoId: string, framing: PhotoFrameTransform = { x: 0, y: 0, scale: 1 }) => {
-    await persistProfile(setSubdivisionFraming(profile, subdivisionCode, photoId, framing))
-  }, [persistProfile, profile])
+    await persistProfile(setSubdivisionFraming(profileRef.current, subdivisionCode, photoId, framing))
+  }, [persistProfile])
 
   const value: ProfileProviderValue = {
     profile,

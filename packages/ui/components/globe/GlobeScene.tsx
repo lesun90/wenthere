@@ -504,8 +504,12 @@ function GlobeSceneComponent({
           onSubdivisionTransformChange={handleSubdivisionTransformChange}
           onCountryTransformChange={handleCountryTransformChange}
           onPresentationCommit={payload => {
-            onSetSubdivisionHero?.(payload.subdivisionId, payload.subdivisionPhotoId, payload.subdivisionTransform)
-            onSetCountryHero?.(payload.countryCode, payload.countryPhotoId, payload.countryTransform)
+            if (payload.subdivisionPhotoId && payload.subdivisionTransform) {
+              onSetSubdivisionHero?.(payload.subdivisionId, payload.subdivisionPhotoId, payload.subdivisionTransform)
+            }
+            if (payload.countryPhotoId && payload.countryTransform) {
+              onSetCountryHero?.(payload.countryCode, payload.countryPhotoId, payload.countryTransform)
+            }
           }}
           clickOrigin={clickOrigin ?? undefined}
           profileIndex={profileIndex}

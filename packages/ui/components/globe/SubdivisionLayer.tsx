@@ -213,6 +213,8 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, int
   return (
     <>
       {visitedFeatures.map(({ id, name, countryCode, heroPicUrl, centroid, geometry, fillGeometry, lineGeometry }) => {
+        const summary = profileIndex.subdivisionSummariesByCode[id]
+        const heroTransform = heroTransforms[id] ?? summary?.heroTransform
         return (
           <SubdivisionFeature
             key={id}
@@ -221,7 +223,7 @@ export function SubdivisionLayer({ opacity, onHoverChange, onSubdivisionTap, int
             isHovered={hoveredId === id}
             opacityTarget={opacity}
             heroPicUrl={heroPicUrl}
-            heroTransform={heroTransforms[id]}
+            heroTransform={heroTransform}
             interactive={subdivisionInteractionsEnabled}
             hoverEnabled={interactionsEnabled}
             palette={palette}
