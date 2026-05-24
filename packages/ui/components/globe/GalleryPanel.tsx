@@ -746,9 +746,13 @@ export function GalleryPanel({
     closingRef.current = true
     setVisible(false)
     const subdivisionHeroId = photos.find(photo => photo.url === heroUrl)?.id
-    const countryHeroId = photos.find(photo => photo.url === countryHeroUrl)?.id
+    const countryPhotos = profileIndex.photosByCountryCode[countryCode] ?? []
+    const countryHeroPhoto = countryPhotos.find(photo => photo.url === countryHeroUrl)
+      ?? (countryPhotos.length === 1 ? countryPhotos[0] : undefined)
+    const countryHeroId = countryHeroPhoto?.id
+    const nextCountryHeroUrl = countryHeroPhoto?.url ?? countryHeroUrl
     if (subdivisionHeroId) onHeroChange?.(subdivisionId, heroUrl, subdivisionHeroId)
-    if (countryHeroId) onCountryHeroChange?.(countryCode, countryHeroUrl, countryHeroId)
+    if (countryHeroId) onCountryHeroChange?.(countryCode, nextCountryHeroUrl, countryHeroId)
     onSubdivisionTransformChange?.(subdivisionId, stagedSubTransform)
     onCountryTransformChange?.(countryCode, stagedCountryTransform)
     if (subdivisionHeroId) onPresentationCommit?.({
@@ -1047,7 +1051,7 @@ export function GalleryPanel({
           </div>
         )}
 
-        {photos.length > 1 && (
+        {photos.length > 0 && (
           <div
             ref={thumbsRef}
             className="gallery-thumbs"

@@ -35,6 +35,24 @@ function samePhoto(photo: TravelPhoto, photoId: string): boolean {
   return photo.id === photoId
 }
 
+function withSinglePhotoCountryHero(profile: TravelerProfile, countryCode: string): TravelerProfile {
+  if (!countryCode) return profile
+
+  const countryPhotos = profile.photos.filter(photo => photo.location.countryCode === countryCode)
+  if (countryPhotos.length !== 1) return profile
+
+  const [photo] = countryPhotos
+  if (profile.presentation?.countryHeroes?.[countryCode]?.photoId === photo.id) return profile
+
+  const presentation = ensurePresentation(profile)
+  presentation.countryHeroes = {
+    ...(presentation.countryHeroes ?? {}),
+    [countryCode]: { photoId: photo.id },
+  }
+
+  return { ...profile, presentation }
+}
+
 export function appendLocalPhotos(profile: TravelerProfile, photos: LocalPhotoInput[]): TravelerProfile {
   return {
     ...profile,
@@ -64,7 +82,7 @@ export function applyPhotoEditDraft(
   const countryCode = findCountryCodeByName(draft.countryName) ?? draft.countryName.trim()
   const subdivisionCode = findSubdivisionCodeByName(draft.subdivisionName, countryCode) ?? draft.subdivisionName.trim()
 
-  return {
+  const next = {
     ...profile,
     photos: profile.photos.map(photo => {
       if (!samePhoto(photo, photoId)) return photo
@@ -79,6 +97,8 @@ export function applyPhotoEditDraft(
       }
     }),
   }
+
+  return withSinglePhotoCountryHero(next, countryCode)
 }
 
 export function removeStoredPhoto(profile: TravelerProfile, photoId: string): TravelerProfile {

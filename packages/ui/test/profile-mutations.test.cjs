@@ -75,6 +75,31 @@ try {
     subdivisionCode: 'USA-3521',
   })
 
+  const firstCountryPhoto = applyPhotoEditDraft({
+    id: 'first-country-photo-check',
+    name: 'First Country Photo Check',
+    photos: [
+      {
+        id: 'local-photo-first',
+        url: 'blob:http://localhost/local-photo-first',
+        caption: 'First local photo',
+        location: { countryCode: '' },
+      },
+    ],
+    presentation: {
+      countryHeroes: {},
+      subdivisionHeroes: {},
+    },
+  }, 'local-photo-first', {
+    caption: 'First country memory',
+    takenAt: '',
+    countryName: 'United States',
+    subdivisionName: 'California',
+  })
+  assert.deepEqual(firstCountryPhoto.presentation.countryHeroes.USA, {
+    photoId: 'local-photo-first',
+  })
+
   const clearedDate = applyPhotoEditDraft(edited, 'local-photo-1', {
     caption: 'No date',
     takenAt: '',
