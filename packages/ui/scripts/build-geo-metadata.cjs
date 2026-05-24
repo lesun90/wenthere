@@ -8,6 +8,9 @@ const subdivisionDir = path.join(sourceGeoDir, 'subdivisions')
 const metadataDir = path.join(repoRoot, 'packages/ui/data/geo/metadata')
 
 const countryNumericIds = {
+  AUS: '036',
+  BRA: '076',
+  CAN: '124',
   CHN: '156',
   DEU: '276',
   EGY: '818',
@@ -15,11 +18,14 @@ const countryNumericIds = {
   ETH: '231',
   FRA: '250',
   GBR: '826',
+  IDN: '360',
+  IND: '356',
   ITA: '380',
   KEN: '404',
   MAR: '504',
   NGA: '566',
   NLD: '528',
+  RUS: '643',
   USA: '840',
   VNM: '704',
   ZAF: '710',

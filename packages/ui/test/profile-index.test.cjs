@@ -124,6 +124,20 @@ try {
   assert.equal(unknownIndex.countrySummariesByCode.XXX.countryNumericId, 'XXX')
   assert.equal(unknownIndex.subdivisionSummariesByCode['XXX-1'].name, 'XXX-1')
 
+  const canadaIndex = buildProfileIndex({
+    id: 'canada-check',
+    name: 'Canada Check',
+    photos: [{
+      id: 'canada-photo',
+      url: '/sample/canada.jpg',
+      caption: 'Canada one',
+      location: { countryCode: 'CAN', subdivisionCode: 'CAN-630' },
+    }],
+  })
+  assert.equal(canadaIndex.countrySummariesByCode.CAN.heroPic, '/sample/canada.jpg')
+  assert.equal(canadaIndex.countrySummariesByCode.CAN.countryNumericId, '124')
+  assert.equal(canadaIndex.countrySummariesByNumericId['124'], canadaIndex.countrySummariesByCode.CAN)
+
   const invalidProfile = {
     id: 'invalid',
     name: 'Invalid',

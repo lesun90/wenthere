@@ -1,15 +1,15 @@
 {
   "AUS": {
     "name": "Australia",
-    "numericId": "AUS"
+    "numericId": "036"
   },
   "BRA": {
     "name": "Brazil",
-    "numericId": "BRA"
+    "numericId": "076"
   },
   "CAN": {
     "name": "Canada",
-    "numericId": "CAN"
+    "numericId": "124"
   },
   "CHN": {
     "name": "China",
@@ -41,11 +41,11 @@
   },
   "IDN": {
     "name": "Indonesia",
-    "numericId": "IDN"
+    "numericId": "360"
   },
   "IND": {
     "name": "India",
-    "numericId": "IND"
+    "numericId": "356"
   },
   "ITA": {
     "name": "Italy",
@@ -69,7 +69,7 @@
   },
   "RUS": {
     "name": "Russia",
-    "numericId": "RUS"
+    "numericId": "643"
   },
   "USA": {
     "name": "United States",
