@@ -1,5 +1,5 @@
 {
-  "name": "@beenthere/storage-supabase",
+  "name": "@beenthere/storage-cloud",
   "version": "0.1.0",
   "private": true,
   "exports": {

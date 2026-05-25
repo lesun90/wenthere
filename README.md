@@ -9,7 +9,7 @@ packages/
   ui/                 React components, lib utilities, domain types
   storage-local/      Filesystem storage for offline local dev
   storage-github/     GitHub repo storage (Phase 1 — personal use)
-  storage-supabase/   Supabase storage (Phase 2 — multi-user, not yet implemented)
+  storage-cloud/      Cloud storage (Phase 2 — multi-user, not yet implemented)
 apps/
   web/                Deployable Next.js app (ui + storage-local/github)
   service/            Phase 2 multi-user app (scaffold only)

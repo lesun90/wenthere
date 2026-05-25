@@ -5,8 +5,8 @@
     "paths": {
       "@beenthere/ui": ["../../packages/ui/index.ts"],
       "@beenthere/ui/*": ["../../packages/ui/*"],
-      "@beenthere/storage-supabase": ["../../packages/storage-supabase/index.ts"],
-      "@beenthere/storage-supabase/*": ["../../packages/storage-supabase/*"]
+      "@beenthere/storage-cloud": ["../../packages/storage-cloud/index.ts"],
+      "@beenthere/storage-cloud/*": ["../../packages/storage-cloud/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

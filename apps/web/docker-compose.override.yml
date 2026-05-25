@@ -9,7 +9,7 @@ services:
       - ui_node_modules:/app/packages/ui/node_modules
       - storage_local_node_modules:/app/packages/storage-local/node_modules
       - storage_github_node_modules:/app/packages/storage-github/node_modules
-      - storage_supabase_node_modules:/app/packages/storage-supabase/node_modules
+      - storage_cloud_node_modules:/app/packages/storage-cloud/node_modules
       - web_next:/app/apps/web/.next
     ports:
       - "9229:9229"
@@ -27,5 +27,5 @@ volumes:
   ui_node_modules:
   storage_local_node_modules:
   storage_github_node_modules:
-  storage_supabase_node_modules:
+  storage_cloud_node_modules:
   web_next:

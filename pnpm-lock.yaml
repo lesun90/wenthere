@@ -14,9 +14,9 @@ importers:
 
   apps/service:
     dependencies:
-      '@beenthere/storage-supabase':
+      '@beenthere/storage-cloud':
         specifier: workspace:*
-        version: link:../../packages/storage-supabase
+        version: link:../../packages/storage-cloud
       '@beenthere/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -86,6 +86,12 @@ importers:
         specifier: ^5
         version: 5.9.3
 
+  packages/storage-cloud:
+    devDependencies:
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
   packages/storage-github:
     dependencies:
       '@beenthere/ui':
@@ -114,12 +120,6 @@ importers:
       next:
         specifier: 15.3.9
         version: 15.3.9(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      typescript:
-        specifier: ^5
-        version: 5.9.3
-
-  packages/storage-supabase:
-    devDependencies:
       typescript:
         specifier: ^5
         version: 5.9.3
