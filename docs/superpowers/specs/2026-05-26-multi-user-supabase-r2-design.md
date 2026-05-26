@@ -209,12 +209,99 @@ Admin rules:
 ## Beta Defaults
 
 - Maximum upload size: 10 MB per original photo.
-- Maximum photos: 500 active photos per profile.
+- Free beta quota: 100 active photos or 250 MB stored R2 objects per profile,
+  whichever comes first.
 - Accepted MIME types: `image/jpeg`, `image/png`, and `image/webp`.
 - Image variants: create one display image and one thumbnail for each active
   photo.
 - Public image delivery: use the proxy route by default.
 - Invalid framing values: reject the request instead of silently clamping.
+
+The architecture should scale to tens of thousands of accounts and public
+viewers, but the free beta must stay bounded by invite count, per-profile
+storage quotas, image compression, and usage monitoring. The product should not
+promise free operation for unlimited uploading users.
+
+## Scale Requirements
+
+The cloud design must avoid full-table scans and unbounded profile assembly.
+
+Required database constraints and indexes:
+
+```text
+profiles
+  unique(slug)
+  index(owner_id)
+  index(public_visible, suspended_at, deleted_at)
+
+photos
+  index(profile_id, status, deleted_at)
+  index(profile_id, country_code)
+  index(profile_id, subdivision_code)
+  index(status, deleted_at)
+
+admin_users
+  primary key(user_id)
+```
+
+Operational requirements:
+
+- Use Supabase pooled connections for server routes instead of opening
+  unbounded direct database connections.
+- Keep admin lists paginated and filterable by profile status, photo status,
+  storage usage, and updated time.
+- Owner and public profile assembly should fetch one profile by owner or slug,
+  then only active, non-deleted photos for that profile.
+- Public profile responses should prefer display/thumb variants and avoid
+  sending original image URLs.
+- Profile reads may be cached for short durations only when visibility
+  revocation still takes effect quickly.
+- Public APIs should use rate limits to protect the database, image proxy, and
+  R2 operation budget.
+
+## Image Security Requirements
+
+User images must be stored securely by default.
+
+- R2 buckets are private.
+- Public `r2.dev` access is disabled for user-image buckets.
+- R2 credentials live only on the server and are never exposed to the browser.
+- Object keys are non-guessable and scoped by profile or user id.
+- Original, display, and thumbnail objects use separate keys.
+- Upload APIs verify authenticated ownership before accepting objects.
+- Upload validation checks actual file content, not only browser-provided MIME
+  type.
+- Uploaded images are decoded and re-encoded for display/thumb variants.
+- EXIF and GPS metadata are stripped from display/thumb variants.
+- Public image proxy responses never reveal raw R2 keys.
+- Deleted or hidden profiles cannot generate new public image responses.
+- Admin cleanup can delete orphaned R2 objects without needing public access.
+
+## Cost Gates
+
+The beta should be able to remain free while usage is small, but the spec treats
+that as an operating target rather than a guarantee.
+
+Current pricing assumptions checked on 2026-05-26:
+
+- Supabase Free includes 50,000 monthly active users, 500 MB database size, 1 GB
+  file storage, and 5 GB egress.
+- Cloudflare R2 Standard free tier includes 10 GB-month storage, 1 million Class
+  A operations, 10 million Class B operations, and free internet egress.
+
+Cost controls:
+
+- Keep Supabase Storage unused for user photos; store only metadata in
+  Supabase Postgres.
+- Recompress images and serve display/thumb variants in globe views.
+- Enforce the free beta quota before writing to R2.
+- Track per-profile stored bytes and active photo count.
+- Track global R2 storage, Class A operations, and Class B operations.
+- Track Supabase database size and MAU usage.
+- Add admin alerts at 70%, 90%, and 100% of free-tier operating budgets.
+- Keep Cloudflare R2 Standard storage for beta; do not use Infrequent Access for
+  frequently viewed profile images.
+- Disable unlimited public crawling with rate limits and cache headers.
 
 ## Data Flows
 
@@ -420,8 +507,8 @@ Auth/session:
 Upload:
 
 - Validate MIME type and maximum file size before R2 write.
-- Enforce beta quotas: 10 MB per original photo and 500 active photos per
-  profile.
+- Enforce beta quotas: 10 MB per original photo, 100 active photos per profile,
+  and 250 MB stored R2 objects per profile.
 - Mark rows `active` only after R2 write and variant generation succeed.
 - Mark rows `failed` if upload or processing fails.
 
