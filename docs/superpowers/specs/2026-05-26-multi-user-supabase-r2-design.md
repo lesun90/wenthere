@@ -209,7 +209,7 @@ Admin rules:
 ## Beta Defaults
 
 - Maximum upload size: 10 MB per original photo.
-- Free beta quota: 100 active photos or 250 MB stored R2 objects per profile,
+- Invite-only beta quota: 100 active photos or 1 GB stored R2 objects per profile,
   whichever comes first.
 - Accepted MIME types: `image/jpeg`, `image/png`, and `image/webp`.
 - Image variants: create one display image and one thumbnail for each active
@@ -221,6 +221,36 @@ The architecture should scale to tens of thousands of accounts and public
 viewers, but the free beta must stay bounded by invite count, per-profile
 storage quotas, image compression, and usage monitoring. The product should not
 promise free operation for unlimited uploading users.
+
+For the first beta, assume around 10 invited testers. Image handling should be
+quality-first inside that bounded group, because low-quality globe and gallery
+images would weaken the core product experience.
+
+## Image Quality Requirements
+
+Original uploads remain private in R2. The globe, gallery, public profile, and
+admin previews should use generated variants instead of original uploads.
+
+Display variant requirements:
+
+- Long edge target: 1600-2048 px.
+- Do not upscale small originals.
+- Use WebP or AVIF where supported, with JPEG fallback.
+- Quality target: visually high quality, roughly WebP quality 82-88 or JPEG
+  quality 85-90.
+- Strip EXIF and GPS metadata.
+
+Thumbnail variant requirements:
+
+- Long edge target: 320-512 px.
+- Use the same metadata-stripping rules as display variants.
+- Tune for fast list/drawer/admin rendering, not full-screen viewing.
+
+The quota is intentionally looser for the invite-only beta than a public free
+plan would be. With about 10 testers, 100 photos per profile, and 1 GB per
+profile, the product can preserve image quality while still fitting the R2 free
+tier in normal use. Admin should alert at 500 MB per profile so storage growth
+is visible before a profile reaches its hard limit.
 
 ## Scale Requirements
 
@@ -296,6 +326,7 @@ Cost controls:
 - Recompress images and serve display/thumb variants in globe views.
 - Enforce the free beta quota before writing to R2.
 - Track per-profile stored bytes and active photo count.
+- Alert when a profile reaches 500 MB of stored R2 objects.
 - Track global R2 storage, Class A operations, and Class B operations.
 - Track Supabase database size and MAU usage.
 - Add admin alerts at 70%, 90%, and 100% of free-tier operating budgets.
@@ -508,7 +539,7 @@ Upload:
 
 - Validate MIME type and maximum file size before R2 write.
 - Enforce beta quotas: 10 MB per original photo, 100 active photos per profile,
-  and 250 MB stored R2 objects per profile.
+  and 1 GB stored R2 objects per profile.
 - Mark rows `active` only after R2 write and variant generation succeed.
 - Mark rows `failed` if upload or processing fails.
 
