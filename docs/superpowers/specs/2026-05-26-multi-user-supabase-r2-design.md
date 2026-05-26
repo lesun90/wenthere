@@ -228,8 +228,9 @@ images would weaken the core product experience.
 
 ## Image Quality Requirements
 
-Original uploads remain private in R2. The globe, gallery, public profile, and
-admin previews should use generated variants instead of original uploads.
+Original upload bytes and metadata remain preserved in private R2 storage. The
+globe, gallery, public profile, and admin previews should use generated variants
+instead of original uploads.
 
 Display variant requirements:
 
@@ -238,13 +239,18 @@ Display variant requirements:
 - Use WebP or AVIF where supported, with JPEG fallback.
 - Quality target: visually high quality, roughly WebP quality 82-88 or JPEG
   quality 85-90.
-- Strip EXIF and GPS metadata.
+- Strip EXIF and GPS metadata from generated display/public variants only.
+- Do not expose original files or original metadata publicly.
 
 Thumbnail variant requirements:
 
 - Long edge target: 320-512 px.
 - Use the same metadata-stripping rules as display variants.
 - Tune for fast list/drawer/admin rendering, not full-screen viewing.
+
+Future owner download or export features may return the preserved original file
+with its original metadata. Any feature that deletes or rewrites original
+metadata must be explicit to the user.
 
 The quota is intentionally looser for the invite-only beta than a public free
 plan would be. With about 10 testers, 100 photos per profile, and 1 GB per
@@ -302,7 +308,9 @@ User images must be stored securely by default.
 - Upload validation checks actual file content, not only browser-provided MIME
   type.
 - Uploaded images are decoded and re-encoded for display/thumb variants.
-- EXIF and GPS metadata are stripped from display/thumb variants.
+- Original upload bytes and metadata are preserved in private R2 storage.
+- EXIF and GPS metadata are stripped only from generated display/thumb/public
+  variants.
 - Public image proxy responses never reveal raw R2 keys.
 - Deleted or hidden profiles cannot generate new public image responses.
 - Admin cleanup can delete orphaned R2 objects without needing public access.
