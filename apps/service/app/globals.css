@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #080c14;
+  --surface: rgba(8, 12, 20, 0.82);
+  --surface-panel: rgba(8, 12, 20, 0.95);
+  --border: rgba(255, 255, 255, 0.10);
+  --divider: rgba(255, 255, 255, 0.06);
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: rgba(255, 255, 255, 0.20);
+  --accent: #60A5FA;
+  --ring: rgba(96, 165, 250, 0.50);
+  --scrollbar: rgba(255, 255, 255, 0.15);
+  --card-shape-stroke: rgba(248, 250, 252, 0.76);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  font-family: var(--font-dm-sans), sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}

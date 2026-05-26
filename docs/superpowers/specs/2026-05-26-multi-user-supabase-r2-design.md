@@ -215,8 +215,7 @@ Admin rules:
 ## Beta Defaults
 
 - Maximum upload size: 10 MB per original photo.
-- Invite-only beta quota: 100 active photos or 1 GB stored R2 objects per profile,
-  whichever comes first.
+- Invite-only beta quota:1 GB stored R2 objects per profile
 - The stored-object quota counts original, display, and thumbnail R2 objects.
 - Accepted MIME types: `image/jpeg`, `image/png`, and `image/webp`.
 - Image variants: create one display image and one thumbnail for each active
@@ -613,9 +612,15 @@ This keeps most development fast and offline while reserving real Supabase Auth,
 R2 object behavior, and email callback testing for `cloud-dev`.
 
 Environment selection must be explicit. For example, `STORAGE_BACKEND=local`
-uses the demo-user local backend, while `STORAGE_BACKEND=cloud` uses Supabase and
-R2. Local mode must remain the default for contributors who have no cloud
-credentials.
+uses the demo-user local backend in `apps/web`, while `apps/service` is the
+dedicated Supabase and R2 deployment. Local mode must remain the default for
+contributors who have no cloud credentials.
+
+Resolved implementation decisions:
+
+- `apps/service` is the dedicated multi-user deployment.
+- `sharp` is the V1 image processing library for Next.js Node.js route handlers.
+- Beta access is admin-created users only.
 
 ## Testing And Verification
 
@@ -665,7 +670,9 @@ Build verification:
 ```text
 pnpm --filter @beenthere/ui test
 pnpm --filter @beenthere/web test
-pnpm build
+pnpm --filter @beenthere/storage-cloud test
+pnpm --filter @beenthere/service test
+pnpm --filter @beenthere/service build
 ```
 
 `pnpm lint` exists in `package.json`, but `pnpm build` is the reliable
@@ -678,6 +685,7 @@ project-wide check for this repository until linting is repaired.
 - Add route-specific cloud/public/admin UI under `app/`.
 - Keep reusable profile and globe logic under `packages/ui`.
 - Keep cloud storage/provider code under `packages/storage-cloud`.
+- Keep `sharp` image processing in Node.js route/server code, not Edge runtime.
 - Continue using structured geo and profile utilities rather than duplicating
   parsing inside React components.
 - Update `docs/UX_UI_PRESERVATION_SPEC.md` only if multi-user work changes the

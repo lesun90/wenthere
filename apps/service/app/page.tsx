@@ -1,8 +1,16 @@
+import { CloudProfileExperience } from './CloudProfileExperience'
+import type { TravelerProfile } from '@beenthere/ui'
+
+const seedProfile: TravelerProfile = {
+  id: 'cloud-demo-user',
+  name: 'Beenthere',
+  photos: [],
+  presentation: {
+    countryHeroes: {},
+    subdivisionHeroes: {},
+  },
+}
+
 export default function ServicePage() {
-  return (
-    <main style={{ padding: 40, fontFamily: 'sans-serif' }}>
-      <h1>Service app — Phase 2 not yet implemented</h1>
-      <p>This will become the multi-user Beenthere service powered by Supabase.</p>
-    </main>
-  )
+  return <CloudProfileExperience seedProfile={seedProfile} />
 }
