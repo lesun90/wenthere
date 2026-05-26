@@ -1,0 +1,7 @@
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: apps/service/Dockerfile
+    ports:
+      - "3001:3001"

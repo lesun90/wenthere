@@ -17,6 +17,7 @@ export interface PhotoLocation {
 export type PhotoSource =
   | { kind: 'asset' }
   | { kind: 'localBlob'; key: string; mimeType: string; fileName?: string }
+  | { kind: 'cloudObject'; key: string; mimeType: string; fileName?: string }
 
 export interface TravelPhoto {
   id: string
