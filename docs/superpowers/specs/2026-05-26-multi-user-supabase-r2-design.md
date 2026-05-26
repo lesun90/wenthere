@@ -451,6 +451,44 @@ Cost controls:
 - Track `byte_size` per photo for admin storage reporting.
 - Prefer R2 for photo object storage.
 
+## Local Development And Deployment
+
+The multi-user implementation must preserve an offline-capable local development
+mode. Ordinary UI work, globe rendering, profile mutation, photo import/delete,
+presentation framing, and regression tests should not require Supabase or R2
+credentials.
+
+Development modes:
+
+```text
+local
+  -> demo user session
+  -> local profile/photo storage
+  -> seeded profiles
+  -> no Supabase or R2 credentials required
+
+cloud-dev
+  -> staging Supabase project
+  -> staging R2 bucket
+  -> real magic-link auth
+  -> seeded test users/profiles
+
+production
+  -> beta Supabase project
+  -> beta R2 bucket
+  -> real magic-link auth
+```
+
+Local mode should simulate one signed-in demo user. The demo user can own a
+local primary profile and exercise the same `ProfileStore` calls as cloud mode.
+This keeps most development fast and offline while reserving real Supabase Auth,
+R2 object behavior, and email callback testing for `cloud-dev`.
+
+Environment selection should be explicit. For example, `STORAGE_BACKEND=local`
+uses the demo-user local backend, while `STORAGE_BACKEND=cloud` uses Supabase and
+R2. Local mode must remain the default for contributors who have no cloud
+credentials.
+
 ## Testing And Verification
 
 Unit tests:
@@ -474,6 +512,7 @@ API tests:
 
 UI/browser checks:
 
+- Local demo-user mode reaches the editable globe without cloud credentials.
 - Owner sign-in reaches editable globe.
 - Upload/import still opens the existing management flow.
 - Owner caption/location edits persist and reload.
