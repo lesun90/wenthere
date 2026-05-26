@@ -62,7 +62,7 @@ Admin user
       -> R2 metadata/object cleanup tools
 ```
 
-The globe UI should not import Supabase or R2 clients directly. Cloud storage
+The globe UI must not import Supabase or R2 clients directly. Cloud storage
 belongs behind a new implementation in `@beenthere/storage-cloud`, matching the
 existing `ProfileStore` shape:
 
@@ -76,7 +76,7 @@ interface ProfileStore {
 ```
 
 The cloud implementation may translate full-profile save calls into scoped API
-updates internally. The UI should continue to work with `TravelerProfile`,
+updates internally. The UI must continue to work with `TravelerProfile`,
 `ProfileProvider`, profile indexes, and existing mutation helpers.
 
 ## Alternatives Considered
@@ -96,7 +96,7 @@ Supabase would handle auth, metadata, and photo storage first, while preserving 
 storage adapter for future R2 migration.
 
 This is fastest, but it postpones the media-cost decision. Since public profile
-viewing can create photo egress pressure, R2 should be part of the beta design.
+viewing can create photo egress pressure, R2 is part of the beta design.
 
 ## Data Model
 
@@ -149,6 +149,12 @@ admin_users
 
 `display_name` maps to `TravelerProfile.name`.
 
+Allowed `photos.status` values:
+
+```text
+uploading | active | failed | deleted
+```
+
 Only active, non-deleted photos are included when assembling a profile:
 
 ```text
@@ -156,7 +162,7 @@ photos.status = 'active'
 photos.deleted_at is null
 ```
 
-Photo source metadata should use a cloud object source:
+Photo source metadata must use a cloud object source:
 
 ```ts
 source: {
@@ -185,7 +191,7 @@ Owner rules:
 
 - Signed-in users can read and write only their own profile and photo rows.
 - Owner APIs verify Supabase session server-side.
-- Supabase RLS should also enforce ownership as a backstop.
+- Supabase RLS must also enforce ownership as a backstop.
 
 Public rules:
 
@@ -203,7 +209,7 @@ Admin rules:
 - Admin users can list profiles, inspect photo counts/storage usage/status, hide
   or suspend public profiles, and run cleanup for failed/deleted/orphaned image
   objects.
-- V1 admin should not directly edit users' memories, captions, locations, or
+- V1 admin must not directly edit users' memories, captions, locations, or
   presentation framing.
 
 ## Beta Defaults
@@ -211,25 +217,26 @@ Admin rules:
 - Maximum upload size: 10 MB per original photo.
 - Invite-only beta quota: 100 active photos or 1 GB stored R2 objects per profile,
   whichever comes first.
+- The stored-object quota counts original, display, and thumbnail R2 objects.
 - Accepted MIME types: `image/jpeg`, `image/png`, and `image/webp`.
 - Image variants: create one display image and one thumbnail for each active
   photo.
 - Public image delivery: use the proxy route by default.
 - Invalid framing values: reject the request instead of silently clamping.
 
-The architecture should scale to tens of thousands of accounts and public
+The architecture must scale to tens of thousands of accounts and public
 viewers, but the free beta must stay bounded by invite count, per-profile
-storage quotas, image compression, and usage monitoring. The product should not
+storage quotas, image compression, and usage monitoring. The product must not
 promise free operation for unlimited uploading users.
 
-For the first beta, assume around 10 invited testers. Image handling should be
+For the first beta, assume around 10 invited testers. Image handling must be
 quality-first inside that bounded group, because low-quality globe and gallery
 images would weaken the core product experience.
 
 ## Image Quality Requirements
 
 Original upload bytes and metadata remain preserved in private R2 storage. The
-globe, gallery, public profile, and admin previews should use generated variants
+globe, gallery, public profile, and admin previews must use generated variants
 instead of original uploads.
 
 Display variant requirements:
@@ -255,7 +262,7 @@ metadata must be explicit to the user.
 The quota is intentionally looser for the invite-only beta than a public free
 plan would be. With about 10 testers, 100 photos per profile, and 1 GB per
 profile, the product can preserve image quality while still fitting the R2 free
-tier in normal use. Admin should alert at 500 MB per profile so storage growth
+tier in normal use. Admin must alert at 500 MB per profile so storage growth
 is visible before a profile reaches its hard limit.
 
 ## Scale Requirements
@@ -286,13 +293,13 @@ Operational requirements:
   unbounded direct database connections.
 - Keep admin lists paginated and filterable by profile status, photo status,
   storage usage, and updated time.
-- Owner and public profile assembly should fetch one profile by owner or slug,
+- Owner and public profile assembly must fetch one profile by owner or slug,
   then only active, non-deleted photos for that profile.
-- Public profile responses should prefer display/thumb variants and avoid
+- Public profile responses must prefer display/thumb variants and avoid
   sending original image URLs.
 - Profile reads may be cached for short durations only when visibility
   revocation still takes effect quickly.
-- Public APIs should use rate limits to protect the database, image proxy, and
+- Public APIs must use rate limits to protect the database, image proxy, and
   R2 operation budget.
 
 ## Image Security Requirements
@@ -317,8 +324,8 @@ User images must be stored securely by default.
 
 ## Cost Gates
 
-The beta should be able to remain free while usage is small, but the spec treats
-that as an operating target rather than a guarantee.
+The beta can remain free while usage is small, but the spec treats that as an
+operating target rather than a guarantee.
 
 Current pricing assumptions checked on 2026-05-26:
 
@@ -327,13 +334,15 @@ Current pricing assumptions checked on 2026-05-26:
 - Cloudflare R2 Standard free tier includes 10 GB-month storage, 1 million Class
   A operations, 10 million Class B operations, and free internet egress.
 
-Cost controls:
+Required controls:
 
 - Keep Supabase Storage unused for user photos; store only metadata in
   Supabase Postgres.
 - Recompress images and serve display/thumb variants in globe views.
 - Enforce the free beta quota before writing to R2.
 - Track per-profile stored bytes and active photo count.
+- Admin storage usage must read from stored metadata, not R2 list scans on every
+  page load.
 - Alert when a profile reaches 500 MB of stored R2 objects.
 - Track global R2 storage, Class A operations, and Class B operations.
 - Track Supabase database size and MAU usage.
@@ -479,7 +488,7 @@ The visible public globe uses current live profile data:
 - hero framing transforms
 - deleted photos excluded
 
-The public route should not include edit, import, delete, or management controls.
+The public route must not include edit, import, delete, or management controls.
 
 ### Admin View
 
@@ -491,7 +500,7 @@ Admin opens /admin
   -> Admin can run cleanup for failed/deleted/orphaned image objects
 ```
 
-The admin page is a utilitarian operations surface. It should not change the
+The admin page is a utilitarian operations surface. It must not change the
 first-screen globe experience for regular users.
 
 ## API Surface
@@ -512,12 +521,12 @@ POST   /api/admin/storage-cleanup
 ```
 
 The existing local `/api/profile` and `/api/photo` routes can remain for local
-development. The cloud backend should use the same UI contract while moving
+development. The cloud backend must use the same UI contract while moving
 cloud-specific behavior into `@beenthere/storage-cloud` and app route handlers.
 
 ## Public Image Delivery
 
-Public profile images should use an image proxy route by default.
+Public profile images must use an image proxy route by default.
 
 Recommended beta behavior:
 
@@ -525,7 +534,7 @@ Recommended beta behavior:
 Proxy route
   /api/public/photos/:photoId
   -> server checks public visibility each request
-  -> server streams or redirects to R2
+  -> server streams or redirects only display/thumb variants from R2
 ```
 
 Avoid long-lived public signed URLs for beta. If a user hides their globe, old
@@ -570,18 +579,11 @@ Public visibility:
 - `suspended_at` overrides owner visibility.
 - Public APIs never expose private account metadata.
 
-Cost controls:
-
-- Serve display/thumb variants in globe views instead of original uploads.
-- Keep Supabase storage metadata-only.
-- Track `byte_size` per photo for admin storage reporting.
-- Prefer R2 for photo object storage.
-
 ## Local Development And Deployment
 
 The multi-user implementation must preserve an offline-capable local development
 mode. Ordinary UI work, globe rendering, profile mutation, photo import/delete,
-presentation framing, and regression tests should not require Supabase or R2
+presentation framing, and regression tests must not require Supabase or R2
 credentials.
 
 Development modes:
@@ -605,12 +607,12 @@ production
   -> real magic-link auth
 ```
 
-Local mode should simulate one signed-in demo user. The demo user can own a
+Local mode must simulate one signed-in demo user. The demo user can own a
 local primary profile and exercise the same `ProfileStore` calls as cloud mode.
 This keeps most development fast and offline while reserving real Supabase Auth,
 R2 object behavior, and email callback testing for `cloud-dev`.
 
-Environment selection should be explicit. For example, `STORAGE_BACKEND=local`
+Environment selection must be explicit. For example, `STORAGE_BACKEND=local`
 uses the demo-user local backend, while `STORAGE_BACKEND=cloud` uses Supabase and
 R2. Local mode must remain the default for contributors who have no cloud
 credentials.
@@ -647,6 +649,17 @@ UI/browser checks:
 - Hidden public profile does not render the globe.
 - Admin page lists profiles and can hide/suspend public display.
 
+Implementation acceptance scenarios:
+
+- User A cannot access User B's profile or photo objects.
+- A hidden public profile renders no globe and serves no image proxy responses.
+- Original upload bytes and metadata remain private and preserved; generated
+  display/thumb/public variants strip EXIF/GPS metadata.
+- Quota enforcement blocks uploads before the API writes to R2.
+- Deleting a hero photo clears country/subdivision presentation references.
+- Local demo-user mode runs the editable globe without Supabase or R2
+  credentials.
+
 Build verification:
 
 ```text
@@ -669,3 +682,59 @@ project-wide check for this repository until linting is repaired.
   parsing inside React components.
 - Update `docs/UX_UI_PRESERVATION_SPEC.md` only if multi-user work changes the
   intended UX baseline.
+
+## Staged Implementation Plan
+
+### Phase 1: Local Demo-User Storage Boundary
+
+- Keep the app default on `STORAGE_BACKEND=local`.
+- Add a cloud-ready store adapter shape under `packages/storage-cloud` without
+  requiring cloud credentials.
+- Preserve `ProfileStore` as the UI-facing interface for profile load/save,
+  photo upload, and photo delete.
+- Ensure local demo-user mode exercises the same owner flows planned for cloud:
+  load, import, edit, delete, hero selection, and framing.
+
+### Phase 2: Supabase Schema, RLS, And Profile Assembly
+
+- Add Supabase migrations for `profiles`, `photos`, `profile_presentation`, and
+  `admin_users`, including the required indexes and status constraints.
+- Add RLS policies for owner reads/writes, public visible reads, and admin
+  operational reads.
+- Implement row-to-`TravelerProfile` assembly and scoped profile/photo/
+  presentation update helpers.
+- Validate `jsonb` presentation references before writes.
+
+### Phase 3: R2 Uploads, Variants, Delete, And Quotas
+
+- Store originals, display variants, and thumbnails in private R2 buckets with
+  non-guessable scoped keys.
+- Generate high-quality display variants and lightweight thumbnails while
+  preserving original bytes and metadata privately.
+- Enforce upload size, active photo count, and stored-object quota before R2
+  writes.
+- Soft-delete photo rows, clear stale hero references, and perform retryable R2
+  object cleanup.
+- Track per-profile and global storage/operation metadata for admin reporting.
+
+### Phase 4: Auth, Public Routes, And Admin Page
+
+- Add Supabase magic-link/OTP sign-in and callback handling.
+- Create a primary profile and slug during first authenticated owner load.
+- Implement owner APIs, public profile APIs, and the public image proxy.
+- Render public `/u/:slug` as read-only and live with `public_visible`.
+- Add `/admin` for profile lists, usage diagnostics, visibility suspension, and
+  storage cleanup triggers.
+
+### Phase 5: Verification, Staging, And Beta Readiness
+
+- Add unit tests for profile assembly, scoped updates, quota checks,
+  presentation validation, and delete cleanup.
+- Add API tests for unauthenticated access, cross-user isolation, public
+  visibility, admin role checks, failed R2 writes, and R2 delete failures.
+- Add browser checks for local demo-user mode, owner sign-in, upload/edit/delete,
+  public read-only view, hidden public profile, and admin visibility controls.
+- Verify in `cloud-dev` with staging Supabase and R2 before enabling production
+  beta resources.
+- Run `pnpm --filter @beenthere/ui test`, `pnpm --filter @beenthere/web test`,
+  and `pnpm build` before beta release.
