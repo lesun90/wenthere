@@ -13,7 +13,7 @@ interface Props {
 
 const RADIUS = 60
 const DEPTH = 40
-const ROTATE_SPEED = 0.01
+const ROTATE_SPEED = 0.0015
 
 function buildPositions(count: number) {
   const positions = new Float32Array(count * 3)
