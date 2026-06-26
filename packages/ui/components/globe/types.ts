@@ -30,4 +30,6 @@ export interface GlobePalette {
   countryBorder: string
   subdivisionBorder: string
   subdivisionBorderHover: string
+  starColor: string
+  starOpacity: number
 }

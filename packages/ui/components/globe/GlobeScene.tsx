@@ -7,6 +7,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { EarthMesh } from './EarthMesh'
+import { StarsBackground } from './StarsBackground'
 import { CountryLayer } from './CountryLayer'
 import { SubdivisionLayer } from './SubdivisionLayer'
 import { FloatingCard } from './FloatingCard'
@@ -47,6 +48,8 @@ const GLOBE_PALETTES: Record<'dark' | 'light', GlobePalette> = {
     countryBorder: '#ffffff',
     subdivisionBorder: '#c8d3e1',
     subdivisionBorderHover: '#ffffff',
+    starColor: '#ffffff',
+    starOpacity: 0.85,
   },
   light: {
     background: '#FFFFFF',
@@ -58,6 +61,8 @@ const GLOBE_PALETTES: Record<'dark' | 'light', GlobePalette> = {
     countryBorder: '#ffffff',
     subdivisionBorder: '#D0C8C0',
     subdivisionBorderHover: '#ffffff',
+    starColor: '#94A3B8',
+    starOpacity: 0.4,
   },
 }
 
@@ -420,6 +425,7 @@ function GlobeSceneComponent({
           style={{ width: '100%', height: '100%' }}
         >
           <color attach="background" args={[palette.background]} />
+          <StarsBackground color={palette.starColor} opacity={palette.starOpacity} />
           <ambientLight color="#ffffff" intensity={0.15} />
           <CameraLight />
           <CameraController
