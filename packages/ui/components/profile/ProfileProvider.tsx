@@ -16,6 +16,15 @@ import type { ProfileStore } from '../../lib/profile-store/types'
 
 type StorageStatus = 'loading' | 'ready' | 'memory-fallback'
 
+export interface ImportProgressEvent {
+  fileIndex: number
+  fileName: string
+  status: 'uploading' | 'done' | 'error'
+  loaded?: number
+  total?: number
+  error?: string
+}
+
 interface ProfileProviderValue {
   profile: TravelerProfile
   profileIndex: ProfileIndex
@@ -25,7 +34,7 @@ interface ProfileProviderValue {
   errorMessage?: string
   pendingEditPhotoId: string | null
   clearPendingEditPhoto: () => void
-  importPhotos: (files: File[], defaultCountryCode?: string) => Promise<void>
+  importPhotos: (files: File[], defaultCountryCode?: string, onProgress?: (event: ImportProgressEvent) => void) => Promise<void>
   editPhoto: (photoId: string, draft: PhotoEditDraftData) => Promise<void>
   deletePhoto: (photoId: string) => Promise<void>
   setCountryHero: (countryCode: string, photoId: string, framing?: PhotoFrameTransform) => Promise<void>
@@ -108,30 +117,35 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
     return () => { cancelled = true }
   }, [setActiveProfile, store, seedProfile])
 
-  const importPhotos = useCallback(async (files: File[], defaultCountryCode?: string) => {
+  // Each file uploads and persists independently — a failure on one file never
+  // blocks or delays the others, and successes appear as soon as they finish.
+  const importPhotos = useCallback(async (files: File[], defaultCountryCode?: string, onProgress?: (event: ImportProgressEvent) => void) => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'))
     if (imageFiles.length === 0) return
 
-    let firstPhotoId: string | null = null
-    const inputs = []
     const currentProfile = profileRef.current
-    for (const file of imageFiles) {
+    let firstPhotoId: string | null = null
+
+    await Promise.all(imageFiles.map(async (file, fileIndex) => {
       const id = nextPhotoId(currentProfile.id)
       // Hyphens keep the key safe as a URL path segment (/api/photo/<key>)
       const blobKey = `photo-${currentProfile.id}-${id}`
-      firstPhotoId ??= id
-      if (storeRef.current?.putPhotoBlob) await storeRef.current.putPhotoBlob(blobKey, file)
-      inputs.push({
-        id,
-        blobKey,
-        objectUrl: `/api/photo/${blobKey}`,
-        mimeType: file.type,
-        fileName: file.name,
-      })
-    }
-
-    await persistProfile(appendLocalPhotos(profileRef.current, inputs, defaultCountryCode))
-    setPendingEditPhotoId(firstPhotoId)
+      try {
+        onProgress?.({ fileIndex, fileName: file.name, status: 'uploading', loaded: 0, total: file.size })
+        if (storeRef.current?.putPhotoBlob) {
+          await storeRef.current.putPhotoBlob(blobKey, file, (loaded, total) => {
+            onProgress?.({ fileIndex, fileName: file.name, status: 'uploading', loaded, total })
+          })
+        }
+        const input = { id, blobKey, objectUrl: `/api/photo/${blobKey}`, mimeType: file.type, fileName: file.name }
+        await persistProfile(appendLocalPhotos(profileRef.current, [input], defaultCountryCode))
+        firstPhotoId ??= id
+        setPendingEditPhotoId(prev => prev ?? firstPhotoId)
+        onProgress?.({ fileIndex, fileName: file.name, status: 'done' })
+      } catch (error) {
+        onProgress?.({ fileIndex, fileName: file.name, status: 'error', error: error instanceof Error ? error.message : 'Upload failed.' })
+      }
+    }))
   }, [persistProfile])
 
   const editPhoto = useCallback(async (photoId: string, draft: PhotoEditDraftData) => {

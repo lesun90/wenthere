@@ -1,5 +1,25 @@
 import type { ProfileStore, TravelerProfile } from '@beenthere/ui'
 
+// XHR (not fetch) so upload progress can drive a per-file progress bar.
+function postFormWithProgress(url: string, form: FormData, onProgress?: (loaded: number, total: number) => void): Promise<void> {
+  if (!onProgress) {
+    return fetch(url, { method: 'POST', body: form }).then(res => {
+      if (!res.ok) throw new Error(`Failed to upload photo: ${res.status}`)
+    })
+  }
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', url)
+    xhr.upload.onprogress = event => { if (event.lengthComputable) onProgress(event.loaded, event.total) }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve()
+      else reject(new Error(`Failed to upload photo: ${xhr.status}`))
+    }
+    xhr.onerror = () => reject(new Error('Network error while uploading photo.'))
+    xhr.send(form)
+  })
+}
+
 export class LocalProfileStore implements ProfileStore {
   constructor(private readonly profileId?: string) {}
 
@@ -23,12 +43,11 @@ export class LocalProfileStore implements ProfileStore {
     if (!res.ok) throw new Error(`Failed to save profile: ${res.status}`)
   }
 
-  async putPhotoBlob(key: string, file: File): Promise<void> {
+  async putPhotoBlob(key: string, file: File, onProgress?: (loaded: number, total: number) => void): Promise<void> {
     const form = new FormData()
     form.append('key', key)
     form.append('file', file)
-    const res = await fetch('/api/photo', { method: 'POST', body: form })
-    if (!res.ok) throw new Error(`Failed to upload photo: ${res.status}`)
+    await postFormWithProgress('/api/photo', form, onProgress)
   }
 
   async deletePhotoBlob(key: string): Promise<void> {

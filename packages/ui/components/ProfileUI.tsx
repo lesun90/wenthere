@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { IdentityStrip } from './IdentityStrip'
 import { PhotoManagementDrawer, type PhotoEditDraft } from './globe/PhotoManagementDrawer'
+import type { ImportProgressEvent } from './profile/ProfileProvider'
 import type { TravelerProfile, ProfileIndex, TravelPhoto } from '../lib/types'
 
 interface Props {
@@ -15,7 +16,7 @@ interface Props {
   onPendingEditPhotoHandled?: () => void
   storageMessage?: string
   targetCountry?: { code: string; name: string } | null
-  onImportFiles?: (files: File[], defaultCountryCode?: string) => void
+  onImportFiles?: (files: File[], defaultCountryCode?: string, onProgress?: (event: ImportProgressEvent) => void) => void | Promise<void>
   onDeletePhoto?: (photoId: string) => void
   onEditPhoto?: (photoId: string, draft: PhotoEditDraft) => void
   onLocatePhoto?: (photo: TravelPhoto) => void

@@ -57,9 +57,9 @@ export function CloudProfileExperience({ seedProfile }: { seedProfile: TravelerP
                 onPendingEditPhotoHandled={profileState.clearPendingEditPhoto}
                 storageMessage={profileState.errorMessage}
                 targetCountry={addPhotosCountry}
-                onImportFiles={(files, defaultCountryCode) => {
+                onImportFiles={(files, defaultCountryCode, onProgress) => {
                   setDrawerOpen(true)
-                  void profileState.importPhotos(files, defaultCountryCode)
+                  return profileState.importPhotos(files, defaultCountryCode, onProgress)
                 }}
                 onDeletePhoto={photoId => void profileState.deletePhoto(photoId)}
                 onEditPhoto={(photoId, draft) => profileState.editPhoto(photoId, draft)}

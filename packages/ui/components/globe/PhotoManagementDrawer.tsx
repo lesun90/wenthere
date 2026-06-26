@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { CountrySummary, ProfileIndex, TravelPhoto } from '../../lib/types'
+import type { ImportProgressEvent } from '../profile/ProfileProvider'
 import {
   findCountryCodeByName,
   getCountryMetadata,
@@ -25,7 +26,7 @@ interface Props {
   onPendingEditPhotoHandled?: () => void
   storageMessage?: string
   targetCountry?: { code: string; name: string } | null
-  onImportFiles?: (files: File[], defaultCountryCode?: string) => void
+  onImportFiles?: (files: File[], defaultCountryCode?: string, onProgress?: (event: ImportProgressEvent) => void) => void | Promise<void>
   onDeletePhoto?: (photoId: string) => void | Promise<void>
   onEditPhoto?: (photoId: string, draft: PhotoEditDraft) => void | Promise<void>
   onLocatePhoto?: (photo: TravelPhoto) => void
@@ -47,7 +48,23 @@ export interface PhotoEditDraft {
   subdivisionName: string
 }
 
+interface ImportJob {
+  jobId: string
+  file: File
+  previewUrl: string
+  status: 'uploading' | 'done' | 'error'
+  loaded: number
+  total: number
+  error?: string
+}
+
 // ─── helpers ──────────────────────────────────────────────────────────────────
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 function findPhoto(photoId: string, profileIndex: ProfileIndex, unplacedPhotos: TravelPhoto[] = []): TravelPhoto | undefined {
   const unplaced = unplacedPhotos.find(x => x.id === photoId)
@@ -329,6 +346,77 @@ function EditPhotoPanel({
   )
 }
 
+const ImportJobRow = memo(function ImportJobRow({
+  job,
+  onRetry,
+  onDismiss,
+}: {
+  job: ImportJob
+  onRetry: () => void
+  onDismiss: () => void
+}) {
+  const percent = job.total > 0 ? Math.min(100, Math.round((job.loaded / job.total) * 100)) : 0
+
+  return (
+    <div className={`photo-import-job${job.status === 'error' ? ' error' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 8px', borderRadius: 10 }}>
+      <img src={job.previewUrl} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8, flexShrink: 0, display: 'block' }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <span style={{ flex: 1, minWidth: 0, color: 'var(--text-primary)', fontSize: 12, fontFamily: 'var(--font-dm-sans), sans-serif', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {job.file.name}
+          </span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-dm-sans), sans-serif', flexShrink: 0 }}>
+            {formatBytes(job.total)}
+          </span>
+        </div>
+
+        {job.status === 'uploading' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+            <div style={{ flex: 1, height: 3, borderRadius: 999, background: 'var(--divider)', overflow: 'hidden' }}>
+              <div style={{ width: `${percent}%`, height: '100%', background: 'var(--accent)', borderRadius: 999, transition: 'width 150ms ease-out' }} />
+            </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-dm-sans), sans-serif', flexShrink: 0, width: 30, textAlign: 'right' }}>{percent}%</span>
+          </div>
+        )}
+
+        {job.status === 'done' && (
+          <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: 11, fontFamily: 'var(--font-dm-sans), sans-serif', marginTop: 4 }}>
+            Added
+          </span>
+        )}
+
+        {job.status === 'error' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <span style={{ flex: 1, minWidth: 0, color: 'var(--error)', fontSize: 11, fontFamily: 'var(--font-dm-sans), sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {job.error ?? 'Upload failed'}
+            </span>
+            <button onClick={onRetry} style={{ flexShrink: 0, background: 'none', border: '1px solid var(--border)', borderRadius: 999, color: 'var(--text-secondary)', fontSize: 11, fontFamily: 'var(--font-dm-sans), sans-serif', padding: '3px 10px', cursor: 'pointer' }}>
+              Retry
+            </button>
+          </div>
+        )}
+      </div>
+
+      {job.status === 'uploading' ? (
+        <div className="photo-import-spinner" aria-hidden="true" style={{ flexShrink: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="var(--accent)" strokeWidth="2" strokeOpacity="0.22" />
+            <path d="M21 12a9 9 0 0 0-9-9" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+      ) : (
+        <button
+          onClick={onDismiss}
+          aria-label={`Dismiss ${job.file.name}`}
+          style={{ width: 18, height: 18, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'var(--divider)', border: 'none', color: 'var(--text-muted)', flexShrink: 0 }}
+        >
+          <svg width="7" height="7" viewBox="0 0 8 8" fill="none"><path d="M1 1l6 6M7 1L1 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+        </button>
+      )}
+    </div>
+  )
+})
+
 const PhotoRow = memo(function PhotoRow({
   photo,
   countryName,
@@ -488,6 +576,10 @@ export function PhotoManagementDrawer({
   const [visible, setVisible] = useState(false)
   const [listReady, setListReady] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [dragItemCount, setDragItemCount] = useState(0)
+  const [importJobs, setImportJobs] = useState<ImportJob[]>([])
+  const [importError, setImportError] = useState<string | null>(null)
+  const [targetCountryDismissed, setTargetCountryDismissed] = useState(false)
   const [query, setQuery] = useState('')
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null)
@@ -520,8 +612,14 @@ export function PhotoManagementDrawer({
       setQuery('')
       setHighlightedIndex(-1)
       setEditingPhotoId(null)
+      setImportError(null)
     }
   }, [isOpen])
+
+  // ── reset dismissal when a new target country is requested ──
+  useEffect(() => {
+    setTargetCountryDismissed(false)
+  }, [targetCountry?.code])
 
   // ── escape key ──
   useEffect(() => {
@@ -546,18 +644,87 @@ export function PhotoManagementDrawer({
     onPendingEditPhotoHandled?.()
   }, [pendingEditPhotoId, onPendingEditPhotoHandled])
 
-  // ── file import ──
-  function handleFiles(files: FileList | null) {
-    if (!files || files.length === 0) return
-    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
-    if (imageFiles.length > 0) onImportFiles?.(imageFiles, targetCountry?.code)
+  // ── file import — each file uploads, progresses, and can retry independently ──
+  const effectiveTargetCountryCode = targetCountryDismissed ? undefined : targetCountry?.code
+
+  function removeImportJob(jobId: string) {
+    setImportJobs(prev => {
+      const job = prev.find(j => j.jobId === jobId)
+      if (job) URL.revokeObjectURL(job.previewUrl)
+      return prev.filter(j => j.jobId !== jobId)
+    })
   }
 
-  // ── drag & drop ──
-  function handleDragEnter(e: React.DragEvent) { e.preventDefault(); dragCounterRef.current++; setIsDragOver(true) }
+  async function runImport(filesToImport: File[]) {
+    const jobs: ImportJob[] = filesToImport.map(file => ({
+      jobId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+      status: 'uploading',
+      loaded: 0,
+      total: file.size,
+    }))
+    setImportJobs(prev => [...prev, ...jobs])
+
+    try {
+      await onImportFiles?.(filesToImport, effectiveTargetCountryCode, event => {
+        const job = jobs[event.fileIndex]
+        if (!job) return
+        setImportJobs(prev => prev.map(j => j.jobId !== job.jobId ? j : {
+          ...j,
+          status: event.status,
+          loaded: event.loaded ?? j.loaded,
+          total: event.total ?? j.total,
+          error: event.error,
+        }))
+        if (event.status === 'done') setTimeout(() => removeImportJob(job.jobId), 1400)
+      })
+    } catch (error) {
+      // Defensive fallback if the host app doesn't report per-file progress.
+      const message = error instanceof Error ? error.message : 'Could not import photo.'
+      const jobIds = new Set(jobs.map(j => j.jobId))
+      setImportJobs(prev => prev.map(j => jobIds.has(j.jobId) && j.status === 'uploading' ? { ...j, status: 'error', error: message } : j))
+    }
+  }
+
+  function retryImportJob(jobId: string) {
+    const job = importJobs.find(j => j.jobId === jobId)
+    if (!job) return
+    removeImportJob(jobId)
+    void runImport([job.file])
+  }
+
+  function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return
+    const allFiles = Array.from(files)
+    const imageFiles = allFiles.filter(f => f.type.startsWith('image/'))
+    if (imageFiles.length === 0) {
+      setImportError(allFiles.length === 1
+        ? "That file isn't a photo — try JPG, PNG, or HEIC."
+        : 'No photos found in that selection — try JPG, PNG, or HEIC.')
+      return
+    }
+    setImportError(null)
+    void runImport(imageFiles)
+  }
+
+  // ── drag & drop (active anywhere over the photo list panel) ──
+  // Real file name/size are inaccessible until drop (browser security), so the
+  // hover state can only show how many items are being dragged, not which ones.
+  function handleDragEnter(e: React.DragEvent) {
+    e.preventDefault()
+    dragCounterRef.current++
+    setIsDragOver(true)
+    setDragItemCount(e.dataTransfer.items.length)
+  }
   function handleDragLeave(e: React.DragEvent) { e.preventDefault(); if (--dragCounterRef.current === 0) setIsDragOver(false) }
-  function handleDragOver(e: React.DragEvent) { e.preventDefault() }
-  function handleDrop(e: React.DragEvent) { e.preventDefault(); dragCounterRef.current = 0; setIsDragOver(false); handleFiles(e.dataTransfer.files) }
+  function handleDragOver(e: React.DragEvent) { e.preventDefault(); setDragItemCount(e.dataTransfer.items.length) }
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    dragCounterRef.current = 0
+    setIsDragOver(false)
+    handleFiles(e.dataTransfer.files)
+  }
 
   // ── search ──
   const q = query.toLowerCase().trim()
@@ -697,28 +864,54 @@ export function PhotoManagementDrawer({
       {/* ── Two-panel sliding content area ── */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
 
-        {/* Panel A — list */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          transform: editingPhotoId ? 'translateX(-30%)' : 'translateX(0)',
-          opacity: editingPhotoId ? 0 : 1,
-          transition: `${panelTr}, opacity ${PANEL_SLIDE_MS}ms ease`,
-          pointerEvents: editingPhotoId ? 'none' : 'auto',
-        }}>
-          {targetCountry && (
-            <div style={{ padding: '0 14px 10px', flexShrink: 0 }}>
-              <div className="photo-drawer-stats" style={{ color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-dm-sans), sans-serif', lineHeight: 1.45, padding: '8px 10px', borderRadius: 8 }}>
-                Adding photos to <strong style={{ color: 'var(--text-primary)' }}>{targetCountry.name}</strong>
+        {/* Panel A — list. Drag-and-drop is active over the whole panel, not just the import box. */}
+        <div
+          onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            transform: editingPhotoId ? 'translateX(-30%)' : 'translateX(0)',
+            opacity: editingPhotoId ? 0 : 1,
+            transition: `${panelTr}, opacity ${PANEL_SLIDE_MS}ms ease`,
+            pointerEvents: editingPhotoId ? 'none' : 'auto',
+          }}>
+          {isDragOver && (
+            <div className="photo-drawer-drop-overlay" aria-hidden="true">
+              <div className="photo-drawer-drop-overlay-inner">
+                <div className="photo-drawer-drop-overlay-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="3" x2="12" y2="15" /><polyline points="7 8 12 3 17 8" />
+                    <path d="M5 16v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />
+                  </svg>
+                </div>
+                <span className="photo-drawer-drop-overlay-title">Release to upload</span>
+                <span className="photo-drawer-drop-overlay-subtitle">
+                  {dragItemCount > 0 ? `${dragItemCount} ${dragItemCount === 1 ? 'photo' : 'photos'} ready` : 'Ready to import'}
+                </span>
               </div>
             </div>
           )}
 
-          {/* Import zone */}
-          <div style={{ padding: '0 14px 14px', flexShrink: 0 }} onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
+          {targetCountry && !targetCountryDismissed && (
+            <div style={{ padding: '0 14px 10px', flexShrink: 0 }}>
+              <div className="photo-drawer-stats" style={{ display: 'flex', alignItems: 'center', color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-dm-sans), sans-serif', lineHeight: 1.45, padding: '8px 10px', borderRadius: 8 }}>
+                <span style={{ flex: 1 }}>Adding photos to <strong style={{ color: 'var(--text-primary)' }}>{targetCountry.name}</strong></span>
+                <button
+                  onClick={() => setTargetCountryDismissed(true)}
+                  aria-label="Stop adding photos to this country"
+                  style={{ width: 18, height: 18, marginLeft: 8, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'var(--divider)', border: 'none', color: 'var(--text-muted)', flexShrink: 0 }}
+                >
+                  <svg width="7" height="7" viewBox="0 0 8 8" fill="none"><path d="M1 1l6 6M7 1L1 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Import zone — stays available while uploads run; each drop starts its own independent batch. */}
+          <div style={{ padding: '0 14px 14px', flexShrink: 0 }}>
             <div
               role="button" tabIndex={0}
               aria-label="Import photos — drag and drop or click to browse"
@@ -746,10 +939,28 @@ export function PhotoManagementDrawer({
             <input ref={fileInputRef} type="file" multiple accept="image/*" style={{ display: 'none' }} aria-hidden="true" onChange={e => { handleFiles(e.target.files); e.target.value = '' }} />
           </div>
 
-          {(storageMessage || actionError) && (
+          {/* Per-file upload progress — each row tracks, fails, and retries independently */}
+          {importJobs.length > 0 && (
+            <div style={{ padding: '0 14px 10px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {importJobs.map(job => (
+                <ImportJobRow
+                  key={job.jobId}
+                  job={job}
+                  onRetry={() => retryImportJob(job.jobId)}
+                  onDismiss={() => removeImportJob(job.jobId)}
+                />
+              ))}
+            </div>
+          )}
+
+          {(importError || actionError || storageMessage) && (
             <div style={{ padding: '0 16px 10px', flexShrink: 0 }}>
-              <div className="photo-drawer-stats" style={{ color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-dm-sans), sans-serif', lineHeight: 1.45, padding: '8px 10px', borderRadius: 8 }}>
-                {actionError ?? storageMessage}
+              <div
+                role={importError || actionError ? 'alert' : undefined}
+                className={`photo-drawer-stats${importError || actionError ? ' photo-drawer-stats-error' : ''}`}
+                style={{ color: importError || actionError ? 'var(--error)' : 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-dm-sans), sans-serif', lineHeight: 1.45, padding: '8px 10px', borderRadius: 8 }}
+              >
+                {importError ?? actionError ?? storageMessage}
               </div>
             </div>
           )}

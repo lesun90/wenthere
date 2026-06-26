@@ -78,9 +78,9 @@ export function ProfileExperience({ seedProfile }: { seedProfile: TravelerProfil
                 onPendingEditPhotoHandled={profileState.clearPendingEditPhoto}
                 storageMessage={profileState.storageStatus === 'memory-fallback' ? 'Offline storage is unavailable in this browser session.' : profileState.errorMessage}
                 targetCountry={addPhotosCountry}
-                onImportFiles={(files, defaultCountryCode) => {
+                onImportFiles={(files, defaultCountryCode, onProgress) => {
                   setDrawerOpen(true)
-                  void profileState.importPhotos(files, defaultCountryCode)
+                  return profileState.importPhotos(files, defaultCountryCode, onProgress)
                 }}
                 onDeletePhoto={photoId => void profileState.deletePhoto(photoId)}
                 onEditPhoto={(photoId, draft) => profileState.editPhoto(photoId, draft)}

@@ -263,6 +263,26 @@ export function isBetaInviteAllowed(input: BetaInviteInput): boolean {
   return input.adminCreatedUserIds.includes(input.userId)
 }
 
+// XHR (not fetch) so upload progress can drive a per-file progress bar.
+function postFormWithProgress(url: string, form: FormData, onProgress?: (loaded: number, total: number) => void): Promise<void> {
+  if (!onProgress) {
+    return fetch(url, { method: 'POST', body: form }).then(res => {
+      if (!res.ok) throw new Error(`Failed to upload cloud photo: ${res.status}`)
+    })
+  }
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', url)
+    xhr.upload.onprogress = event => { if (event.lengthComputable) onProgress(event.loaded, event.total) }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve()
+      else reject(new Error(`Failed to upload cloud photo: ${xhr.status}`))
+    }
+    xhr.onerror = () => reject(new Error('Network error while uploading photo.'))
+    xhr.send(form)
+  })
+}
+
 export class CloudProfileStore implements ProfileStore {
   constructor(private readonly profileUrl = '/api/profile') {}
 
@@ -282,12 +302,11 @@ export class CloudProfileStore implements ProfileStore {
     if (!res.ok) throw new Error(`Failed to save cloud profile: ${res.status}`)
   }
 
-  async putPhotoBlob(key: string, file: File): Promise<void> {
+  async putPhotoBlob(key: string, file: File, onProgress?: (loaded: number, total: number) => void): Promise<void> {
     const form = new FormData()
     form.append('key', key)
     form.append('file', file)
-    const res = await fetch('/api/photos', { method: 'POST', body: form })
-    if (!res.ok) throw new Error(`Failed to upload cloud photo: ${res.status}`)
+    await postFormWithProgress('/api/photos', form, onProgress)
   }
 
   async deletePhotoBlob(key: string): Promise<void> {
