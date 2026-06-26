@@ -10,7 +10,8 @@ import { firstOtherPhotoUrls } from './photoUtils'
 import type { HoverInfo, GlobePalette, HeroTransform } from './types'
 import type { ProfileIndex } from '../../lib/types'
 import { prepareCountryRecords } from '../../lib/geo-cache'
-import { registerCountryGeometry } from '../../lib/geo-registry'
+import { registerCountryGeometry, registerCountryCentroid } from '../../lib/geo-registry'
+import { listCountries } from '../../lib/geo-metadata'
 import { latLngToVec3 } from '../../lib/geo'
 
 let countriesTopology: Topology<{ countries: GeometryCollection }> | null = null
@@ -78,6 +79,15 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     return prepareCountryRecords(feature(topology, topology.objects.countries).features)
   }, [topology])
 
+  // Profile-independent numeric topology ID -> alpha-3 code, covering every
+  // country (not just visited ones) so unvisited countries can still be
+  // tapped and located.
+  const numericIdToCode = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const country of listCountries()) map[country.numericId] = country.code
+    return map
+  }, [])
+
   const visitedCountries = useMemo(() => {
     const result: Record<string, string> = {}
     for (const [numericId, summary] of Object.entries(profileIndex.countrySummariesByNumericId)) {
@@ -87,11 +97,13 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
   }, [countryHeroOverrides, profileIndex])
 
   useEffect(() => {
-    for (const { id, geometry } of features) {
+    for (const { id, geometry, centroid } of features) {
       const summary = profileIndex.countrySummariesByNumericId[id]
+      const code = summary?.countryCode ?? numericIdToCode[id]
+      if (code) registerCountryCentroid(code, centroid)
       if (summary?.countryCode) registerCountryGeometry(summary.countryCode, geometry)
     }
-  }, [features, profileIndex])
+  }, [features, profileIndex, numericIdToCode])
 
   function projectToScreen(lonLat: [number, number]): { screenX: number; screenY: number } {
     const [lon, lat] = lonLat
@@ -131,8 +143,9 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
 
   function handleTap(id: string, centroid: [number, number]) {
     const summary = profileIndex.countrySummariesByNumericId[id]
-    if (!summary || summary.renderablePlaceCount === 0) return
-    onCountryTap(summary.countryCode, centroid)
+    const code = summary?.countryCode ?? numericIdToCode[id]
+    if (!code) return
+    onCountryTap(code, centroid)
   }
 
   const dimmed = showSubdivisions

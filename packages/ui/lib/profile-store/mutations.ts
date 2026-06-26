@@ -53,7 +53,7 @@ function withSinglePhotoCountryHero(profile: TravelerProfile, countryCode: strin
   return { ...profile, presentation }
 }
 
-export function appendLocalPhotos(profile: TravelerProfile, photos: LocalPhotoInput[]): TravelerProfile {
+export function appendLocalPhotos(profile: TravelerProfile, photos: LocalPhotoInput[], defaultCountryCode?: string): TravelerProfile {
   return {
     ...profile,
     photos: [
@@ -62,7 +62,7 @@ export function appendLocalPhotos(profile: TravelerProfile, photos: LocalPhotoIn
         id: photo.id,
         url: photo.objectUrl,
         caption: captionFromFileName(photo.fileName),
-        location: { countryCode: '' },
+        location: { countryCode: defaultCountryCode ?? '' },
         source: {
           kind: 'localBlob',
           key: photo.blobKey,

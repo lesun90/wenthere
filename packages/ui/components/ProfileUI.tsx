@@ -14,9 +14,11 @@ interface Props {
   pendingEditPhotoId?: string | null
   onPendingEditPhotoHandled?: () => void
   storageMessage?: string
-  onImportFiles?: (files: File[]) => void
+  targetCountry?: { code: string; name: string } | null
+  onImportFiles?: (files: File[], defaultCountryCode?: string) => void
   onDeletePhoto?: (photoId: string) => void
   onEditPhoto?: (photoId: string, draft: PhotoEditDraft) => void
+  onLocatePhoto?: (photo: TravelPhoto) => void
 }
 
 export function ProfileUI({
@@ -28,9 +30,11 @@ export function ProfileUI({
   pendingEditPhotoId,
   onPendingEditPhotoHandled,
   storageMessage,
+  targetCountry,
   onImportFiles,
   onDeletePhoto,
   onEditPhoto,
+  onLocatePhoto,
 }: Props) {
   const [internalOpen, setInternalOpen] = useState(false)
   const drawerOpen = drawerOpenProp ?? internalOpen
@@ -52,9 +56,11 @@ export function ProfileUI({
         pendingEditPhotoId={pendingEditPhotoId}
         onPendingEditPhotoHandled={onPendingEditPhotoHandled}
         storageMessage={storageMessage}
+        targetCountry={targetCountry}
         onImportFiles={onImportFiles}
         onDeletePhoto={onDeletePhoto}
         onEditPhoto={onEditPhoto}
+        onLocatePhoto={onLocatePhoto}
       />
     </>
   )

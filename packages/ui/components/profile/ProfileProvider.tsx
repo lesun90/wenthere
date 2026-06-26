@@ -25,7 +25,7 @@ interface ProfileProviderValue {
   errorMessage?: string
   pendingEditPhotoId: string | null
   clearPendingEditPhoto: () => void
-  importPhotos: (files: File[]) => Promise<void>
+  importPhotos: (files: File[], defaultCountryCode?: string) => Promise<void>
   editPhoto: (photoId: string, draft: PhotoEditDraftData) => Promise<void>
   deletePhoto: (photoId: string) => Promise<void>
   setCountryHero: (countryCode: string, photoId: string, framing?: PhotoFrameTransform) => Promise<void>
@@ -108,7 +108,7 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
     return () => { cancelled = true }
   }, [setActiveProfile, store, seedProfile])
 
-  const importPhotos = useCallback(async (files: File[]) => {
+  const importPhotos = useCallback(async (files: File[], defaultCountryCode?: string) => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'))
     if (imageFiles.length === 0) return
 
@@ -130,7 +130,7 @@ export function ProfileProvider({ seedProfile, store = null, children }: Props) 
       })
     }
 
-    await persistProfile(appendLocalPhotos(profileRef.current, inputs))
+    await persistProfile(appendLocalPhotos(profileRef.current, inputs, defaultCountryCode))
     setPendingEditPhotoId(firstPhotoId)
   }, [persistProfile])
 

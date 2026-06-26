@@ -24,9 +24,11 @@ interface Props {
   pendingEditPhotoId?: string | null
   onPendingEditPhotoHandled?: () => void
   storageMessage?: string
-  onImportFiles?: (files: File[]) => void
+  targetCountry?: { code: string; name: string } | null
+  onImportFiles?: (files: File[], defaultCountryCode?: string) => void
   onDeletePhoto?: (photoId: string) => void | Promise<void>
   onEditPhoto?: (photoId: string, draft: PhotoEditDraft) => void | Promise<void>
+  onLocatePhoto?: (photo: TravelPhoto) => void
 }
 
 interface Suggestion {
@@ -333,22 +335,32 @@ const PhotoRow = memo(function PhotoRow({
   subdivisionName,
   onDelete,
   onEdit,
+  onLocate,
 }: {
   photo: TravelPhoto
   countryName: string
   subdivisionName: string
   onDelete?: (id: string) => void
   onEdit?: (id: string) => void
+  onLocate?: (photo: TravelPhoto) => void
 }) {
+  const locatable = Boolean(onLocate && photo.location.countryCode)
+
   return (
     <div
       className="photo-row"
+      role={locatable ? 'button' : undefined}
+      tabIndex={locatable ? 0 : undefined}
+      aria-label={locatable ? `Locate ${photo.caption} on the globe` : undefined}
+      onClick={locatable ? () => onLocate?.(photo) : undefined}
+      onKeyDown={locatable ? e => { if (e.key === 'Enter' || e.key === ' ') onLocate?.(photo) } : undefined}
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: 10,
         padding: '7px 0',
         borderBottom: '1px solid var(--divider)',
+        cursor: locatable ? 'pointer' : undefined,
       }}
     >
       <img
@@ -397,7 +409,11 @@ const PhotoRow = memo(function PhotoRow({
       </div>
 
       {/* Action buttons — visible on hover */}
-      <div className="photo-row-actions" style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+      <div
+        className="photo-row-actions"
+        onClick={e => e.stopPropagation()}
+        style={{ display: 'flex', gap: 4, flexShrink: 0 }}
+      >
         {onEdit && (
           <button
             onClick={() => onEdit(photo.id)}
@@ -462,9 +478,11 @@ export function PhotoManagementDrawer({
   pendingEditPhotoId,
   onPendingEditPhotoHandled,
   storageMessage,
+  targetCountry,
   onImportFiles,
   onDeletePhoto,
   onEditPhoto,
+  onLocatePhoto,
 }: Props) {
   const [mounted, setMounted] = useState(isOpen)
   const [visible, setVisible] = useState(false)
@@ -532,7 +550,7 @@ export function PhotoManagementDrawer({
   function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return
     const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
-    if (imageFiles.length > 0) onImportFiles?.(imageFiles)
+    if (imageFiles.length > 0) onImportFiles?.(imageFiles, targetCountry?.code)
   }
 
   // ── drag & drop ──
@@ -691,6 +709,14 @@ export function PhotoManagementDrawer({
           transition: `${panelTr}, opacity ${PANEL_SLIDE_MS}ms ease`,
           pointerEvents: editingPhotoId ? 'none' : 'auto',
         }}>
+          {targetCountry && (
+            <div style={{ padding: '0 14px 10px', flexShrink: 0 }}>
+              <div className="photo-drawer-stats" style={{ color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-dm-sans), sans-serif', lineHeight: 1.45, padding: '8px 10px', borderRadius: 8 }}>
+                Adding photos to <strong style={{ color: 'var(--text-primary)' }}>{targetCountry.name}</strong>
+              </div>
+            </div>
+          )}
+
           {/* Import zone */}
           <div style={{ padding: '0 14px 14px', flexShrink: 0 }} onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
             <div
@@ -857,6 +883,7 @@ export function PhotoManagementDrawer({
                         subdivisionName="Edit to place"
                         onDelete={onDeletePhoto}
                         onEdit={setEditingPhotoId}
+                        onLocate={onLocatePhoto}
                       />
                     ))}
                   </div>
@@ -884,6 +911,7 @@ export function PhotoManagementDrawer({
                               subdivisionName={sub.name}
                               onDelete={onDeletePhoto}
                               onEdit={setEditingPhotoId}
+                              onLocate={onLocatePhoto}
                             />
                           ))}
                         </div>

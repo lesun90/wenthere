@@ -17,7 +17,14 @@ function GlobeLoader() {
 
 export function CloudProfileExperience({ seedProfile }: { seedProfile: TravelerProfile }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [addPhotosCountry, setAddPhotosCountry] = useState<{ code: string; name: string } | null>(null)
+  const [locateRequest, setLocateRequest] = useState<{ countryCode: string; requestId: number } | null>(null)
   const store = useMemo(() => new CloudProfileStore(), [])
+
+  function handleDrawerOpenChange(open: boolean) {
+    setDrawerOpen(open)
+    if (!open) setAddPhotosCountry(null)
+  }
 
   return (
     <ProfileProvider seedProfile={seedProfile} store={store}>
@@ -33,6 +40,11 @@ export function CloudProfileExperience({ seedProfile }: { seedProfile: TravelerP
                   photoDrawerOpen={drawerOpen}
                   onSetCountryHero={profileState.setCountryHero}
                   onSetSubdivisionHero={profileState.setSubdivisionHero}
+                  onRequestAddPhotos={(code, name) => {
+                    setDrawerOpen(true)
+                    setAddPhotosCountry({ code, name })
+                  }}
+                  locateRequest={locateRequest}
                 />
               </Suspense>
               <ProfileUI
@@ -40,16 +52,22 @@ export function CloudProfileExperience({ seedProfile }: { seedProfile: TravelerP
                 profileIndex={profileState.profileIndex}
                 unplacedPhotos={profileState.unplacedPhotos}
                 drawerOpen={drawerOpen}
-                onDrawerOpenChange={setDrawerOpen}
+                onDrawerOpenChange={handleDrawerOpenChange}
                 pendingEditPhotoId={profileState.pendingEditPhotoId}
                 onPendingEditPhotoHandled={profileState.clearPendingEditPhoto}
                 storageMessage={profileState.errorMessage}
-                onImportFiles={files => {
+                targetCountry={addPhotosCountry}
+                onImportFiles={(files, defaultCountryCode) => {
                   setDrawerOpen(true)
-                  void profileState.importPhotos(files)
+                  void profileState.importPhotos(files, defaultCountryCode)
                 }}
                 onDeletePhoto={photoId => void profileState.deletePhoto(photoId)}
                 onEditPhoto={(photoId, draft) => profileState.editPhoto(photoId, draft)}
+                onLocatePhoto={photo => {
+                  const countryCode = photo.location.countryCode
+                  if (!countryCode) return
+                  setLocateRequest({ countryCode, requestId: Date.now() })
+                }}
               />
             </>
           )}

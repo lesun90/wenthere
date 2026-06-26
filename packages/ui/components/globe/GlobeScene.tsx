@@ -18,6 +18,8 @@ import type { HoverInfo, GlobeState, GlobePalette, HeroTransform } from './types
 import { latLngToVec3 } from '../../lib/geo'
 import type { TravelerProfile } from '../../lib/types'
 import { buildProfileIndex } from '../../lib/geodata'
+import { getCountryCentroid } from '../../lib/geo-registry'
+import { getCountryMetadata } from '../../lib/geo-metadata'
 
 const MODE_TRANSITION_MS = 300
 const MIN_CAMERA_DISTANCE = 1.2
@@ -229,6 +231,8 @@ interface GlobeSceneProps {
   photoDrawerOpen?: boolean
   onSetCountryHero?: (countryCode: string, photoId: string, framing: HeroTransform) => void
   onSetSubdivisionHero?: (subdivisionCode: string, photoId: string, framing: HeroTransform) => void
+  onRequestAddPhotos?: (countryCode: string, countryName: string) => void
+  locateRequest?: { countryCode: string; requestId: number } | null
 }
 
 function GlobeSceneComponent({
@@ -236,6 +240,8 @@ function GlobeSceneComponent({
   photoDrawerOpen = false,
   onSetCountryHero,
   onSetSubdivisionHero,
+  onRequestAddPhotos,
+  locateRequest,
 }: GlobeSceneProps) {
   const { theme } = useTheme()
   const palette = GLOBE_PALETTES[theme]
@@ -356,7 +362,20 @@ function GlobeSceneComponent({
     pendingFlyRef.current = null
     setFlyTarget(null)
     push({ level: 'subdivision', countryCode: job.countryCode, countryCenter: job.center })
+    if (!profileIndex.countrySummariesByCode[job.countryCode]) {
+      const countryName = getCountryMetadata(job.countryCode)?.name ?? job.countryCode
+      onRequestAddPhotos?.(job.countryCode, countryName)
+    }
   }
+
+  useEffect(() => {
+    if (!locateRequest) return
+    const centroid = getCountryCentroid(locateRequest.countryCode)
+    if (!centroid) return
+    setNavStack([{ level: 'world' }])
+    pendingFlyRef.current = { countryCode: locateRequest.countryCode, center: centroid }
+    setFlyTarget(centroid)
+  }, [locateRequest])
 
   function handleSubdivisionTap(subdivisionId: string, countryCode: string) {
     const galleryState: GlobeState = {
