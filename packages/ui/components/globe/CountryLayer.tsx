@@ -11,7 +11,7 @@ import type { HoverInfo, GlobePalette, HeroTransform } from './types'
 import type { ProfileIndex } from '../../lib/types'
 import { prepareCountryRecords } from '../../lib/geo-cache'
 import { registerCountryGeometry, registerCountryCentroid } from '../../lib/geo-registry'
-import { listCountries } from '../../lib/geo-metadata'
+import { getAlpha3FromNumericId } from '../../lib/iso-country-codes'
 import { latLngToVec3 } from '../../lib/geo'
 
 let countriesTopology: Topology<{ countries: GeometryCollection }> | null = null
@@ -38,7 +38,7 @@ interface Props {
   showSubdivisions: boolean
   photoOpacity: number
   onHoverChange: (info: HoverInfo | null) => void
-  onCountryTap: (countryCode: string, centroid: [number, number]) => void
+  onCountryTap: (countryCode: string, centroid: [number, number], countryName: string) => void
   onCountryHover?: (countryCode: string) => void
   interactionsEnabled?: boolean
   palette: GlobePalette
@@ -79,15 +79,6 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     return prepareCountryRecords(feature(topology, topology.objects.countries).features)
   }, [topology])
 
-  // Profile-independent numeric topology ID -> alpha-3 code, covering every
-  // country (not just visited ones) so unvisited countries can still be
-  // tapped and located.
-  const numericIdToCode = useMemo(() => {
-    const map: Record<string, string> = {}
-    for (const country of listCountries()) map[country.numericId] = country.code
-    return map
-  }, [])
-
   const visitedCountries = useMemo(() => {
     const result: Record<string, string> = {}
     for (const [numericId, summary] of Object.entries(profileIndex.countrySummariesByNumericId)) {
@@ -99,11 +90,11 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
   useEffect(() => {
     for (const { id, geometry, centroid } of features) {
       const summary = profileIndex.countrySummariesByNumericId[id]
-      const code = summary?.countryCode ?? numericIdToCode[id]
+      const code = summary?.countryCode ?? getAlpha3FromNumericId(id)
       if (code) registerCountryCentroid(code, centroid)
       if (summary?.countryCode) registerCountryGeometry(summary.countryCode, geometry)
     }
-  }, [features, profileIndex, numericIdToCode])
+  }, [features, profileIndex])
 
   function projectToScreen(lonLat: [number, number]): { screenX: number; screenY: number } {
     const [lon, lat] = lonLat
@@ -141,11 +132,11 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
     onHoverChange(null)
   }
 
-  function handleTap(id: string, centroid: [number, number]) {
+  function handleTap(id: string, name: string, centroid: [number, number]) {
     const summary = profileIndex.countrySummariesByNumericId[id]
-    const code = summary?.countryCode ?? numericIdToCode[id]
+    const code = summary?.countryCode ?? getAlpha3FromNumericId(id)
     if (!code) return
-    onCountryTap(code, centroid)
+    onCountryTap(code, centroid, name)
   }
 
   const dimmed = showSubdivisions
@@ -173,7 +164,7 @@ export function CountryLayer({ showSubdivisions, photoOpacity, onHoverChange, on
             palette={palette}
             onHover={() => handleHover(id, name, heroPicUrl, centroid, geometry)}
             onUnhover={handleUnhover}
-            onClick={() => handleTap(id, centroid)}
+            onClick={() => handleTap(id, name, centroid)}
           />
         )
       })}

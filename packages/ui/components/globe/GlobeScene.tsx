@@ -250,7 +250,7 @@ function GlobeSceneComponent({
   const [navStack, setNavStack] = useState<GlobeState[]>([{ level: 'world' }])
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null)
   const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null)
-  const pendingFlyRef = useRef<{ countryCode: string; center: [number, number] } | null>(null)
+  const pendingFlyRef = useRef<{ countryCode: string; center: [number, number]; countryName?: string } | null>(null)
   const orbitRef = useRef<React.ElementRef<typeof OrbitControls>>(null)
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 })
   const [clickOrigin, setClickOrigin] = useState<{ x: number; y: number } | null>(null)
@@ -349,10 +349,10 @@ function GlobeSceneComponent({
     setHoveredCountryCode(countryCode)
   }
 
-  function handleCountryTap(countryCode: string, centroid: [number, number]) {
+  function handleCountryTap(countryCode: string, centroid: [number, number], countryName: string) {
     if (current.level !== 'world') return
     setFocusedCountryCode(countryCode)
-    pendingFlyRef.current = { countryCode, center: centroid }
+    pendingFlyRef.current = { countryCode, center: centroid, countryName }
     setFlyTarget(centroid)
   }
 
@@ -363,7 +363,7 @@ function GlobeSceneComponent({
     setFlyTarget(null)
     push({ level: 'subdivision', countryCode: job.countryCode, countryCenter: job.center })
     if (!profileIndex.countrySummariesByCode[job.countryCode]) {
-      const countryName = getCountryMetadata(job.countryCode)?.name ?? job.countryCode
+      const countryName = job.countryName ?? getCountryMetadata(job.countryCode)?.name ?? job.countryCode
       onRequestAddPhotos?.(job.countryCode, countryName)
     }
   }
